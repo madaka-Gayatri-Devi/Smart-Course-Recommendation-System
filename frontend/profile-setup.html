@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - SmartLearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="profile-wizard-page">
+
+    <div class="profile-bg-decor decor-1"></div>
+    <div class="profile-bg-decor decor-2"></div>
+
+    <div class="profile-container">
+        
+        <div class="profile-header">
+            <div class="profile-header-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+            <h2>Complete Your Profile</h2>
+            <p>This helps us generate personalized course recommendations tailored to your goals.</p>
+        </div>
+        
+        <div class="stepper-desktop">
+            <div class="step-item active" data-step="1"><div class="step-num">1</div> Personal</div>
+            <div class="step-item" data-step="2"><div class="step-num">2</div> Education</div>
+            <div class="step-item" data-step="3"><div class="step-num">3</div> Skills</div>
+            <div class="step-item" data-step="4"><div class="step-num">4</div> Interests</div>
+            <div class="step-item" data-step="5"><div class="step-num">5</div> Career</div>
+            <div class="step-item" data-step="6"><div class="step-num">6</div> Experience</div>
+            <div class="step-item" data-step="7"><div class="step-num">7</div> Projects</div>
+            <div class="step-item" data-step="8"><div class="step-num">8</div> Prefs</div>
+            <div class="step-item" data-step="9"><div class="step-num">9</div> Docs</div>
+            <div class="step-item" data-step="10"><div class="step-num"><i class="fa-solid fa-check"></i></div> Review</div>
+        </div>
+        
+        <div class="stepper-mobile">
+            <div class="mobile-step-info">
+                <span>Step <span id="mobStepNum">1</span> of 10</span>
+                <span id="mobStepName">Personal Information</span>
+            </div>
+            <div class="mobile-progress-bar">
+                <div class="mobile-progress-fill" id="mobProgressFill" style="width: 10%;"></div>
+            </div>
+        </div>
+
+        <div class="profile-body">
+            <form id="onboardingForm" novalidate>
+                
+                <!-- STEP 1: Personal Info -->
+                <div class="wizard-step active" id="step-1">
+                    <div class="step-header">
+                        <h3>Personal Information</h3>
+                        <p>Let's start with the basics.</p>
+                    </div>
+                    
+                    <div class="form-section-card card-personal">
+                        <div class="profile-photo-wrapper">
+                            <div class="profile-upload">
+                                <i class="fa-solid fa-camera"></i>
+                                <input type="file" class="hidden-file-input" accept="image/*">
+                            </div>
+                            <div class="profile-photo-text">
+                                <h4>Upload Photo</h4>
+                                <p>Optional. Recommended size: 400x400px.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Full Name <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="profileFullName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address <span class="required">*</span></label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-lock left-icon"></i>
+                                    <input type="email" class="form-control" id="profileEmail" value="user@example.com" readonly required>
+                                </div>
+                                <span class="helper-text"><i class="fa-solid fa-circle-info"></i> This email is associated with your SmartLearn account.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone Number <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="profilePhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Date of Birth <span class="required">*</span></label>
+                                <input type="date" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Gender (Optional)</label>
+                                <select class="form-select">
+                                    <option value="">Select Gender</option>
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                    <option>Other</option>
+                                    <option>Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>City / Location (Optional)</label>
+                                <input type="text" class="form-control" placeholder="e.g. Mumbai, India">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Education -->
+                <div class="wizard-step" id="step-2">
+                    <div class="step-header">
+                        <h3>Education</h3>
+                        <p>What is your highest qualification?</p>
+                    </div>
+                    
+                    <div id="educationList" class="form-section-card card-edu">
+                        <div class="repeatable-card box-entry">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Highest Qualification <span class="required">*</span></label>
+                                    <select class="form-select" required>
+                                        <option value="">Select</option>
+                                        <option>B.Tech / B.E</option>
+                                        <option>B.Sc</option>
+                                        <option>BCA</option>
+                                        <option>MCA</option>
+                                        <option>MBA</option>
+                                        <option>Diploma</option>
+                                        <option>12th</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>College / University</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Degree / Specialization</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Graduation Year</label>
+                                    <input type="number" class="form-control" min="1950" max="2030">
+                                </div>
+                            </div>
+                            <div class="form-group" style="width: 48%;">
+                                <label>CGPA / Percentage</label>
+                                <input type="text" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-profile btn-back btn-sm" id="addEduBtn" style="height: 40px; padding: 0 1rem; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Add Education</button>
+                </div>
+
+                <!-- STEP 3: Skills -->
+                <div class="wizard-step" id="step-3">
+                    <div class="step-header">
+                        <h3>Skills</h3>
+                        <p>Select your current skills (Mandatory: Select at least 1)</p>
+                    </div>
+                    <div class="form-section-card card-skills">
+                        <div class="form-group chip-search">
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-magnifying-glass left-icon"></i>
+                                <input type="text" class="form-control custom-chip-input" placeholder="Search or type to add custom skills (Press Enter)..." id="skillSearch"  data-target="skill-pool" data-type="skill-chip">
+                            </div>
+                        </div>
+                        
+                        <div class="chip-pool" id="skill-pool">
+                            <div class="selectable-chip gradient-selected skill-chip">Python</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Java</div>
+                            <div class="selectable-chip gradient-selected skill-chip">HTML</div>
+                            <div class="selectable-chip gradient-selected skill-chip">CSS</div>
+                            <div class="selectable-chip gradient-selected skill-chip">JavaScript</div>
+                            <div class="selectable-chip gradient-selected skill-chip">React</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Node.js</div>
+                            <div class="selectable-chip gradient-selected skill-chip">SQL</div>
+                            <div class="selectable-chip gradient-selected skill-chip">AWS</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Docker</div>
+                            <div class="selectable-chip gradient-selected skill-chip">C++</div>
+                            <div class="selectable-chip gradient-selected skill-chip">C#</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Ruby</div>
+                            <div class="selectable-chip gradient-selected skill-chip">PHP</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Swift</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Kotlin</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Go</div>
+                            <div class="selectable-chip gradient-selected skill-chip">TypeScript</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Angular</div>
+                            <div class="selectable-chip gradient-selected skill-chip">Vue.js</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Interests & Languages -->
+                <div class="wizard-step" id="step-4">
+                    <div class="step-header">
+                        <h3>Interests & Languages</h3>
+                        <p>What topics excite you? Select at least 1 interest.</p>
+                    </div>
+                    <div class="form-section-card card-inter">
+                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Interests</h4>
+                        <div class="chip-pool" id="interest-pool" style="margin-bottom: 2rem;">
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-globe"></i> Web Development</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-robot"></i> AI / ML</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-database"></i> Data Science</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-cloud"></i> Cloud Computing</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-shield-halved"></i> Cyber Security</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-server"></i> DevOps</div>
+                            <div class="selectable-chip interest-chip"><i class="fa-solid fa-mobile-screen"></i> Mobile App</div>
+                        </div>
+                        
+                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Languages</h4>
+                        <div class="chip-pool" id="lang-pool">
+                            <div class="selectable-chip lang-chip">English</div>
+                            <div class="selectable-chip lang-chip">Telugu</div>
+                            <div class="selectable-chip lang-chip">Hindi</div>
+                            <div class="selectable-chip lang-chip">Spanish</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 5: Career Goals -->
+                <div class="wizard-step" id="step-5">
+                    <div class="step-header">
+                        <h3>Career Goals</h3>
+                        <p>What career are you aiming for?</p>
+                    </div>
+                    <div class="form-section-card card-career">
+                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Primary Career Goal <span class="required">*</span></h4>
+                        <div class="selectable-card-grid career-cards">
+                            <div class="selectable-card career-card-select">Full Stack Developer</div>
+                            <div class="selectable-card career-card-select">Frontend Developer</div>
+                            <div class="selectable-card career-card-select">Backend Developer</div>
+                            <div class="selectable-card career-card-select">Data Scientist</div>
+                            <div class="selectable-card career-card-select">AI Engineer</div>
+                            <div class="selectable-card career-card-select">Cloud Engineer</div>
+                            <div class="selectable-card career-card-select">Cyber Security Analyst</div>
+                            <div class="selectable-card career-card-select">UI/UX Designer</div>
+                        </div>
+                        <input type="hidden" id="primaryCareer" required>
+                        
+                        <div class="form-row" style="margin-top: 2rem;">
+                            <div class="form-group">
+                                <label>Target Industry (Optional)</label>
+                                <input type="text" class="form-control" placeholder="e.g. FinTech, Healthcare">
+                            </div>
+                            <div class="form-group">
+                                <label>Career Timeline (Optional)</label>
+                                <select class="form-select">
+                                    <option value="">Select</option>
+                                    <option>0-6 Months</option>
+                                    <option>1 Year</option>
+                                    <option>2+ Years</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 6: Experience -->
+                <div class="wizard-step" id="step-6">
+                    <div class="step-header">
+                        <h3>Experience</h3>
+                        <p>Do you have previous internship or work experience?</p>
+                    </div>
+                    <div class="form-section-card card-exp">
+                        <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 14px;">
+                                <input type="radio" name="hasExp" value="yes"> Yes
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 14px;">
+                                <input type="radio" name="hasExp" value="no" checked> No
+                            </label>
+                        </div>
+                        
+                        <div id="experienceSection" style="display: none;">
+                            <div class="repeatable-card box-entry">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Company Name</label>
+                                        <input type="text" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Role</label>
+                                        <input type="text" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Start Date</label>
+                                        <input type="date" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>End Date</label>
+                                        <input type="date" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <textarea class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-profile btn-back btn-sm" id="addIntBtn" style="height: 40px; padding: 0 1rem; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Add Internship</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 7: Projects -->
+                <div class="wizard-step" id="step-7">
+                    <div class="step-header">
+                        <h3>Projects</h3>
+                        <p>Add projects you've built (Optional)</p>
+                    </div>
+                    <div id="projectSection" class="form-section-card card-proj">
+                        <div class="repeatable-card box-entry">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Project Name</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Project Type</label>
+                                    <input type="text" class="form-control" placeholder="e.g. Web App, ML Model">
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label>Description</label>
+                                <textarea class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>GitHub URL</label>
+                                    <input type="url" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Live URL</label>
+                                    <input type="url" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-profile btn-back btn-sm" id="addProjBtn" style="height: 40px; padding: 0 1rem; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Add Project</button>
+                    </div>
+                </div>
+
+                <!-- STEP 8: Preferences -->
+                <div class="wizard-step" id="step-8">
+                    <div class="step-header">
+                        <h3>Learning Preferences</h3>
+                        <p>Help us recommend the best course format for you.</p>
+                    </div>
+                    <div class="form-section-card card-pref">
+                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Preferred Learning Style</h4>
+                        <div class="selectable-card-grid pref-cards" style="margin-bottom: 2rem;">
+                            <div class="selectable-card pref-chip"><i class="fa-solid fa-video mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Video</div>
+                            <div class="selectable-card pref-chip"><i class="fa-solid fa-book-open mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Reading</div>
+                            <div class="selectable-card pref-chip"><i class="fa-solid fa-laptop-code mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Hands-on</div>
+                            <div class="selectable-card pref-chip"><i class="fa-solid fa-shuffle mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Mixed</div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Learning Pace</label>
+                                <select class="form-select">
+                                    <option>Relaxed (1-3 hours/week)</option>
+                                    <option>Moderate (4-8 hours/week)</option>
+                                    <option>Intensive (10+ hours/week)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Preferred Course Duration</label>
+                                <select class="form-select">
+                                    <option>Short (1-4 weeks)</option>
+                                    <option>Medium (1-3 months)</option>
+                                    <option>Long (3+ months)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 9: Docs & Courses -->
+                <div class="wizard-step" id="step-9">
+                    <div class="step-header">
+                        <h3>Documents & Courses</h3>
+                        <p>Upload your resume and add any previously completed courses.</p>
+                    </div>
+                    <div class="form-section-card card-docs">
+                        <div class="file-upload-box mb-4">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <h4>Upload Your Resume</h4>
+                            <p>PDF, DOC, DOCX up to 5MB</p>
+                            <input type="file" class="hidden-file-input">
+                        </div>
+                        
+                        <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Previous Courses</h4>
+                        <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 14px;">
+                                <input type="radio" name="hasCourses" value="yes"> Yes
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 14px;">
+                                <input type="radio" name="hasCourses" value="no" checked> No
+                            </label>
+                        </div>
+                        
+                        <div id="coursesSection" style="display: none;">
+                            <div class="repeatable-card box-entry">
+                                <div class="form-group mb-3">
+                                    <label>Course Name</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Platform / Institution</label>
+                                        <input type="text" class="form-control">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Completion Date</label>
+                                        <input type="date" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-profile btn-back btn-sm" id="addCourseBtn" style="height: 40px; padding: 0 1rem; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Add Course</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 10: Review -->
+                <div class="wizard-step" id="step-10">
+                    <div class="step-header" id="reviewHeaderBlock">
+                        <h3>Review & Complete</h3>
+                        <p>Please review your profile summary before completing the setup.</p>
+                    </div>
+                    
+                    <div id="reviewBoxFields">
+                        <div class="review-section">
+                            <div class="review-header">
+                                <h4>Personal Information</h4>
+                                <button type="button" class="btn-edit" data-target="1"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content">
+                                <p><strong>Name:</strong> <span id="revName">Gayatri Devi</span></p>
+                                <p><strong>Email:</strong> <span id="revEmail">gayatri@example.com</span></p>
+                                <p><strong>Phone:</strong> <span id="revPhone"></span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="review-section">
+                            <div class="review-header">
+                                <h4>Career Goal</h4>
+                                <button type="button" class="btn-edit" data-target="5"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content">
+                                <p><strong>Primary Goal:</strong> <span id="revCareer"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="onboardingSuccess" class="success-message" style="display: none;">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <h3 style="font-size: 24px; color: var(--dark-text); margin-bottom: 0.5rem;">Profile Completed!</h3>
+                        <p style="color: var(--secondary-text); max-width: 500px; margin: 0 auto;">Your profile is securely set up. We are now generating personalized course recommendations tailored to your goals.</p>
+                    </div>
+                </div>
+                
+            </form>
+        </div>
+        
+        <div class="profile-footer">
+            <button type="button" class="btn-profile btn-back" id="prevBtn" style="display: none;"><i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Back</button>
+            <div style="flex-grow: 1;"></div>
+            <div class="profile-completion-widget">
+                <span class="completion-text">Profile Completion <span id="compText">10%</span></span>
+                <div class="completion-bar-bg">
+                    <div class="completion-bar-fill" id="compFill" style="width: 10%;"></div>
+                </div>
+            </div>
+            <button type="button" class="btn-profile btn-next" id="nextBtn">Save & Continue <i class="fa-solid fa-arrow-right" style="margin-left: 0.5rem;"></i></button>
+            <button type="button" class="btn-profile btn-next" id="submitWizardBtn" style="display: none;">Complete Profile <i class="fa-solid fa-check" style="margin-left: 0.5rem;"></i></button>
+            
+        </div>
+    </div>
+
+    <script src="js/api.js?v=3"></script>`n    <script src="js/profile.js?v=5"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+

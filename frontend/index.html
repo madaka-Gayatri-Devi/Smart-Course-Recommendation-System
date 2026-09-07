@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLearn | Smart Course Recommendation System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header class="header" id="header">
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>SmartLearn</span>
+            </a>
+            
+            <nav class="navbar" id="navbar">
+                <ul class="nav-links">
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#courses">Courses</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <div class="nav-buttons">
+                    <a href="login.html" class="btn btn-outline">Login</a>
+                    <a href="register.html" class="btn btn-primary">Get Started</a>
+                </div>
+            </nav>
+            
+            <div class="mobile-menu-btn" id="mobile-menu-btn">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="container hero-container">
+                <div class="hero-content fade-in-left">
+                    <h1><span class="text-highlight">Learn Smarter.</span><br>Build Your <span class="text-highlight">Future.</span></h1>
+                    <p>Get personalized course recommendations based on your skills, interests, career goals, and learning needs.</p>
+                    <div class="hero-buttons">
+                        <a href="register.html" class="btn btn-primary btn-lg">Get Started <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i></a>
+                        <a href="#courses" class="btn btn-outline btn-lg">Explore Courses</a>
+                    </div>
+                    <div class="hero-trusted-by">
+                        <div class="student-avatars">
+                            <img src="https://i.pravatar.cc/100?img=1" alt="Student 1">
+                            <img src="https://i.pravatar.cc/100?img=2" alt="Student 2">
+                            <img src="https://i.pravatar.cc/100?img=3" alt="Student 3">
+                            <img src="https://i.pravatar.cc/100?img=4" alt="Student 4">
+                        </div>
+                        <span class="trusted-text">Trusted by 5,000+ students<br>from top universities</span>
+                    </div>
+                </div>
+                <div class="hero-image-wrapper fade-in-right delay-1">
+                    <div class="hero-blob"></div>
+                    <div class="hero-blob-2"></div>
+                    <img src="assets/images/hero-illustration-full.jpg" alt="Student learning on laptop illustration" class="main-hero-img">
+                </div>
+            </div>
+        </section>
+
+        <!-- Trust / Statistics Section -->
+        <section class="statistics" id="statistics">
+            <div class="container stats-container">
+                <div class="stat-card fade-in-up">
+                    <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
+                    <div class="stat-content">
+                        <h2 class="counter" data-target="10000">0</h2><span>+</span>
+                        <p>Courses Available</p>
+                    </div>
+                </div>
+                <div class="stat-card fade-in-up delay-1">
+                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-content">
+                        <h2 class="counter" data-target="5000">0</h2><span>+</span>
+                        <p>Active Learners</p>
+                    </div>
+                </div>
+                <div class="stat-card fade-in-up delay-2">
+                    <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+                    <div class="stat-content">
+                        <h2 class="counter" data-target="95">0</h2><span>%</span>
+                        <p>Recommendation Accuracy</p>
+                    </div>
+                </div>
+                <div class="stat-card fade-in-up delay-3">
+                    <div class="stat-icon"><i class="fa-solid fa-award"></i></div>
+                    <div class="stat-content">
+                        <h2 class="counter" data-target="100">0</h2><span>+</span>
+                        <p>Skills Tracked</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Features</span>
+                    <h2>Everything You Need to Learn the Right Skills</h2>
+                    <p>Our platform uses intelligent algorithms to guide your educational journey from start to finish.</p>
+                </div>
+                
+                <div class="features-grid">
+                    <!-- Feature 1 -->
+                    <article class="feature-card bg-tint-1 fade-in-up">
+                        <div class="icon-wrapper"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h3>Personalized Recommendations</h3>
+                        <p>Courses recommended according to your student profile, interests, and long-term goals.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                    <!-- Feature 2 -->
+                    <article class="feature-card bg-tint-2 fade-in-up delay-1">
+                        <div class="icon-wrapper"><i class="fa-solid fa-chart-pie"></i></div>
+                        <h3>Skill Gap Analysis</h3>
+                        <p>Identify exactly which missing skills are required for your desired career path.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                    <!-- Feature 3 -->
+                    <article class="feature-card bg-tint-3 fade-in-up delay-2">
+                        <div class="icon-wrapper"><i class="fa-solid fa-bullseye"></i></div>
+                        <h3>Career Goals</h3>
+                        <p>Set, manage, and track your career objectives with clarity and precision.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                    <!-- Feature 4 -->
+                    <article class="feature-card bg-tint-4 fade-in-up">
+                        <div class="icon-wrapper"><i class="fa-solid fa-list-check"></i></div>
+                        <h3>Skill Assessment</h3>
+                        <p>Evaluate your current knowledge and skills with interactive, adaptive assessments.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                    <!-- Feature 5 -->
+                    <article class="feature-card bg-tint-5 fade-in-up delay-1">
+                        <div class="icon-wrapper"><i class="fa-solid fa-route"></i></div>
+                        <h3>Personalized Learning Path</h3>
+                        <p>Generate an optimized, ordered path of courses tailored to achieve your specific career goals.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                    <!-- Feature 6 -->
+                    <article class="feature-card bg-tint-6 fade-in-up delay-2">
+                        <div class="icon-wrapper"><i class="fa-solid fa-chart-line"></i></div>
+                        <h3>Progress Tracking</h3>
+                        <p>Monitor your course completion rates, skill improvements, and overall learning progress.</p>
+                        <a href="#" class="feature-link"><i class="fa-solid fa-arrow-right"></i></a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="how-it-works section-bg">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Process</span>
+                    <h2>How It Works</h2>
+                    <p>Your flow to success in simple steps.</p>
+                </div>
+                
+                <div class="timeline-visual">
+                    <div class="timeline-track"></div>
+                    <!-- Step 1 -->
+                    <div class="timeline-node fade-in-up">
+                        <div class="node-icon"><i class="fa-solid fa-user"></i></div>
+                        <div class="node-content">
+                            <h4>Student Profile</h4>
+                            <p>Enter your details and existing skills.</p>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="timeline-node fade-in-up delay-1">
+                        <div class="node-icon"><i class="fa-solid fa-flag-checkered"></i></div>
+                        <div class="node-content">
+                            <h4>Career Goal</h4>
+                            <p>Choose your desired career path.</p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="timeline-node fade-in-up delay-2">
+                        <div class="node-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                        <div class="node-content">
+                            <h4>Skill Assessment</h4>
+                            <p>Evaluate your current knowledge.</p>
+                        </div>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="timeline-node fade-in-up delay-3">
+                        <div class="node-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                        <div class="node-content">
+                            <h4>Skill Gap Analysis</h4>
+                            <p>Identify missing critical skills.</p>
+                        </div>
+                    </div>
+                    <!-- Step 5 -->
+                    <div class="timeline-node fade-in-up">
+                        <div class="node-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                        <div class="node-content">
+                            <h4>Course Recommendations</h4>
+                            <p>Get personalized course suggestions.</p>
+                        </div>
+                    </div>
+                    <!-- Step 6 -->
+                    <div class="timeline-node fade-in-up delay-1">
+                        <div class="node-icon"><i class="fa-solid fa-map"></i></div>
+                        <div class="node-content">
+                            <h4>Personalized Path</h4>
+                            <p>Follow a structured learning journey.</p>
+                        </div>
+                    </div>
+                    <!-- Step 7 -->
+                    <div class="timeline-node final-node fade-in-up delay-2">
+                        <div class="node-icon bg-gradient-strong"><i class="fa-solid fa-briefcase"></i></div>
+                        <div class="node-content">
+                            <h4>Career Ready</h4>
+                            <p>Achieve your professional goals.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Smart Recommendation Section -->
+        <section class="recommendation-engine" id="recommendation">
+            <div class="container">
+                <div class="recommendation-container">
+                    <div class="recommendation-text fade-in-up">
+                        <span class="badge">AI Powered</span>
+                        <h2>Recommendations Built Around You</h2>
+                        <p>Our intelligent engine analyzes your profile and automatically maps out exactly what you need to learn to reach your dream role.</p>
+                        <a href="#" class="btn btn-primary mt-4">View Recommendations</a>
+                    </div>
+                    
+                    <div class="recommendation-card fade-in-up delay-1">
+                        <div class="rec-header">
+                            <span class="label">Career Goal:</span>
+                            <span class="value">Full Stack Developer</span>
+                        </div>
+                        
+                        <div class="rec-body">
+                            <div class="skills-row">
+                                <div class="skills-col">
+                                    <h4>Current Skills</h4>
+                                    <ul class="skill-tags has-skills">
+                                        <li><i class="fa-solid fa-check"></i> HTML</li>
+                                        <li><i class="fa-solid fa-check"></i> CSS</li>
+                                        <li><i class="fa-solid fa-check"></i> JavaScript</li>
+                                    </ul>
+                                </div>
+                                <div class="skills-col">
+                                    <h4>Skill Gaps</h4>
+                                    <ul class="skill-tags missing-skills">
+                                        <li><i class="fa-solid fa-xmark"></i> React</li>
+                                        <li><i class="fa-solid fa-xmark"></i> Node.js</li>
+                                        <li><i class="fa-solid fa-xmark"></i> REST APIs</li>
+                                        <li><i class="fa-solid fa-xmark"></i> Databases</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="rec-path">
+                                <h4>Recommended Learning Path</h4>
+                                <ol class="path-list">
+                                    <li>JavaScript Advanced</li>
+                                    <li>React.js</li>
+                                    <li>Node.js</li>
+                                    <li>REST API Development</li>
+                                    <li>Database Fundamentals</li>
+                                    <li>Full Stack Development</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skill Gap Analysis Section -->
+        <section class="skill-gap section-bg" id="skill-gap">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Analytics</span>
+                    <h2>Skill Gap Analysis</h2>
+                    <p>The system constantly compares your existing skills with the requirements of your selected career goal, highlighting exactly what to focus on.</p>
+                </div>
+                
+                <div class="gap-dashboard fade-in-up delay-1">
+                    <div class="gap-header">
+                        <h3>Current Skills vs Required Skills</h3>
+                        <span class="status-indicator">Live Updates</span>
+                    </div>
+                    <div class="gap-bars">
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">HTML</span>
+                                <span class="skill-percent">100%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-high" style="width: 0%" data-width="100%"></div>
+                            </div>
+                        </div>
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">CSS</span>
+                                <span class="skill-percent">90%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-high" style="width: 0%" data-width="90%"></div>
+                            </div>
+                        </div>
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">JavaScript</span>
+                                <span class="skill-percent">70%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-mid" style="width: 0%" data-width="70%"></div>
+                            </div>
+                        </div>
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">SQL</span>
+                                <span class="skill-percent">50%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-mid" style="width: 0%" data-width="50%"></div>
+                            </div>
+                        </div>
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">React</span>
+                                <span class="skill-percent">30%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-low" style="width: 0%" data-width="30%"></div>
+                            </div>
+                        </div>
+                        <!-- Skill Item -->
+                        <div class="skill-progress-item">
+                            <div class="skill-info">
+                                <span class="skill-name">Node.js</span>
+                                <span class="skill-percent">20%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill fill-low" style="width: 0%" data-width="20%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Popular Courses Section -->
+        <section class="popular-courses" id="courses">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Explore</span>
+                    <h2>Popular Courses</h2>
+                    <p>Discover our top-rated courses taught by industry experts.</p>
+                </div>
+                
+                <div class="courses-grid">
+                    <!-- Course 1 -->
+                    <article class="course-card fade-in-up">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=600" alt="Full Stack Web Development" class="course-img">
+                            <span class="difficulty intermediate">Intermediate</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">Web Development</span>
+                            <h3>Full Stack Web Development</h3>
+                            <p class="course-desc">Master front-end and back-end development with HTML, CSS, JS, and Node.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=1" alt="Sarah Johnson" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">Sarah Johnson</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.8 (2.1k)</span>
+                                <span><i class="fa-regular fa-clock"></i> 40h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                    <!-- Course 2 -->
+                    <article class="course-card fade-in-up delay-1">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600" alt="Python for Data Science" class="course-img">
+                            <span class="difficulty beginner">Beginner</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">Data Science</span>
+                            <h3>Python for Data Science</h3>
+                            <p class="course-desc">Learn Python programming, pandas, NumPy, and data visualization.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=2" alt="David Wilson" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">David Wilson</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.9 (3.4k)</span>
+                                <span><i class="fa-regular fa-clock"></i> 35h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                    <!-- Course 3 -->
+                    <article class="course-card fade-in-up delay-2">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&q=80&w=600" alt="Machine Learning Fundamentals" class="course-img">
+                            <span class="difficulty advanced">Advanced</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">AI / ML</span>
+                            <h3>Machine Learning Fundamentals</h3>
+                            <p class="course-desc">Dive deep into predictive modeling, neural networks, and AI algorithms.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=3" alt="Emily Carter" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">Emily Carter</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.7 (1.8k)</span>
+                                <span><i class="fa-regular fa-clock"></i> 50h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                    <!-- Course 4 -->
+                    <article class="course-card fade-in-up">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=600" alt="AWS Cloud Computing" class="course-img">
+                            <span class="difficulty intermediate">Intermediate</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">Cloud</span>
+                            <h3>AWS Cloud Computing</h3>
+                            <p class="course-desc">Learn cloud infrastructure, deploying scalable apps, and AWS services.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=4" alt="Michael Brown" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">Michael Brown</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.8 (1.5k)</span>
+                                <span><i class="fa-regular fa-clock"></i> 30h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                    <!-- Course 5 -->
+                    <article class="course-card fade-in-up delay-1">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=600" alt="Cyber Security" class="course-img">
+                            <span class="difficulty intermediate">Intermediate</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">Security</span>
+                            <h3>Cyber Security</h3>
+                            <p class="course-desc">Understand network security, ethical hacking, and threat mitigation.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=2" alt="David Wilson" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">David Wilson</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.9 (900)</span>
+                                <span><i class="fa-regular fa-clock"></i> 60h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                    <!-- Course 6 -->
+                    <article class="course-card fade-in-up delay-2">
+                        <div class="course-img-wrapper">
+                            <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600" alt="Java Programming" class="course-img">
+                            <span class="difficulty beginner">Beginner</span>
+                        </div>
+                        <div class="course-content">
+                            <span class="category">Programming</span>
+                            <h3>Java Programming</h3>
+                            <p class="course-desc">Start your programming journey with object-oriented Java concepts.</p>
+                            <div class="course-instructor">
+                                <img src="https://i.pravatar.cc/100?img=3" alt="Emily Carter" class="instructor-avatar">
+                                <div class="instructor-name-wrap">
+                                    <span class="instructor-label">Instructor:</span>
+                                    <span class="instructor-name">Emily Carter</span>
+                                </div>
+                            </div>
+                            <div class="course-info">
+                                <span><i class="fa-solid fa-star text-purple"></i> 4.6 (4.2k)</span>
+                                <span><i class="fa-regular fa-clock"></i> 45h</span>
+                            </div>
+                            <a href="#" class="btn btn-outline btn-block">View Course</a>
+                        </div>
+                    </article>
+                </div>
+                <div class="text-center mt-5">
+                    <a href="#" class="btn btn-primary btn-lg">View All Courses</a>
+                </div>
+            </div>
+        </section>
+        <!-- Featured Instructors Section -->
+        <section class="featured-instructors section-bg" id="instructors">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Experts</span>
+                    <h2>Learn From Industry Experts</h2>
+                    <p>Get guidance from experienced instructors who bring real-world knowledge and practical expertise to every course.</p>
+                </div>
+                
+                <div class="instructors-grid">
+                    <!-- Instructor 1 -->
+                    <article class="instructor-card bg-tint-1 fade-in-up">
+                        <img src="https://i.pravatar.cc/150?img=1" alt="Sarah Johnson" class="instructor-img">
+                        <h3>Sarah Johnson</h3>
+                        <p class="instructor-role">Senior Full Stack Developer</p>
+                        <div class="instructor-stats">
+                            <span><i class="fa-solid fa-briefcase"></i> 8+ Years</span>
+                            <span><i class="fa-solid fa-star text-purple"></i> 4.9</span>
+                            <span><i class="fa-solid fa-users"></i> 12.5k+ Students</span>
+                        </div>
+                        <p class="instructor-expertise"><strong>Expertise:</strong> JavaScript, React, Node.js</p>
+                        <a href="#" class="btn btn-outline btn-block">View Profile</a>
+                    </article>
+                    
+                    <!-- Instructor 2 -->
+                    <article class="instructor-card bg-tint-2 fade-in-up delay-1">
+                        <img src="https://i.pravatar.cc/150?img=2" alt="David Wilson" class="instructor-img">
+                        <h3>David Wilson</h3>
+                        <p class="instructor-role">Data Science Instructor</p>
+                        <div class="instructor-stats">
+                            <span><i class="fa-solid fa-briefcase"></i> 10+ Years</span>
+                            <span><i class="fa-solid fa-star text-purple"></i> 4.8</span>
+                            <span><i class="fa-solid fa-users"></i> 18k+ Students</span>
+                        </div>
+                        <p class="instructor-expertise"><strong>Expertise:</strong> Python, Data Science, ML</p>
+                        <a href="#" class="btn btn-outline btn-block">View Profile</a>
+                    </article>
+                    
+                    <!-- Instructor 3 -->
+                    <article class="instructor-card bg-tint-3 fade-in-up delay-2">
+                        <img src="https://i.pravatar.cc/150?img=3" alt="Emily Carter" class="instructor-img">
+                        <h3>Emily Carter</h3>
+                        <p class="instructor-role">AI / ML Engineer</p>
+                        <div class="instructor-stats">
+                            <span><i class="fa-solid fa-briefcase"></i> 7+ Years</span>
+                            <span><i class="fa-solid fa-star text-purple"></i> 4.9</span>
+                            <span><i class="fa-solid fa-users"></i> 9.5k+ Students</span>
+                        </div>
+                        <p class="instructor-expertise"><strong>Expertise:</strong> Python, AI, Deep Learning</p>
+                        <a href="#" class="btn btn-outline btn-block">View Profile</a>
+                    </article>
+                    
+                    <!-- Instructor 4 -->
+                    <article class="instructor-card bg-tint-4 fade-in-up">
+                        <img src="https://i.pravatar.cc/150?img=4" alt="Michael Brown" class="instructor-img">
+                        <h3>Michael Brown</h3>
+                        <p class="instructor-role">Cloud & DevOps Engineer</p>
+                        <div class="instructor-stats">
+                            <span><i class="fa-solid fa-briefcase"></i> 9+ Years</span>
+                            <span><i class="fa-solid fa-star text-purple"></i> 4.8</span>
+                            <span><i class="fa-solid fa-users"></i> 11k+ Students</span>
+                        </div>
+                        <p class="instructor-expertise"><strong>Expertise:</strong> AWS, Docker, Kubernetes</p>
+                        <a href="#" class="btn btn-outline btn-block">View Profile</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trust Element -->
+        <section class="trust-element" style="padding: 3rem 0; text-align: center;">
+            <div class="container fade-in-up">
+                <div class="stars" style="color: var(--primary-purple); font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+                <h3 style="margin-bottom: 0.5rem;">4.8/5 average learner rating</h3>
+                <p style="margin: 0; color: var(--secondary-text);">Trusted by 5,000+ learners building skills for their future.</p>
+            </div>
+        </section>
+
+        <!-- Student Testimonials Section -->
+        <section class="testimonials section-bg" id="testimonials">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Testimonials</span>
+                    <h2>What Our Learners Say</h2>
+                    <p>See how SmartLearn helps learners discover the right skills, courses, and learning paths for their career goals.</p>
+                </div>
+                
+                <div class="testimonials-container">
+                    <!-- Testimonial 1 -->
+                    <div class="testimonial-card bg-tint-1 fade-in-up">
+                        <i class="fa-solid fa-quote-left quote-icon"></i>
+                        <div class="stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="testimonial-text">"SmartLearn helped me understand exactly which skills I was missing for my goal of becoming a Full Stack Developer."</p>
+                        <div class="student-info">
+                            <img src="https://i.pravatar.cc/100?img=5" alt="Ananya">
+                            <div>
+                                <h4>Ananya</h4>
+                                <span>Aspiring Full Stack Developer</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Testimonial 2 -->
+                    <div class="testimonial-card bg-tint-3 fade-in-up delay-1">
+                        <i class="fa-solid fa-quote-left quote-icon"></i>
+                        <div class="stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="testimonial-text">"The skill gap analysis was the most useful part for me. Instead of randomly choosing courses, I knew exactly what to learn next."</p>
+                        <div class="student-info">
+                            <img src="https://i.pravatar.cc/100?img=11" alt="Rahul">
+                            <div>
+                                <h4>Rahul</h4>
+                                <span>Software Developer</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Testimonial 3 -->
+                    <div class="testimonial-card bg-tint-6 fade-in-up delay-2">
+                        <i class="fa-solid fa-quote-left quote-icon"></i>
+                        <div class="stars">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <p class="testimonial-text">"I finally had a clear learning path instead of jumping between unrelated courses. The recommendations are spot on!"</p>
+                        <div class="student-info">
+                            <img src="https://i.pravatar.cc/100?img=9" alt="Priya">
+                            <div>
+                                <h4>Priya</h4>
+                                <span>Data Science Learner</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Career Goals Section -->
+        <section class="career-goals section-bg" id="careers">
+            <div class="container">
+                <div class="section-header text-center fade-in-up">
+                    <span class="badge">Careers</span>
+                    <h2>Popular Career Paths</h2>
+                    <p>Target highly demanded roles in the tech industry.</p>
+                </div>
+                
+                <div class="careers-grid">
+                    <!-- Career 1 -->
+                    <div class="career-card fade-in-up">
+                        <div class="career-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                        <h3>Full Stack Developer</h3>
+                        <p class="req-skills">Required: HTML/CSS, JS, React, Node, DBs</p>
+                        <a href="#" class="btn-link">Explore Path <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <!-- Career 2 -->
+                    <div class="career-card fade-in-up delay-1">
+                        <div class="career-icon"><i class="fa-solid fa-database"></i></div>
+                        <h3>Data Scientist</h3>
+                        <p class="req-skills">Required: Python, SQL, Stats, ML, Data Viz</p>
+                        <a href="#" class="btn-link">Explore Path <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <!-- Career 3 -->
+                    <div class="career-card fade-in-up delay-2">
+                        <div class="career-icon"><i class="fa-solid fa-robot"></i></div>
+                        <h3>Machine Learning Engineer</h3>
+                        <p class="req-skills">Required: Python, Math, DL, TensorFlow, MLOps</p>
+                        <a href="#" class="btn-link">Explore Path <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call-To-Action Section -->
+        <section class="cta" id="cta">
+            <div class="container fade-in-up">
+                <div class="cta-card">
+                    <div class="cta-content">
+                        <h2>Ready to Start Your Learning Journey?</h2>
+                        <p>Discover the right courses, close your skill gaps, and build a learning path designed for your career.</p>
+                        <div class="cta-buttons">
+                            <a href="register.html" class="btn btn-primary btn-lg">Create Free Account</a>
+                            <a href="#courses" class="btn btn-outline btn-lg">Explore Courses</a>
+                        </div>
+                    </div>
+                    <div class="cta-image">
+                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800" alt="Career Growth">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="about">
+        <div class="container footer-container">
+            <div class="footer-col">
+                <a href="#" class="logo footer-logo">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>SmartLearn</span>
+                </a>
+                <p class="footer-desc">The intelligent platform that provides personalized course recommendations based on your skills, goals, and learning needs.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"><i class="fa-brands fa-github"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#courses">Courses</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#about">About</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-col">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms & Conditions</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-col newsletter-col">
+                <h4>Stay Updated</h4>
+                <p>Subscribe to our newsletter for the latest learning tips.</p>
+                <form class="newsletter-form" onsubmit="event.preventDefault();">
+                    <input type="email" placeholder="Enter your email" required>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="container text-center">
+                <p>&copy; 2026 SmartLearn. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="js/landing.js"></script>
+
+    
+</body>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - SmartLearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-book-open"></i> My Courses</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-road"></i> Learning Path</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-chart-line"></i> Progress</a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="#" class="nav-item"><i class="fa-solid fa-compass"></i> Recommendations</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-layer-group"></i> Skill Gaps</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> Assessment</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-heart"></i> Wishlist</a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="#" class="nav-item text-danger" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Dashboard</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search courses...">
+                </div>
+                
+                <div class="topbar-icon">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">GD</div>
+                    <span class="profile-name" id="topName">Gayatri Devi</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 id="welcomeTitle">Welcome back, Student 👋</h1>
+                <p>Continue your learning journey and build the skills needed for your career.</p>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-book"></i></div>
+                    <div class="stat-info">
+                        <h3>12</h3>
+                        <p>Courses Enrolled</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-award"></i></div>
+                    <div class="stat-info">
+                        <h3>4</h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="stat-info">
+                        <h3 id="statSkills">0</h3>
+                        <p>Skills Acquired</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                    <div class="stat-info">
+                        <h3>42h</h3>
+                        <p>Learning Hours</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Left Column -->
+                <div class="main-column">
+                    
+                    <!-- Continue Learning -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Continue Learning</h3>
+                            <a href="#" class="view-all">View All</a>
+                        </div>
+                        
+                        <div class="continue-course">
+                            <div class="course-thumb">
+                                <i class="fa-brands fa-react"></i>
+                            </div>
+                            <div class="course-progress-info">
+                                <h4>React.js Fundamentals</h4>
+                                <p>12 of 16 lessons completed</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                            <button class="btn-primary-small">Continue →</button>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Courses -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Recommended For You</h3>
+                                <p class="card-subtitle">Courses selected based on your skills, interests, and career goal.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="recommendation-grid">
+                            
+                            <!-- Course Card 1 -->
+                            <div class="course-card">
+                                <div class="course-img placeholder-img-1">
+                                    <span class="match-badge">92% Match</span>
+                                </div>
+                                <div class="course-content">
+                                    <div class="course-meta">
+                                        <span class="category">Web Development</span>
+                                        <span class="rating"><i class="fa-solid fa-star"></i> 4.8</span>
+                                    </div>
+                                    <h4 class="course-title">Full Stack Web Development Boot Camp</h4>
+                                    <p class="instructor">Dr. Angela Yu</p>
+                                    
+                                    <div class="course-details">
+                                        <span><i class="fa-solid fa-clock"></i> 40h</span>
+                                        <span><i class="fa-solid fa-layer-group"></i> Intermediate</span>
+                                    </div>
+                                    
+                                    <div class="course-skills">
+                                        <span class="chip-sm">HTML</span>
+                                        <span class="chip-sm">CSS</span>
+                                        <span class="chip-sm">React</span>
+                                    </div>
+                                    
+                                    <div class="why-course">
+                                        <p><i class="fa-solid fa-check"></i> Matches your career goal</p>
+                                        <p><i class="fa-solid fa-check"></i> Builds missing JavaScript skills</p>
+                                    </div>
+                                    
+                                    <button class="btn-outline-full">View Course</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Course Card 2 -->
+                            <div class="course-card">
+                                <div class="course-img placeholder-img-2">
+                                    <span class="match-badge">88% Match</span>
+                                </div>
+                                <div class="course-content">
+                                    <div class="course-meta">
+                                        <span class="category">Backend</span>
+                                        <span class="rating"><i class="fa-solid fa-star"></i> 4.7</span>
+                                    </div>
+                                    <h4 class="course-title">Node.js, Express, MongoDB & More</h4>
+                                    <p class="instructor">Jonas Schmedtmann</p>
+                                    
+                                    <div class="course-details">
+                                        <span><i class="fa-solid fa-clock"></i> 32h</span>
+                                        <span><i class="fa-solid fa-layer-group"></i> Beginner</span>
+                                    </div>
+                                    
+                                    <div class="course-skills">
+                                        <span class="chip-sm">Node.js</span>
+                                        <span class="chip-sm">Express</span>
+                                        <span class="chip-sm">MongoDB</span>
+                                    </div>
+                                    
+                                    <div class="why-course">
+                                        <p><i class="fa-solid fa-check"></i> Fits your learning preference</p>
+                                    </div>
+                                    
+                                    <button class="btn-outline-full">View Course</button>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="side-column">
+                    
+                    <!-- Career Goal -->
+                    <div class="dashboard-card feature-card">
+                        <h3>Your Career Goal</h3>
+                        <h2 class="career-highlight" id="dashCareer">Not set</h2>
+                        <div class="progress-container mb-3">
+                            <div class="progress-labels">
+                                <span>Progress</span>
+                                <span>68%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: 68%;"></div>
+                            </div>
+                        </div>
+                        <button class="btn-primary-full">View Learning Path →</button>
+                    </div>
+                    
+                    <!-- Profile Completion -->
+                    <div class="dashboard-card">
+                        <div class="profile-completion">
+                            <div class="completion-header">
+                                <h3>Profile Completion</h3>
+                                <span class="completion-value">85%</span>
+                            </div>
+                            <div class="progress-bar-bg mb-3">
+                                <div class="progress-bar-fill" style="width: 85%;"></div>
+                            </div>
+                            <button class="btn-outline-full">Complete Profile</button>
+                        </div>
+                    </div>
+
+                    <!-- Skill Gaps -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Your Skill Gaps</h3>
+                        </div>
+                        <p class="card-subtitle mb-3">Skills missing for your career goal.</p>
+                        
+                        <div class="skill-gap-item">
+                            <div class="gap-labels">
+                                <span>TypeScript</span>
+                                <span>40%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill gap-fill" style="width: 40%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skill-gap-item">
+                            <div class="gap-labels">
+                                <span>Node.js</span>
+                                <span>60%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill gap-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skill-gap-item">
+                            <div class="gap-labels">
+                                <span>AWS</span>
+                                <span>30%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill gap-fill" style="width: 30%;"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-outline-full mt-3">View Gap Analysis</button>
+                    </div>
+
+                    <!-- Learning Path Timeline -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3>Learning Path</h3>
+                        </div>
+                        
+                        <div class="timeline">
+                            <div class="timeline-item completed">
+                                <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
+                                <div class="timeline-content">HTML & CSS</div>
+                            </div>
+                            <div class="timeline-item completed">
+                                <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
+                                <div class="timeline-content">JavaScript</div>
+                            </div>
+                            <div class="timeline-item current">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">React.js</div>
+                            </div>
+                            <div class="timeline-item upcoming">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">Node.js</div>
+                            </div>
+                            <div class="timeline-item upcoming">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">SQL</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script src="../js/api.js?v=3"></script>`n    <script src="../js/dashboard.js?v=3"></script>
+</body>
+</html>
+
