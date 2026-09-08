@@ -61,3 +61,8 @@ update2.py
 update_dashboard.py
 update_profile_backend.py
 update_profile_js.py
+
+# Uploads & Media
+backend/uploads/**
+!backend/uploads/.gitkeep
+

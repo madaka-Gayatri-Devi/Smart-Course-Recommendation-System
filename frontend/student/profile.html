@@ -1,1 +1,901 @@
-<!-- frontend/student/profile.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Glow Orbs -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <!-- Sidebar Bottom Footer - Student Account Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">My Profile</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="topbar-icon">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- Alert Banner -->
+            <div id="profileAlert" style="display: none; padding: 1rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: space-between;">
+                <span id="profileAlertMsg"></span>
+                <button type="button" style="background:none; border:none; cursor:pointer; font-size:16px;" onclick="document.getElementById('profileAlert').style.display='none'"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="profile-dashboard-layout">
+                
+                <!-- Left Column: User Summary Card -->
+                <aside class="profile-sidebar-card">
+                    <div class="profile-avatar-large" id="avatarContainer">
+                        <img id="profilePageAvatar" src="" alt="Profile Photo" style="display: none;">
+                        <span id="avatarInitials">ST</span>
+                        <label for="profilePhotoFileInput" class="avatar-edit-btn" title="Change Photo">
+                            <i class="fa-solid fa-camera"></i>
+                        </label>
+                        <input type="file" id="profilePhotoFileInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <h3 id="sideFullName">Student Name</h3>
+                    <span class="profile-role-badge" id="sideRole">Student</span>
+                    
+                    <div class="progress-container mb-3" style="text-align: left;">
+                        <div class="progress-labels">
+                            <span style="font-size: 12px; font-weight: 600;">Profile Completion</span>
+                            <span style="font-size: 12px; font-weight: 700; color: var(--primary-purple);" id="sideCompletionPct">0%</span>
+                        </div>
+                        <div class="progress-bar-bg" style="height: 6px;">
+                            <div class="progress-bar-fill" id="sideCompletionBar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="profile-sidebar-info">
+                        <div class="info-item">
+                            <i class="fa-regular fa-envelope"></i>
+                            <span id="sideEmail">user@example.com</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-phone"></i>
+                            <span id="sidePhone">Not provided</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span id="sideCity">Not set</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-bullseye"></i>
+                            <span id="sideCareer">Target Goal: Not set</span>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-primary-full mt-4" id="saveAllProfileBtn">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes
+                    </button>
+                </aside>
+
+                <!-- Right Column: Tabbed Edit Sections -->
+                <div class="profile-main-tabs">
+                    <div class="profile-tab-nav">
+                        <button type="button" class="profile-tab-btn active" data-tab="personal"><i class="fa-solid fa-user"></i> Personal</button>
+                        <button type="button" class="profile-tab-btn" data-tab="skills"><i class="fa-solid fa-bolt"></i> Skills & Proficiency</button>
+                        <button type="button" class="profile-tab-btn" data-tab="career"><i class="fa-solid fa-bullseye"></i> Career Goals</button>
+                        <button type="button" class="profile-tab-btn" data-tab="interests"><i class="fa-solid fa-heart"></i> Interests</button>
+                        <button type="button" class="profile-tab-btn" data-tab="education"><i class="fa-solid fa-graduation-cap"></i> Education</button>
+                        <button type="button" class="profile-tab-btn" data-tab="experience"><i class="fa-solid fa-briefcase"></i> Experience</button>
+                        <button type="button" class="profile-tab-btn" data-tab="projects"><i class="fa-solid fa-diagram-project"></i> Projects</button>
+                    </div>
+
+                    <div class="profile-tab-content">
+                        
+                        <!-- TAB 1: Personal -->
+                        <div class="profile-tab-pane active" id="tab-personal">
+                            <h3 style="font-size: 16px; margin-bottom: 1.25rem; color: var(--dark-navy);">Personal Details</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" class="form-control" id="editFullName">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Address</label>
+                                    <input type="email" class="form-control" id="editEmail" readonly style="background: #f8fafc; color: #64748b;">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="tel" class="form-control" id="editPhone" placeholder="+1 234 567 8900">
+                                </div>
+                                <div class="form-group">
+                                    <label>Date of Birth</label>
+                                    <input type="date" class="form-control" id="editDob">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Gender</label>
+                                    <select class="form-select" id="editGender">
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>City / Location</label>
+                                    <input type="text" class="form-control" id="editCity" placeholder="e.g. San Francisco, USA">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Skills & Proficiency -->
+                        <div class="profile-tab-pane" id="tab-skills">
+                            <h3 style="font-size: 16px; margin-bottom: 0.5rem; color: var(--dark-navy);">Skills & Proficiency Levels</h3>
+                            <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.25rem;">Add technical or soft skills and specify your proficiency level (Beginner, Intermediate, Advanced, Expert).</p>
+                            
+                            <div class="form-group chip-search mb-3">
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-magnifying-glass left-icon"></i>
+                                    <input type="text" class="form-control" id="editSkillInput" placeholder="Type a skill and press Enter (e.g. Python, React, SQL)...">
+                                </div>
+                            </div>
+
+                            <div class="chip-pool mb-4" id="editSkillPool">
+                                <div class="selectable-chip skill-chip">Python</div>
+                                <div class="selectable-chip skill-chip">Java</div>
+                                <div class="selectable-chip skill-chip">HTML</div>
+                                <div class="selectable-chip skill-chip">CSS</div>
+                                <div class="selectable-chip skill-chip">JavaScript</div>
+                                <div class="selectable-chip skill-chip">React</div>
+                                <div class="selectable-chip skill-chip">Node.js</div>
+                                <div class="selectable-chip skill-chip">SQL</div>
+                                <div class="selectable-chip skill-chip">AWS</div>
+                                <div class="selectable-chip skill-chip">Docker</div>
+                                <div class="selectable-chip skill-chip">C++</div>
+                                <div class="selectable-chip skill-chip">Go</div>
+                                <div class="selectable-chip skill-chip">TypeScript</div>
+                            </div>
+
+                            <div class="selected-skills-wrapper">
+                                <h4 style="font-size: 14px; color: var(--dark-navy); margin-bottom: 0.75rem;">Your Configured Skills</h4>
+                                <div class="selected-skills-grid" id="editSelectedSkillsGrid">
+                                    <!-- Populated via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Career Goals -->
+                        <div class="profile-tab-pane" id="tab-career">
+                            <h3 style="font-size: 16px; margin-bottom: 0.5rem; color: var(--dark-navy);">Target Career Path</h3>
+                            <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.25rem;">Recommendations and learning paths are tailored to your primary and secondary goals.</p>
+
+                            <h4 style="font-size: 14px; margin-bottom: 0.75rem; color: var(--dark-navy);">Primary Career Goal <span class="required">*</span></h4>
+                            <div class="selectable-card-grid career-cards mb-4" id="editPrimaryCareerGrid">
+                                <div class="selectable-card career-card-select">Full Stack Developer</div>
+                                <div class="selectable-card career-card-select">Frontend Developer</div>
+                                <div class="selectable-card career-card-select">Backend Developer</div>
+                                <div class="selectable-card career-card-select">Data Scientist</div>
+                                <div class="selectable-card career-card-select">AI Engineer</div>
+                                <div class="selectable-card career-card-select">Cloud Engineer</div>
+                                <div class="selectable-card career-card-select">Cyber Security Analyst</div>
+                                <div class="selectable-card career-card-select">UI/UX Designer</div>
+                            </div>
+                            <input type="hidden" id="editPrimaryCareerVal">
+
+                            <h4 style="font-size: 14px; margin-bottom: 0.75rem; color: var(--dark-navy);">Secondary Career Goal (Optional)</h4>
+                            <div class="selectable-card-grid secondary-career-cards" id="editSecondaryCareerGrid">
+                                <div class="selectable-card secondary-career-card-select selected" data-value="">None (Optional)</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Full Stack Developer">Full Stack Developer</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Frontend Developer">Frontend Developer</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Backend Developer">Backend Developer</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Data Scientist">Data Scientist</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="AI Engineer">AI Engineer</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Cloud Engineer">Cloud Engineer</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="Cyber Security Analyst">Cyber Security Analyst</div>
+                                <div class="selectable-card secondary-career-card-select" data-value="UI/UX Designer">UI/UX Designer</div>
+                            </div>
+                            <input type="hidden" id="editSecondaryCareerVal">
+                        </div>
+
+                        <!-- TAB 4: Interests & Languages -->
+                        <div class="profile-tab-pane" id="tab-interests">
+                            <h3 style="font-size: 16px; margin-bottom: 0.75rem; color: var(--dark-navy);">Interests & Domains</h3>
+                            <div class="chip-pool mb-4" id="editInterestPool">
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-globe"></i> Web Development</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-robot"></i> AI / ML</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-database"></i> Data Science</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-cloud"></i> Cloud Computing</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-shield-halved"></i> Cyber Security</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-server"></i> DevOps</div>
+                                <div class="selectable-chip interest-chip"><i class="fa-solid fa-mobile-screen"></i> Mobile App</div>
+                            </div>
+
+                            <h3 style="font-size: 16px; margin-bottom: 0.75rem; color: var(--dark-navy);">Languages</h3>
+                            <div class="chip-pool" id="editLangPool">
+                                <div class="selectable-chip lang-chip">English</div>
+                                <div class="selectable-chip lang-chip">Telugu</div>
+                                <div class="selectable-chip lang-chip">Hindi</div>
+                                <div class="selectable-chip lang-chip">Spanish</div>
+                                <div class="selectable-chip lang-chip">German</div>
+                                <div class="selectable-chip lang-chip">French</div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 5: Education -->
+                        <div class="profile-tab-pane" id="tab-education">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;">Education History</h3>
+                                <button type="button" class="btn-profile btn-back btn-sm" id="btnEditAddEdu"><i class="fa-solid fa-plus mr-1"></i> Add Degree</button>
+                            </div>
+                            <div id="editEducationContainer">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- TAB 6: Experience -->
+                        <div class="profile-tab-pane" id="tab-experience">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;">Work & Internships</h3>
+                                <button type="button" class="btn-profile btn-back btn-sm" id="btnEditAddExp"><i class="fa-solid fa-plus mr-1"></i> Add Experience</button>
+                            </div>
+                            <div id="editExperienceContainer">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- TAB 7: Projects -->
+                        <div class="profile-tab-pane" id="tab-projects">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;">Projects Portfolio</h3>
+                                <button type="button" class="btn-profile btn-back btn-sm" id="btnEditAddProj"><i class="fa-solid fa-plus mr-1"></i> Add Project</button>
+                            </div>
+                            <div id="editProjectsContainer">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js?v=4"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Auth check & load data
+        let userData = null;
+        let profileData = null;
+        const skillsMap = new Map();
+
+        const topName = document.getElementById('topName');
+        const topAvatar = document.getElementById('topAvatar');
+        const sideFullName = document.getElementById('sideFullName');
+        const sideRole = document.getElementById('sideRole');
+        const sideEmail = document.getElementById('sideEmail');
+        const sidePhone = document.getElementById('sidePhone');
+        const sideCity = document.getElementById('sideCity');
+        const sideCareer = document.getElementById('sideCareer');
+        const sideCompletionPct = document.getElementById('sideCompletionPct');
+        const sideCompletionBar = document.getElementById('sideCompletionBar');
+        const avatarImg = document.getElementById('profilePageAvatar');
+        const avatarInitials = document.getElementById('avatarInitials');
+
+        const editFullName = document.getElementById('editFullName');
+        const editEmail = document.getElementById('editEmail');
+        const editPhone = document.getElementById('editPhone');
+        const editDob = document.getElementById('editDob');
+        const editGender = document.getElementById('editGender');
+        const editCity = document.getElementById('editCity');
+        const editPrimaryCareerVal = document.getElementById('editPrimaryCareerVal');
+        const editSecondaryCareerVal = document.getElementById('editSecondaryCareerVal');
+
+        function showAlert(msg, isSuccess = true) {
+            const alertBox = document.getElementById('profileAlert');
+            const alertMsg = document.getElementById('profileAlertMsg');
+            if (alertBox && alertMsg) {
+                alertBox.style.display = 'flex';
+                alertBox.style.background = isSuccess ? '#ecfdf5' : '#fef2f2';
+                alertBox.style.color = isSuccess ? '#065f46' : '#991b1b';
+                alertBox.style.border = isSuccess ? '1px solid #a7f3d0' : '1px solid #fecaca';
+                alertMsg.innerHTML = `<i class="fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-circle-exclamation'}" style="margin-right:0.5rem;"></i> ${msg}`;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        async function initPage() {
+            try {
+                userData = await window.api.getMe();
+                profileData = await window.api.getProfile();
+            } catch (err) {
+                console.error(err);
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Bind User Details
+            const name = userData.full_name || 'Student';
+            if (topName) topName.textContent = name;
+            if (sideFullName) sideFullName.textContent = name;
+            if (editFullName) editFullName.value = name;
+            if (sideEmail) sideEmail.textContent = userData.email || '';
+            if (editEmail) editEmail.value = userData.email || '';
+            if (sideRole) sideRole.textContent = userData.role || 'Student';
+
+            // Initials Avatar
+            const names = name.split(' ');
+            let initials = names[0]?.charAt(0) || 'S';
+            if (names.length > 1) initials += names[1].charAt(0);
+            if (topAvatar) topAvatar.textContent = initials.toUpperCase();
+            if (avatarInitials) avatarInitials.textContent = initials.toUpperCase();
+
+            // Profile Data
+            if (profileData) {
+                if (profileData.profile_image) {
+                    const fullImgUrl = window.api.getImageUrl(profileData.profile_image);
+                    if (avatarImg) {
+                        avatarImg.src = fullImgUrl;
+                        avatarImg.style.display = 'block';
+                    }
+                    if (avatarInitials) avatarInitials.style.display = 'none';
+                }
+
+                if (profileData.phone) {
+                    if (sidePhone) sidePhone.textContent = profileData.phone;
+                    if (editPhone) editPhone.value = profileData.phone;
+                }
+                if (profileData.dob && editDob) editDob.value = profileData.dob;
+                if (profileData.gender && editGender) editGender.value = profileData.gender;
+                if (profileData.city) {
+                    if (sideCity) sideCity.textContent = profileData.city;
+                    if (editCity) editCity.value = profileData.city;
+                }
+
+                // Career Goal
+                if (profileData.career_goal) {
+                    if (sideCareer) sideCareer.textContent = 'Goal: ' + profileData.career_goal;
+                    if (editPrimaryCareerVal) editPrimaryCareerVal.value = profileData.career_goal;
+                    document.querySelectorAll('#editPrimaryCareerGrid .career-card-select').forEach(card => {
+                        if (card.textContent.trim() === profileData.career_goal) {
+                            card.classList.add('selected');
+                        } else {
+                            card.classList.remove('selected');
+                        }
+                    });
+                }
+
+                // Secondary Goal
+                if (profileData.secondary_career_goal) {
+                    if (editSecondaryCareerVal) editSecondaryCareerVal.value = profileData.secondary_career_goal;
+                    document.querySelectorAll('#editSecondaryCareerGrid .secondary-career-card-select').forEach(card => {
+                        if (card.getAttribute('data-value') === profileData.secondary_career_goal) {
+                            card.classList.add('selected');
+                        } else {
+                            card.classList.remove('selected');
+                        }
+                    });
+                }
+
+                // Completion percentage
+                const pct = profileData.completion_percentage || 50;
+                if (sideCompletionPct) sideCompletionPct.textContent = pct + '%';
+                if (sideCompletionBar) sideCompletionBar.style.width = pct + '%';
+
+                // Skills
+                if (profileData.skills && Array.isArray(profileData.skills)) {
+                    profileData.skills.forEach(s => {
+                        if (typeof s === 'string') {
+                            skillsMap.set(s, { skill: s, level: 'Intermediate' });
+                        } else if (s && typeof s === 'object' && s.skill) {
+                            skillsMap.set(s.skill, { skill: s.skill, level: s.level || 'Intermediate' });
+                        }
+                    });
+                }
+                renderSkillsUI();
+
+                // Interests
+                if (profileData.interests && Array.isArray(profileData.interests)) {
+                    document.querySelectorAll('#editInterestPool .interest-chip').forEach(chip => {
+                        const txt = chip.textContent.trim();
+                        if (profileData.interests.some(i => txt.includes(i) || i.includes(txt))) {
+                            chip.classList.add('selected');
+                        }
+                    });
+                }
+
+                // Languages
+                if (profileData.languages && Array.isArray(profileData.languages)) {
+                    document.querySelectorAll('#editLangPool .lang-chip').forEach(chip => {
+                        if (profileData.languages.includes(chip.textContent.trim())) {
+                            chip.classList.add('selected');
+                        }
+                    });
+                }
+
+                // Education List
+                renderEducationList(profileData.education || []);
+                // Experience List
+                renderExperienceList(profileData.experience || []);
+                // Projects List
+                renderProjectsList(profileData.projects || []);
+            }
+        }
+
+        // Skills rendering
+        const editSkillsGrid = document.getElementById('editSelectedSkillsGrid');
+        function renderSkillsUI() {
+            if (!editSkillsGrid) return;
+            editSkillsGrid.innerHTML = '';
+            if (skillsMap.size === 0) {
+                editSkillsGrid.innerHTML = '<p style="color: var(--secondary-text); font-size: 13px;">No skills added yet.</p>';
+                return;
+            }
+
+            skillsMap.forEach((item, name) => {
+                const card = document.createElement('div');
+                card.className = 'skill-level-card';
+                card.innerHTML = `
+                    <div class="skill-name"><i class="fa-solid fa-code"></i><span>${name}</span></div>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <select class="skill-level-select" data-skill="${name}">
+                            <option value="Beginner" ${item.level==='Beginner'?'selected':''}>Beginner</option>
+                            <option value="Intermediate" ${item.level==='Intermediate'?'selected':''}>Intermediate</option>
+                            <option value="Advanced" ${item.level==='Advanced'?'selected':''}>Advanced</option>
+                            <option value="Expert" ${item.level==='Expert'?'selected':''}>Expert</option>
+                        </select>
+                        <button type="button" class="btn-remove-skill" data-skill="${name}"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `;
+                editSkillsGrid.appendChild(card);
+            });
+
+            editSkillsGrid.querySelectorAll('.skill-level-select').forEach(s => {
+                s.addEventListener('change', function() {
+                    const sk = this.getAttribute('data-skill');
+                    if (skillsMap.has(sk)) skillsMap.get(sk).level = this.value;
+                });
+            });
+
+            editSkillsGrid.querySelectorAll('.btn-remove-skill').forEach(b => {
+                b.addEventListener('click', function() {
+                    const sk = this.getAttribute('data-skill');
+                    skillsMap.delete(sk);
+                    document.querySelectorAll('#editSkillPool .skill-chip').forEach(chip => {
+                        if (chip.textContent.trim().toLowerCase() === sk.toLowerCase()) chip.classList.remove('selected');
+                    });
+                    renderSkillsUI();
+                });
+            });
+        }
+
+        // Skill chip click in pool
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#editSkillPool .skill-chip')) {
+                const chip = e.target.closest('#editSkillPool .skill-chip');
+                const name = chip.textContent.trim();
+                if (skillsMap.has(name)) {
+                    skillsMap.delete(name);
+                    chip.classList.remove('selected');
+                } else {
+                    skillsMap.set(name, { skill: name, level: 'Intermediate' });
+                    chip.classList.add('selected');
+                }
+                renderSkillsUI();
+            } else if (e.target.closest('#editInterestPool .interest-chip')) {
+                e.target.closest('#editInterestPool .interest-chip').classList.toggle('selected');
+            } else if (e.target.closest('#editLangPool .lang-chip')) {
+                e.target.closest('#editLangPool .lang-chip').classList.toggle('selected');
+            }
+        });
+
+        // Custom skill input
+        const editSkillInput = document.getElementById('editSkillInput');
+        if (editSkillInput) {
+            editSkillInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = editSkillInput.value.trim();
+                    if (val) {
+                        skillsMap.set(val, { skill: val, level: 'Intermediate' });
+                        editSkillInput.value = '';
+                        renderSkillsUI();
+                    }
+                }
+            });
+        }
+
+        // Primary & Secondary career selection
+        document.querySelectorAll('#editPrimaryCareerGrid .career-card-select').forEach(c => {
+            c.addEventListener('click', function() {
+                document.querySelectorAll('#editPrimaryCareerGrid .career-card-select').forEach(x => x.classList.remove('selected'));
+                this.classList.add('selected');
+                if (editPrimaryCareerVal) editPrimaryCareerVal.value = this.textContent.trim();
+            });
+        });
+
+        document.querySelectorAll('#editSecondaryCareerGrid .secondary-career-card-select').forEach(c => {
+            c.addEventListener('click', function() {
+                document.querySelectorAll('#editSecondaryCareerGrid .secondary-career-card-select').forEach(x => x.classList.remove('selected'));
+                this.classList.add('selected');
+                if (editSecondaryCareerVal) editSecondaryCareerVal.value = this.getAttribute('data-value') || '';
+            });
+        });
+
+        // Tab Navigation
+        document.querySelectorAll('.profile-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.profile-tab-pane').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                const targetId = `tab-${this.getAttribute('data-tab')}`;
+                const targetPane = document.getElementById(targetId);
+                if (targetPane) targetPane.classList.add('active');
+            });
+        });
+
+        // Photo Upload in Profile Page
+        const fileInput = document.getElementById('profilePhotoFileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', async function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert('Photo exceeds 5MB limit. Please choose a smaller image.', false);
+                    return;
+                }
+
+                try {
+                    const res = await window.api.uploadAvatar(file);
+                    const newUrl = window.api.getImageUrl(res.relative_url || res.image_url);
+                    if (avatarImg) {
+                        avatarImg.src = newUrl;
+                        avatarImg.style.display = 'block';
+                    }
+                    if (avatarInitials) avatarInitials.style.display = 'none';
+                    showAlert('Profile photo updated successfully!');
+                } catch (err) {
+                    console.error(err);
+                    showAlert('Failed to upload photo: ' + err.message, false);
+                }
+            });
+        }
+
+        // Dynamic Education Cards
+        const eduContainer = document.getElementById('editEducationContainer');
+        function renderEducationList(items) {
+            if (!eduContainer) return;
+            eduContainer.innerHTML = '';
+            const list = (items && items.length > 0) ? items : [{ qualification: 'B.Tech / B.E', institution: '', specialization: '', year: '', cgpa: '' }];
+            list.forEach(edu => addEduEntry(edu));
+        }
+
+        function addEduEntry(data = {}) {
+            const card = document.createElement('div');
+            card.className = 'repeatable-card box-entry mb-3';
+            card.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Highest Qualification</label>
+                        <select class="form-select edu-qual">
+                            <option ${data.qualification==='B.Tech / B.E'?'selected':''}>B.Tech / B.E</option>
+                            <option ${data.qualification==='B.Sc'?'selected':''}>B.Sc</option>
+                            <option ${data.qualification==='BCA'?'selected':''}>BCA</option>
+                            <option ${data.qualification==='MCA'?'selected':''}>MCA</option>
+                            <option ${data.qualification==='MBA'?'selected':''}>MBA</option>
+                            <option ${data.qualification==='Diploma'?'selected':''}>Diploma</option>
+                            <option ${data.qualification==='12th'?'selected':''}>12th</option>
+                            <option ${data.qualification==='Other'?'selected':''}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>College / University</label>
+                        <input type="text" class="form-control edu-inst" value="${data.institution || ''}" placeholder="e.g. Stanford University">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Specialization</label>
+                        <input type="text" class="form-control edu-spec" value="${data.specialization || ''}" placeholder="e.g. Computer Science">
+                    </div>
+                    <div class="form-group">
+                        <label>Graduation Year</label>
+                        <input type="number" class="form-control edu-yr" value="${data.year || ''}" placeholder="2025">
+                    </div>
+                </div>
+                <div class="form-group mb-2" style="width: 48%;">
+                    <label>CGPA / Percentage</label>
+                    <input type="text" class="form-control edu-score" value="${data.cgpa || ''}" placeholder="e.g. 8.5">
+                </div>
+                <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
+            `;
+            eduContainer.appendChild(card);
+        }
+
+        document.getElementById('btnEditAddEdu')?.addEventListener('click', () => addEduEntry());
+
+        // Dynamic Experience Cards
+        const expContainer = document.getElementById('editExperienceContainer');
+        function renderExperienceList(items) {
+            if (!expContainer) return;
+            expContainer.innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(exp => addExpEntry(exp));
+            } else {
+                expContainer.innerHTML = '<p style="color:var(--secondary-text); font-size:13px; margin-bottom:1rem;">No work experience listed yet.</p>';
+            }
+        }
+
+        function addExpEntry(data = {}) {
+            const pEmpty = expContainer.querySelector('p');
+            if (pEmpty) pEmpty.remove();
+
+            const card = document.createElement('div');
+            card.className = 'repeatable-card box-entry mb-3';
+            card.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <input type="text" class="form-control exp-comp" value="${data.company || ''}" placeholder="e.g. Google">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <input type="text" class="form-control exp-pos" value="${data.role || ''}" placeholder="e.g. Frontend Intern">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" class="form-control exp-sdate" value="${data.startDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" class="form-control exp-edate" value="${data.endDate || ''}">
+                    </div>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Description</label>
+                    <textarea class="form-control exp-details" rows="2" placeholder="Responsibilities and accomplishments...">${data.description || ''}</textarea>
+                </div>
+                <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
+            `;
+            expContainer.appendChild(card);
+        }
+
+        document.getElementById('btnEditAddExp')?.addEventListener('click', () => addExpEntry());
+
+        // Dynamic Projects Cards
+        const projContainer = document.getElementById('editProjectsContainer');
+        function renderProjectsList(items) {
+            if (!projContainer) return;
+            projContainer.innerHTML = '';
+            if (items && items.length > 0) {
+                items.forEach(proj => addProjEntry(proj));
+            } else {
+                projContainer.innerHTML = '<p style="color:var(--secondary-text); font-size:13px; margin-bottom:1rem;">No projects listed yet.</p>';
+            }
+        }
+
+        function addProjEntry(data = {}) {
+            const pEmpty = projContainer.querySelector('p');
+            if (pEmpty) pEmpty.remove();
+
+            const card = document.createElement('div');
+            card.className = 'repeatable-card box-entry mb-3';
+            card.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Project Title</label>
+                        <input type="text" class="form-control prj-name" value="${data.title || ''}" placeholder="e.g. Smart Course Recommender">
+                    </div>
+                    <div class="form-group">
+                        <label>Project Type</label>
+                        <input type="text" class="form-control prj-kind" value="${data.type || ''}" placeholder="e.g. Full Stack Web App">
+                    </div>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Description</label>
+                    <textarea class="form-control prj-summary" rows="2" placeholder="Tech stack and key features...">${data.description || ''}</textarea>
+                </div>
+                <div class="form-row mb-2">
+                    <div class="form-group">
+                        <label>GitHub Link</label>
+                        <input type="url" class="form-control prj-repo" value="${data.githubUrl || ''}" placeholder="https://github.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label>Live Demo URL</label>
+                        <input type="url" class="form-control prj-demo" value="${data.liveUrl || ''}" placeholder="https://...">
+                    </div>
+                </div>
+                <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
+            `;
+            projContainer.appendChild(card);
+        }
+
+        document.getElementById('btnEditAddProj')?.addEventListener('click', () => addProjEntry());
+
+        // Save All Changes Button
+        const saveAllBtn = document.getElementById('saveAllProfileBtn');
+        if (saveAllBtn) {
+            saveAllBtn.addEventListener('click', async () => {
+                saveAllBtn.disabled = true;
+                saveAllBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+
+                try {
+                    // Education
+                    const education = [];
+                    document.querySelectorAll('#editEducationContainer .box-entry').forEach(card => {
+                        const qualification = card.querySelector('.edu-qual')?.value;
+                        const institution = card.querySelector('.edu-inst')?.value;
+                        const specialization = card.querySelector('.edu-spec')?.value;
+                        const year = card.querySelector('.edu-yr')?.value;
+                        const cgpa = card.querySelector('.edu-score')?.value;
+                        if (qualification) education.push({ qualification, institution, specialization, year, cgpa });
+                    });
+
+                    // Experience
+                    const experience = [];
+                    document.querySelectorAll('#editExperienceContainer .box-entry').forEach(card => {
+                        const company = card.querySelector('.exp-comp')?.value;
+                        const role = card.querySelector('.exp-pos')?.value;
+                        const startDate = card.querySelector('.exp-sdate')?.value;
+                        const endDate = card.querySelector('.exp-edate')?.value;
+                        const description = card.querySelector('.exp-details')?.value;
+                        if (company || role) experience.push({ company, role, startDate, endDate, description });
+                    });
+
+                    // Projects
+                    const projects = [];
+                    document.querySelectorAll('#editProjectsContainer .box-entry').forEach(card => {
+                        const title = card.querySelector('.prj-name')?.value;
+                        const type = card.querySelector('.prj-kind')?.value;
+                        const description = card.querySelector('.prj-summary')?.value;
+                        const githubUrl = card.querySelector('.prj-repo')?.value;
+                        const liveUrl = card.querySelector('.prj-demo')?.value;
+                        if (title) projects.push({ title, type, description, githubUrl, liveUrl });
+                    });
+
+                    const interests = Array.from(document.querySelectorAll('#editInterestPool .interest-chip.selected')).map(c => c.textContent.trim());
+                    const languages = Array.from(document.querySelectorAll('#editLangPool .lang-chip.selected')).map(c => c.textContent.trim());
+
+                    const payload = {
+                        phone: editPhone?.value || '',
+                        dob: editDob?.value || '',
+                        gender: editGender?.value || '',
+                        city: editCity?.value || '',
+                        career_goal: editPrimaryCareerVal?.value || '',
+                        secondary_career_goal: editSecondaryCareerVal?.value || '',
+                        skills: Array.from(skillsMap.values()),
+                        interests,
+                        languages,
+                        education,
+                        experience,
+                        projects
+                    };
+
+                    const res = await window.api.saveProfile(payload);
+                    showAlert('Profile updated successfully! All information saved.');
+                    
+                    // Update side summary
+                    if (sidePhone && payload.phone) sidePhone.textContent = payload.phone;
+                    if (sideCity && payload.city) sideCity.textContent = payload.city;
+                    if (sideCareer && payload.career_goal) sideCareer.textContent = 'Goal: ' + payload.career_goal;
+                    if (sideCompletionPct && res.completion_percentage) {
+                        sideCompletionPct.textContent = res.completion_percentage + '%';
+                        if (sideCompletionBar) sideCompletionBar.style.width = res.completion_percentage + '%';
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    showAlert('Failed to save profile: ' + (err.message || 'Server error'), false);
+                } finally {
+                    saveAllBtn.disabled = false;
+                    saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                }
+            });
+        }
+
+        // Mobile Sidebar Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('dashboardSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (menuToggle && sidebar && overlay) {
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+        }
+
+        // Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.api.clearToken();
+            window.location.href = '../login.html';
+        });
+
+        initPage();
+    });
+    </script>
+</body>
+</html>

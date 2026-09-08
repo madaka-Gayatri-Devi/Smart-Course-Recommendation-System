@@ -1,1 +1,182 @@
-<!-- frontend/student/wishlist.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Wishlist - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Glow Orbs -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+            <a href="wishlist.html" class="nav-item active"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <!-- Sidebar Bottom Footer - Student Account Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Saved Wishlist</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="topbar-icon">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <div class="welcome-section" style="margin-bottom: 2rem;">
+                <h1>Bookmarked Courses 💖</h1>
+                <p>Saved programs and courses for upcoming learning phases.</p>
+            </div>
+
+            <div class="recommendation-grid" id="wishlistGrid" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
+                <!-- Loaded from recommendations -->
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            let currentUser = null;
+            let profileData = null;
+            try {
+                currentUser = await window.api.getMe();
+                profileData = await window.api.getProfile().catch(() => ({}));
+                const fullName = currentUser.full_name || 'Student';
+                const roleName = currentUser.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Student';
+                
+                document.getElementById('topName').textContent = fullName;
+                document.getElementById('sidebarName').textContent = fullName;
+                document.getElementById('sidebarRole').textContent = roleName;
+
+                const names = fullName.trim().split(' ');
+                let initials = names[0].charAt(0);
+                if (names.length > 1) initials += names[1].charAt(0);
+                initials = initials.toUpperCase();
+
+                if (profileData && profileData.profile_image) {
+                    const imgUrl = window.api.getImageUrl(profileData.profile_image);
+                    document.getElementById('topAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
+                    document.getElementById('sidebarAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
+                } else {
+                    document.getElementById('topAvatar').textContent = initials;
+                    document.getElementById('sidebarAvatar').textContent = initials;
+                }
+
+                const data = await window.api.getRecommendations({ limit: 4 });
+                const list = (data && data.recommendations) ? data.recommendations : [];
+                const grid = document.getElementById('wishlistGrid');
+                if (grid && list.length > 0) {
+                    grid.innerHTML = list.slice(0, 3).map(course => `
+                        <div class="rec-card">
+                            <div>
+                                <div class="rec-header">
+                                    <span class="rec-category-badge">${course.category}</span>
+                                    <span class="rec-match-pill"><i class="fa-solid fa-heart" style="color:#FFF;"></i> Saved</span>
+                                </div>
+                                <h3 class="rec-title">${course.title}</h3>
+                                <p class="rec-desc">${course.description}</p>
+                                <div class="rec-meta">
+                                    <span><i class="fa-solid fa-clock"></i> ${course.duration}</span>
+                                    <span><i class="fa-solid fa-star" style="color:#F59E0B;"></i> ${course.rating}</span>
+                                    <span><i class="fa-solid fa-layer-group"></i> ${course.level}</span>
+                                </div>
+                            </div>
+                            <div class="rec-footer">
+                                <span class="rec-instructor">${course.instructor}</span>
+                                <a href="courses.html?course=${course.id}" class="btn-enroll-card">Start Course →</a>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (_) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Toggle & Logout
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('dashboardSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', () => { sidebar.classList.add('active'); overlay.classList.add('active'); });
+                overlay.addEventListener('click', () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); });
+            }
+            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.api.clearToken();
+                window.location.href = '../login.html';
+            });
+        });
+    </script>
+</body>
+</html>

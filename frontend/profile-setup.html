@@ -59,13 +59,15 @@
                     
                     <div class="form-section-card card-personal">
                         <div class="profile-photo-wrapper">
-                            <div class="profile-upload">
-                                <i class="fa-solid fa-camera"></i>
-                                <input type="file" class="hidden-file-input" accept="image/*">
+                            <div class="profile-upload" id="avatarUploadTrigger">
+                                <img id="avatarPreviewImg" src="" alt="Profile Photo" style="display: none;">
+                                <i class="fa-solid fa-camera" id="avatarUploadIcon"></i>
+                                <div class="upload-overlay"><i class="fa-solid fa-pen"></i></div>
+                                <input type="file" id="profilePhotoInput" class="hidden-file-input" accept="image/*">
                             </div>
                             <div class="profile-photo-text">
                                 <h4>Upload Photo</h4>
-                                <p>Optional. Recommended size: 400x400px.</p>
+                                <p id="avatarUploadStatus">Optional. Click to upload (Max 5MB).</p>
                             </div>
                         </div>
                         
@@ -87,28 +89,28 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Phone Number <span class="required">*</span></label>
-                                <input type="tel" class="form-control" id="profilePhone" required>
+                                <input type="tel" class="form-control" id="profilePhone" placeholder="+1 234 567 8900" required>
                             </div>
                             <div class="form-group">
                                 <label>Date of Birth <span class="required">*</span></label>
-                                <input type="date" class="form-control" required>
+                                <input type="date" class="form-control" id="profileDob" required>
                             </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Gender (Optional)</label>
-                                <select class="form-select">
+                                <select class="form-select" id="profileGender">
                                     <option value="">Select Gender</option>
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                    <option>Other</option>
-                                    <option>Prefer not to say</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Prefer not to say">Prefer not to say</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>City / Location (Optional)</label>
-                                <input type="text" class="form-control" placeholder="e.g. Mumbai, India">
+                                <input type="text" class="form-control" id="profileCity" placeholder="e.g. Mumbai, India">
                             </div>
                         </div>
                     </div>
@@ -126,7 +128,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Highest Qualification <span class="required">*</span></label>
-                                    <select class="form-select" required>
+                                    <select class="form-select edu-qualification" required>
                                         <option value="">Select</option>
                                         <option>B.Tech / B.E</option>
                                         <option>B.Sc</option>
@@ -140,22 +142,22 @@
                                 </div>
                                 <div class="form-group">
                                     <label>College / University</label>
-                                    <input type="text" class="form-control">
+                                    <input type="text" class="form-control edu-institution" placeholder="e.g. Stanford University">
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Degree / Specialization</label>
-                                    <input type="text" class="form-control">
+                                    <input type="text" class="form-control edu-specialization" placeholder="e.g. Computer Science">
                                 </div>
                                 <div class="form-group">
                                     <label>Graduation Year</label>
-                                    <input type="number" class="form-control" min="1950" max="2030">
+                                    <input type="number" class="form-control edu-year" min="1950" max="2030" placeholder="2025">
                                 </div>
                             </div>
                             <div class="form-group" style="width: 48%;">
                                 <label>CGPA / Percentage</label>
-                                <input type="text" class="form-control">
+                                <input type="text" class="form-control edu-cgpa" placeholder="e.g. 8.5 or 85%">
                             </div>
                         </div>
                     </div>
@@ -165,38 +167,48 @@
                 <!-- STEP 3: Skills -->
                 <div class="wizard-step" id="step-3">
                     <div class="step-header">
-                        <h3>Skills</h3>
-                        <p>Select your current skills (Mandatory: Select at least 1)</p>
+                        <h3>Skills & Proficiency</h3>
+                        <p>Select your skills and assign your proficiency level (Select at least 1 skill)</p>
                     </div>
                     <div class="form-section-card card-skills">
                         <div class="form-group chip-search">
                             <div class="input-with-icon">
                                 <i class="fa-solid fa-magnifying-glass left-icon"></i>
-                                <input type="text" class="form-control custom-chip-input" placeholder="Search or type to add custom skills (Press Enter)..." id="skillSearch"  data-target="skill-pool" data-type="skill-chip">
+                                <input type="text" class="form-control custom-chip-input" placeholder="Search or type custom skill and press Enter..." id="skillSearch" data-target="skill-pool" data-type="skill-chip">
                             </div>
                         </div>
                         
                         <div class="chip-pool" id="skill-pool">
-                            <div class="selectable-chip gradient-selected skill-chip">Python</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Java</div>
-                            <div class="selectable-chip gradient-selected skill-chip">HTML</div>
-                            <div class="selectable-chip gradient-selected skill-chip">CSS</div>
-                            <div class="selectable-chip gradient-selected skill-chip">JavaScript</div>
-                            <div class="selectable-chip gradient-selected skill-chip">React</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Node.js</div>
-                            <div class="selectable-chip gradient-selected skill-chip">SQL</div>
-                            <div class="selectable-chip gradient-selected skill-chip">AWS</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Docker</div>
-                            <div class="selectable-chip gradient-selected skill-chip">C++</div>
-                            <div class="selectable-chip gradient-selected skill-chip">C#</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Ruby</div>
-                            <div class="selectable-chip gradient-selected skill-chip">PHP</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Swift</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Kotlin</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Go</div>
-                            <div class="selectable-chip gradient-selected skill-chip">TypeScript</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Angular</div>
-                            <div class="selectable-chip gradient-selected skill-chip">Vue.js</div>
+                            <div class="selectable-chip skill-chip">Python</div>
+                            <div class="selectable-chip skill-chip">Java</div>
+                            <div class="selectable-chip skill-chip">HTML</div>
+                            <div class="selectable-chip skill-chip">CSS</div>
+                            <div class="selectable-chip skill-chip">JavaScript</div>
+                            <div class="selectable-chip skill-chip">React</div>
+                            <div class="selectable-chip skill-chip">Node.js</div>
+                            <div class="selectable-chip skill-chip">SQL</div>
+                            <div class="selectable-chip skill-chip">AWS</div>
+                            <div class="selectable-chip skill-chip">Docker</div>
+                            <div class="selectable-chip skill-chip">C++</div>
+                            <div class="selectable-chip skill-chip">C#</div>
+                            <div class="selectable-chip skill-chip">Ruby</div>
+                            <div class="selectable-chip skill-chip">PHP</div>
+                            <div class="selectable-chip skill-chip">Swift</div>
+                            <div class="selectable-chip skill-chip">Kotlin</div>
+                            <div class="selectable-chip skill-chip">Go</div>
+                            <div class="selectable-chip skill-chip">TypeScript</div>
+                            <div class="selectable-chip skill-chip">Angular</div>
+                            <div class="selectable-chip skill-chip">Vue.js</div>
+                        </div>
+
+                        <!-- Selected Skills List with Proficiency -->
+                        <div class="selected-skills-wrapper" id="selectedSkillsSection">
+                            <h4 style="font-size: 14px; color: var(--dark-navy); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-sliders" style="color: var(--primary-purple);"></i> Configured Skills & Proficiency Levels
+                            </h4>
+                            <div class="selected-skills-grid" id="selectedSkillsGrid">
+                                <!-- Dynamically populated -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -208,7 +220,7 @@
                         <p>What topics excite you? Select at least 1 interest.</p>
                     </div>
                     <div class="form-section-card card-inter">
-                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Interests</h4>
+                        <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Interests <span class="required">*</span></h4>
                         <div class="chip-pool" id="interest-pool" style="margin-bottom: 2rem;">
                             <div class="selectable-chip interest-chip"><i class="fa-solid fa-globe"></i> Web Development</div>
                             <div class="selectable-chip interest-chip"><i class="fa-solid fa-robot"></i> AI / ML</div>
@@ -225,6 +237,8 @@
                             <div class="selectable-chip lang-chip">Telugu</div>
                             <div class="selectable-chip lang-chip">Hindi</div>
                             <div class="selectable-chip lang-chip">Spanish</div>
+                            <div class="selectable-chip lang-chip">German</div>
+                            <div class="selectable-chip lang-chip">French</div>
                         </div>
                     </div>
                 </div>
@@ -233,7 +247,7 @@
                 <div class="wizard-step" id="step-5">
                     <div class="step-header">
                         <h3>Career Goals</h3>
-                        <p>What career are you aiming for?</p>
+                        <p>Define your primary target and optional secondary career direction.</p>
                     </div>
                     <div class="form-section-card card-career">
                         <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Primary Career Goal <span class="required">*</span></h4>
@@ -248,6 +262,20 @@
                             <div class="selectable-card career-card-select">UI/UX Designer</div>
                         </div>
                         <input type="hidden" id="primaryCareer" required>
+                        
+                        <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Secondary Career Goal (Optional)</h4>
+                        <div class="selectable-card-grid secondary-career-cards">
+                            <div class="selectable-card secondary-career-card-select selected" data-value="">None (Optional)</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Full Stack Developer">Full Stack Developer</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Frontend Developer">Frontend Developer</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Backend Developer">Backend Developer</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Data Scientist">Data Scientist</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="AI Engineer">AI Engineer</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Cloud Engineer">Cloud Engineer</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="Cyber Security Analyst">Cyber Security Analyst</div>
+                            <div class="selectable-card secondary-career-card-select" data-value="UI/UX Designer">UI/UX Designer</div>
+                        </div>
+                        <input type="hidden" id="secondaryCareer" value="">
                         
                         <div class="form-row" style="margin-top: 2rem;">
                             <div class="form-group">
@@ -288,26 +316,26 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Company Name</label>
-                                        <input type="text" class="form-control">
+                                        <input type="text" class="form-control exp-company" placeholder="e.g. Google, Infosys">
                                     </div>
                                     <div class="form-group">
                                         <label>Role</label>
-                                        <input type="text" class="form-control">
+                                        <input type="text" class="form-control exp-role" placeholder="e.g. Software Engineer Intern">
                                     </div>
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Start Date</label>
-                                        <input type="date" class="form-control">
+                                        <input type="date" class="form-control exp-start">
                                     </div>
                                     <div class="form-group">
                                         <label>End Date</label>
-                                        <input type="date" class="form-control">
+                                        <input type="date" class="form-control exp-end">
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label>Description</label>
-                                    <textarea class="form-control" rows="3"></textarea>
+                                    <textarea class="form-control exp-desc" rows="3" placeholder="Describe your key contributions and technologies used..."></textarea>
                                 </div>
                             </div>
                             <button type="button" class="btn-profile btn-back btn-sm" id="addIntBtn" style="height: 40px; padding: 0 1rem; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Add Internship</button>
@@ -326,25 +354,25 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Project Name</label>
-                                    <input type="text" class="form-control">
+                                    <input type="text" class="form-control proj-title" placeholder="e.g. Course Recommender">
                                 </div>
                                 <div class="form-group">
                                     <label>Project Type</label>
-                                    <input type="text" class="form-control" placeholder="e.g. Web App, ML Model">
+                                    <input type="text" class="form-control proj-type" placeholder="e.g. Web App, ML Model">
                                 </div>
                             </div>
                             <div class="form-group mb-3">
                                 <label>Description</label>
-                                <textarea class="form-control" rows="2"></textarea>
+                                <textarea class="form-control proj-desc" rows="2" placeholder="Brief overview of features and architecture..."></textarea>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>GitHub URL</label>
-                                    <input type="url" class="form-control">
+                                    <input type="url" class="form-control proj-github" placeholder="https://github.com/...">
                                 </div>
                                 <div class="form-group">
                                     <label>Live URL</label>
-                                    <input type="url" class="form-control">
+                                    <input type="url" class="form-control proj-live" placeholder="https://...">
                                 </div>
                             </div>
                         </div>
@@ -361,7 +389,7 @@
                     <div class="form-section-card card-pref">
                         <h4 style="margin-bottom: 1rem; color: var(--dark-text); font-size: 14px;">Preferred Learning Style</h4>
                         <div class="selectable-card-grid pref-cards" style="margin-bottom: 2rem;">
-                            <div class="selectable-card pref-chip"><i class="fa-solid fa-video mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Video</div>
+                            <div class="selectable-card pref-chip selected"><i class="fa-solid fa-video mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Video</div>
                             <div class="selectable-card pref-chip"><i class="fa-solid fa-book-open mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Reading</div>
                             <div class="selectable-card pref-chip"><i class="fa-solid fa-laptop-code mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Hands-on</div>
                             <div class="selectable-card pref-chip"><i class="fa-solid fa-shuffle mb-2" style="font-size: 1.5rem; color: var(--primary-purple); display: block;"></i> Mixed</div>
@@ -370,17 +398,17 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Learning Pace</label>
-                                <select class="form-select">
+                                <select class="form-select" id="prefPace">
                                     <option>Relaxed (1-3 hours/week)</option>
-                                    <option>Moderate (4-8 hours/week)</option>
+                                    <option selected>Moderate (4-8 hours/week)</option>
                                     <option>Intensive (10+ hours/week)</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label>Preferred Course Duration</label>
-                                <select class="form-select">
+                                <select class="form-select" id="prefDuration">
                                     <option>Short (1-4 weeks)</option>
-                                    <option>Medium (1-3 months)</option>
+                                    <option selected>Medium (1-3 months)</option>
                                     <option>Long (3+ months)</option>
                                 </select>
                             </div>
@@ -416,16 +444,16 @@
                             <div class="repeatable-card box-entry">
                                 <div class="form-group mb-3">
                                     <label>Course Name</label>
-                                    <input type="text" class="form-control">
+                                    <input type="text" class="form-control course-name">
                                 </div>
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label>Platform / Institution</label>
-                                        <input type="text" class="form-control">
+                                        <input type="text" class="form-control course-platform">
                                     </div>
                                     <div class="form-group">
                                         <label>Completion Date</label>
-                                        <input type="date" class="form-control">
+                                        <input type="date" class="form-control course-date">
                                     </div>
                                 </div>
                             </div>
@@ -444,23 +472,68 @@
                     <div id="reviewBoxFields">
                         <div class="review-section">
                             <div class="review-header">
-                                <h4>Personal Information</h4>
+                                <h4><i class="fa-solid fa-user"></i> Personal Information</h4>
                                 <button type="button" class="btn-edit" data-target="1"><i class="fa-solid fa-pen"></i> Edit</button>
                             </div>
                             <div class="review-content">
-                                <p><strong>Name:</strong> <span id="revName">Gayatri Devi</span></p>
-                                <p><strong>Email:</strong> <span id="revEmail">gayatri@example.com</span></p>
-                                <p><strong>Phone:</strong> <span id="revPhone"></span></p>
+                                <p><strong>Name:</strong> <span id="revName">—</span></p>
+                                <p><strong>Email:</strong> <span id="revEmail">—</span></p>
+                                <p><strong>Phone:</strong> <span id="revPhone">—</span></p>
+                                <p><strong>DOB:</strong> <span id="revDob">—</span></p>
+                                <p><strong>City:</strong> <span id="revCity">—</span></p>
+                            </div>
+                        </div>
+
+                        <div class="review-section">
+                            <div class="review-header">
+                                <h4><i class="fa-solid fa-graduation-cap"></i> Education</h4>
+                                <button type="button" class="btn-edit" data-target="2"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content" id="revEduContainer">
+                                <p id="revEduSummary">—</p>
+                            </div>
+                        </div>
+
+                        <div class="review-section">
+                            <div class="review-header">
+                                <h4><i class="fa-solid fa-bolt"></i> Skills & Proficiency</h4>
+                                <button type="button" class="btn-edit" data-target="3"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content" id="revSkillsContainer">
+                                <p id="revSkillsSummary">—</p>
+                            </div>
+                        </div>
+
+                        <div class="review-section">
+                            <div class="review-header">
+                                <h4><i class="fa-solid fa-heart"></i> Interests & Languages</h4>
+                                <button type="button" class="btn-edit" data-target="4"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content">
+                                <p><strong>Interests:</strong> <span id="revInterests">—</span></p>
+                                <p><strong>Languages:</strong> <span id="revLanguages">—</span></p>
                             </div>
                         </div>
                         
                         <div class="review-section">
                             <div class="review-header">
-                                <h4>Career Goal</h4>
+                                <h4><i class="fa-solid fa-bullseye"></i> Career Goals</h4>
                                 <button type="button" class="btn-edit" data-target="5"><i class="fa-solid fa-pen"></i> Edit</button>
                             </div>
                             <div class="review-content">
-                                <p><strong>Primary Goal:</strong> <span id="revCareer"></span></p>
+                                <p><strong>Primary Goal:</strong> <span id="revCareer" class="review-accent">—</span></p>
+                                <p><strong>Secondary Goal:</strong> <span id="revSecondaryCareer">—</span></p>
+                            </div>
+                        </div>
+
+                        <div class="review-section" id="revExpSection">
+                            <div class="review-header">
+                                <h4><i class="fa-solid fa-briefcase"></i> Experience & Projects</h4>
+                                <button type="button" class="btn-edit" data-target="6"><i class="fa-solid fa-pen"></i> Edit</button>
+                            </div>
+                            <div class="review-content">
+                                <p><strong>Experience:</strong> <span id="revExpSummary">None specified</span></p>
+                                <p><strong>Projects:</strong> <span id="revProjSummary">None specified</span></p>
                             </div>
                         </div>
                     </div>

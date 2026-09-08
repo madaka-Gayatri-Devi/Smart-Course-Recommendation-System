@@ -1,1 +1,177 @@
-<!-- frontend/student/notifications.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Glow Orbs -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item active"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <!-- Sidebar Bottom Footer - Student Account Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Notifications</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <div class="welcome-section" style="margin-bottom: 2rem;">
+                <h1>System Notifications 🔔</h1>
+                <p>Stay updated on skill recommendations, assessment milestones, and coursework reminders.</p>
+            </div>
+
+            <div class="dashboard-card" style="padding: 1.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: #F8F7FF; border-radius: 10px; border-left: 4px solid var(--primary-purple);">
+                        <i class="fa-solid fa-bullseye" style="color: var(--primary-purple); font-size: 1.25rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: var(--dark-navy); font-size: 14.5px;">New Recommendations Generated</strong>
+                            <p style="color: var(--secondary-text); font-size: 12.5px; margin: 2px 0 0;">Personalized courses have been calibrated for your target career goal.</p>
+                            <span style="font-size: 11px; color: var(--secondary-text);">2 hours ago</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: #F8F7FF; border-radius: 10px; border-left: 4px solid #10B981;">
+                        <i class="fa-solid fa-award" style="color: #10B981; font-size: 1.25rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: var(--dark-navy); font-size: 14.5px;">Skill Assessment Ready</strong>
+                            <p style="color: var(--secondary-text); font-size: 12.5px; margin: 2px 0 0;">Take the Full Stack Web Development benchmark assessment to measure your readiness.</p>
+                            <span style="font-size: 11px; color: var(--secondary-text);">1 day ago</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: #F8F7FF; border-radius: 10px; border-left: 4px solid #F59E0B;">
+                        <i class="fa-solid fa-user-check" style="color: #F59E0B; font-size: 1.25rem; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="color: var(--dark-navy); font-size: 14.5px;">Profile Completion Status</strong>
+                            <p style="color: var(--secondary-text); font-size: 12.5px; margin: 2px 0 0;">Keep your technical skills and interests up to date to improve recommendation accuracy.</p>
+                            <span style="font-size: 11px; color: var(--secondary-text);">2 days ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            let currentUser = null;
+            let profileData = null;
+            try {
+                currentUser = await window.api.getMe();
+                profileData = await window.api.getProfile().catch(() => ({}));
+                const fullName = currentUser.full_name || 'Student';
+                const roleName = currentUser.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Student';
+                
+                document.getElementById('topName').textContent = fullName;
+                document.getElementById('sidebarName').textContent = fullName;
+                document.getElementById('sidebarRole').textContent = roleName;
+
+                const names = fullName.trim().split(' ');
+                let initials = names[0].charAt(0);
+                if (names.length > 1) initials += names[1].charAt(0);
+                initials = initials.toUpperCase();
+
+                if (profileData && profileData.profile_image) {
+                    const imgUrl = window.api.getImageUrl(profileData.profile_image);
+                    document.getElementById('topAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
+                    document.getElementById('sidebarAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
+                } else {
+                    document.getElementById('topAvatar').textContent = initials;
+                    document.getElementById('sidebarAvatar').textContent = initials;
+                }
+            } catch (_) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Toggle & Logout
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('dashboardSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', () => { sidebar.classList.add('active'); overlay.classList.add('active'); });
+                overlay.addEventListener('click', () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); });
+            }
+            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.api.clearToken();
+                window.location.href = '../login.html';
+            });
+        });
+    </script>
+</body>
+</html>

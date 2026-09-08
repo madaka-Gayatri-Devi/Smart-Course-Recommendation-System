@@ -1,1 +1,282 @@
-<!-- frontend/student/assessment.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Assessment - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/profile.css">
+    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Glow Orbs -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+            <a href="assessment.html" class="nav-item active"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <!-- Sidebar Bottom Footer - Student Account Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Skill Assessment</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="topbar-icon">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- VIEW 1: Assessments Catalog & History View -->
+            <div id="viewCatalog">
+                
+                <!-- Hero Intro Banner -->
+                <div class="welcome-section" style="margin-bottom: 2rem;">
+                    <h1>Skill & Career Readiness Assessment 🎯</h1>
+                    <p>Validate your technical proficiency, uncover skill gaps, and get personalized course recommendations.</p>
+                </div>
+
+                <!-- Grid Layout: Available Assessments & History -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                    
+                    <!-- Left: Available Assessments -->
+                    <div>
+                        <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-navy); margin-bottom: 1.25rem;">
+                            <i class="fa-solid fa-list-check" style="color: var(--primary-purple); margin-right: 0.5rem;"></i> Available Assessments
+                        </h3>
+                        
+                        <div id="assessmentsListContainer">
+                            <div style="text-align: center; padding: 2rem;">
+                                <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-purple);"></i>
+                                <p style="margin-top: 1rem; color: var(--secondary-text);">Loading assessments...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Assessment Instructions & History -->
+                    <div>
+                        <!-- Instructions Card -->
+                        <div class="dashboard-card mb-4" style="background: linear-gradient(180deg, #FAF8FF 0%, #FFFFFF 100%);">
+                            <h3 style="font-size: 16px; margin-bottom: 0.75rem;"><i class="fa-solid fa-circle-info" style="color: var(--primary-purple); margin-right: 0.5rem;"></i> How it Works</h3>
+                            <ul style="padding-left: 1.25rem; font-size: 13.5px; color: var(--secondary-text); line-height: 1.7;">
+                                <li>Choose an assessment aligned with your career goal.</li>
+                                <li>Answer all multiple-choice questions.</li>
+                                <li>Real-time scoring evaluates your knowledge level.</li>
+                                <li>Your skill profile and recommended learning paths update instantly.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Past Attempts History Card -->
+                        <div class="dashboard-card">
+                            <h3 style="font-size: 16px; margin-bottom: 1rem;"><i class="fa-solid fa-clock-rotate-left" style="color: var(--magenta-pink); margin-right: 0.5rem;"></i> Your Past Results</h3>
+                            <div id="historyListContainer">
+                                <p style="color: var(--secondary-text); font-size: 13px;">No previous assessment attempts recorded.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- VIEW 2: Active Assessment Taking View (Inspired by Reference 5) -->
+            <div id="viewActiveTest" style="display: none; max-width: 860px; margin: 0 auto;">
+                
+                <!-- Test Top Bar with Exit, Title, Timer & Progress -->
+                <div class="test-topbar-wrapper" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <button type="button" class="btn-exit-test" id="btnExitAssessment">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Exit Test
+                        </button>
+                        <div>
+                            <h2 id="activeAssessmentTitle" style="font-size: 20px; font-weight: 800; color: var(--dark-navy); margin: 0;">Assessment Title</h2>
+                            <span style="font-size: 12.5px; color: var(--secondary-text);">Skill Proficiency Evaluation</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 1.25rem;">
+                        <!-- Countdown Timer Badge -->
+                        <div class="test-timer-badge" id="testTimerBadge">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="testTimerText">15:00</span>
+                        </div>
+
+                        <!-- Question Counter & Mini Progress -->
+                        <div style="text-align: right;">
+                            <span style="font-size: 13px; font-weight: 700; color: var(--dark-navy);">Question <span id="currentQNum">1</span> of <span id="totalQNum">5</span></span>
+                            <div class="progress-bar-bg" style="width: 130px; height: 7px; margin-top: 0.35rem;">
+                                <div class="progress-bar-fill" id="testProgressFill" style="width: 20%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Box (Clean centered card) -->
+                <div class="question-container">
+                    <div class="question-header">
+                        <span class="question-number" id="qBadgeNum">Question 1</span>
+                        <span class="question-points" id="qPointsBadge">+20 Points</span>
+                    </div>
+
+                    <div class="question-text" id="qText">
+                        Question text goes here...
+                    </div>
+
+                    <!-- Multiple-choice Options -->
+                    <div class="options-list" id="optionsContainer">
+                        <!-- Dynamic option cards with A, B, C, D indicators -->
+                    </div>
+
+                    <!-- Test Navigation Controls -->
+                    <div class="test-footer-nav">
+                        <button type="button" class="btn-profile btn-back" id="btnPrevQuestion" style="display: none;">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> Previous
+                        </button>
+                        <div style="flex-grow: 1;"></div>
+                        <button type="button" class="btn-profile btn-next" id="btnNextQuestion">
+                            Next <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                        <button type="button" class="btn-profile btn-submit-test" id="btnSubmitAssessment" style="display: none;">
+                            Submit Assessment <i class="fa-solid fa-circle-check ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- VIEW 3: Assessment Result & Review View -->
+            <div id="viewResult" style="display: none; max-width: 850px; margin: 0 auto;">
+                
+                <!-- Result Hero Card -->
+                <div class="result-hero-card">
+                    <div class="result-score-circle">
+                        <span class="big-pct" id="resPercentage">85%</span>
+                        <span class="score-label" id="resScoreFraction">85 / 100</span>
+                    </div>
+
+                    <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 0.5rem;" id="resAssessmentTitle">Assessment Completed!</h2>
+                    <p style="font-size: 15px; opacity: 0.95; max-width: 500px; margin: 0 auto 1rem;" id="resRecommendationNote">Excellent conceptual knowledge.</p>
+                    <span class="badge-level" id="resPerformanceLevel">Advanced</span>
+                </div>
+
+                <!-- Result Stats Row -->
+                <div class="stats-grid mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ecfdf5; color: #10b981;"><i class="fa-solid fa-check"></i></div>
+                        <div class="stat-info">
+                            <h3 id="resCorrectCount">4</h3>
+                            <p>Correct Answers</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fef2f2; color: #ef4444;"><i class="fa-solid fa-xmark"></i></div>
+                        <div class="stat-info">
+                            <h3 id="resIncorrectCount">1</h3>
+                            <p>Incorrect Answers</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--light-lavender); color: var(--primary-purple);"><i class="fa-solid fa-calendar"></i></div>
+                        <div class="stat-info">
+                            <h3 id="resSubmittedDate" style="font-size: 15px; margin-top: 4px;">Today</h3>
+                            <p>Completed Date</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Breakdown & Explanations -->
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-navy); margin-bottom: 1.25rem;">
+                    <i class="fa-solid fa-list-check" style="color: var(--primary-purple); margin-right: 0.5rem;"></i> Question Review & Explanations
+                </h3>
+                
+                <div id="resFeedbackList">
+                    <!-- Dynamic review items -->
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; margin-bottom: 3rem;">
+                    <button type="button" class="btn-profile btn-back" id="btnRetakeAssessment">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Retake Assessment
+                    </button>
+                    <button type="button" class="btn-profile btn-next" id="btnBackToCatalog">
+                        <i class="fa-solid fa-grid-2 mr-2"></i> All Assessments
+                    </button>
+                    <a href="dashboard.html" class="btn-profile btn-next" style="background: var(--dark-navy); text-decoration: none;">
+                        <i class="fa-solid fa-house mr-2"></i> Go to Dashboard
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js?v=4"></script>
+    <script src="../js/assessment.js?v=2"></script>
+</body>
+</html>

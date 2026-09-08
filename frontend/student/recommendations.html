@@ -1,1 +1,130 @@
-<!-- frontend/student/recommendations.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Recommendations - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+</head>
+<body class="dashboard-body">
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Glow Orbs -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">LEARNING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
+            
+            <div class="nav-label">DISCOVER</div>
+            <a href="recommendations.html" class="nav-item active"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+        </nav>
+        
+        <!-- Sidebar Bottom Footer - Student Account Card -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Personalized Recommendations</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="recSearchInput" placeholder="Search recommended courses...">
+                </div>
+                
+                <div class="topbar-icon">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- Hero Banner -->
+            <div class="welcome-section" style="margin-bottom: 1.5rem;">
+                <h1>Intelligent Course Matches 🎯</h1>
+                <p>Dynamically ranked based on your target career goal, skill proficiency, and assessment benchmark scores.</p>
+            </div>
+
+            <!-- Filter Controls -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;" id="filterContainer">
+                <button class="filter-btn active" data-category="all">All Domains</button>
+                <button class="filter-btn" data-category="Web Development">Web Development</button>
+                <button class="filter-btn" data-category="Data Science & AI">Data Science & AI</button>
+                <button class="filter-btn" data-category="Cloud & DevOps">Cloud & DevOps</button>
+                <button class="filter-btn" data-category="Cyber Security">Cyber Security</button>
+                <button class="filter-btn" data-category="UI/UX Design">UI/UX Design</button>
+                <button class="filter-btn" data-category="Mobile Development">Mobile</button>
+            </div>
+
+            <!-- Recommendations Grid -->
+            <div class="recommendation-grid" id="recommendationsListGrid" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-purple);"></i>
+                    <p style="margin-top: 1rem; color: var(--secondary-text);">Calculating personalized course matches...</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/recommendations.js"></script>
+</body>
+</html>

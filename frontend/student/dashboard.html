@@ -4,20 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - SmartLearn</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons & Styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/style.css?v=12.0">
+    <link rel="stylesheet" href="../css/dashboard.css?v=12.0">
 </head>
 <body class="dashboard-body">
 
     <!-- Mobile Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (Full Height Colored Gradient) -->
     <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <!-- Ambient Decorative Glows -->
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
         <div class="sidebar-brand">
             <i class="fa-solid fa-graduation-cap"></i> SmartLearn
         </div>
@@ -25,24 +31,34 @@
         <nav class="sidebar-nav">
             <div class="nav-label">LEARNING</div>
             <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-book-open"></i> My Courses</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-road"></i> Learning Path</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-chart-line"></i> Progress</a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> My Courses</a>
+            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> Learning Path</a>
+            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Progress</a>
             
             <div class="nav-label">DISCOVER</div>
-            <a href="#" class="nav-item"><i class="fa-solid fa-compass"></i> Recommendations</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-layer-group"></i> Skill Gaps</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> Assessment</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-heart"></i> Wishlist</a>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> Recommendations</a>
+            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> Skill Gaps</a>
+            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> Assessment</a>
+            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> Wishlist</a>
             
             <div class="nav-label">ACCOUNT</div>
-            <a href="#" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="nav-badge">3</span></a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> Profile</a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="nav-badge" id="navNotifBadge">0</span></a>
         </nav>
         
         <div class="sidebar-footer">
-            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
             <a href="#" class="nav-item text-danger" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            
+            <!-- Real Authenticated Student Account Area -->
+            <a href="profile.html" class="sidebar-user-card" id="sidebarUserCard" title="View Profile">
+                <div class="user-avatar-sm" id="sidebarAvatar">ST</div>
+                <div class="user-details">
+                    <div class="user-name-text" id="sidebarName">Student</div>
+                    <div class="user-role-text" id="sidebarRole">Student</div>
+                </div>
+                <i class="fa-solid fa-chevron-right user-arrow"></i>
+            </a>
         </div>
     </aside>
 
@@ -59,19 +75,19 @@
             <div class="topbar-right">
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" placeholder="Search courses...">
+                    <input type="text" id="dashboardSearchInput" placeholder="Search courses...">
                 </div>
                 
-                <div class="topbar-icon">
+                <a href="notifications.html" class="topbar-icon" title="Notifications">
                     <i class="fa-solid fa-bell"></i>
-                    <span class="notification-dot"></span>
-                </div>
+                    <span class="notification-dot" id="topNotificationDot" style="display: none;"></span>
+                </a>
                 
-                <div class="profile-dropdown">
-                    <div class="avatar" id="topAvatar">GD</div>
-                    <span class="profile-name" id="topName">Gayatri Devi</span>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
+                <a href="profile.html" class="profile-dropdown" style="text-decoration: none; color: inherit;">
+                    <div class="avatar" id="topAvatar">ST</div>
+                    <span class="profile-name" id="topName">Student</span>
+                    <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: var(--secondary-text);"></i>
+                </a>
             </div>
         </header>
 
@@ -80,23 +96,23 @@
             
             <!-- Welcome Section -->
             <div class="welcome-section">
-                <h1 id="welcomeTitle">Welcome back, Student 👋</h1>
+                <h1 id="welcomeTitle">Welcome back 👋</h1>
                 <p>Continue your learning journey and build the skills needed for your career.</p>
             </div>
 
-            <!-- Stats Row -->
+            <!-- Stats Row (Dynamic, Real Data Only) -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon"><i class="fa-solid fa-book"></i></div>
+                    <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
                     <div class="stat-info">
-                        <h3>12</h3>
+                        <h3 id="statEnrolled">0</h3>
                         <p>Courses Enrolled</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fa-solid fa-award"></i></div>
                     <div class="stat-info">
-                        <h3>4</h3>
+                        <h3 id="statCompleted">0</h3>
                         <p>Completed</p>
                     </div>
                 </div>
@@ -110,114 +126,56 @@
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
                     <div class="stat-info">
-                        <h3>42h</h3>
+                        <h3 id="statHours">0h</h3>
                         <p>Learning Hours</p>
                     </div>
                 </div>
             </div>
 
+            <!-- Main Layout Grid -->
             <div class="dashboard-grid">
                 <!-- Left Column -->
                 <div class="main-column">
                     
-                    <!-- Continue Learning -->
+                    <!-- Continue Learning Card -->
                     <div class="dashboard-card">
                         <div class="card-header">
                             <h3>Continue Learning</h3>
-                            <a href="#" class="view-all">View All</a>
+                            <a href="courses.html" class="view-all">View All</a>
                         </div>
                         
-                        <div class="continue-course">
-                            <div class="course-thumb">
-                                <i class="fa-brands fa-react"></i>
+                        <div id="continueLearningContainer">
+                            <!-- Dynamic in-progress course or clean empty state -->
+                            <div class="empty-state-card">
+                                <div class="empty-icon"><i class="fa-solid fa-book-open"></i></div>
+                                <h4>No courses in progress</h4>
+                                <p>Start your learning journey by exploring courses matched to your career goal.</p>
+                                <a href="courses.html" class="btn-primary-small">Explore Courses →</a>
                             </div>
-                            <div class="course-progress-info">
-                                <h4>React.js Fundamentals</h4>
-                                <p>12 of 16 lessons completed</p>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar-fill" style="width: 75%;"></div>
-                                </div>
-                            </div>
-                            <button class="btn-primary-small">Continue →</button>
                         </div>
                     </div>
 
-                    <!-- Recommended Courses -->
+                    <!-- Recommended Courses Section -->
                     <div class="dashboard-card">
                         <div class="card-header">
                             <div>
                                 <h3>Recommended For You</h3>
-                                <p class="card-subtitle">Courses selected based on your skills, interests, and career goal.</p>
+                                <p class="card-subtitle">Courses matched based on your skills, interests, and career goal.</p>
                             </div>
+                            <a href="recommendations.html" class="view-all">View All</a>
                         </div>
                         
-                        <div class="recommendation-grid">
-                            
-                            <!-- Course Card 1 -->
-                            <div class="course-card">
-                                <div class="course-img placeholder-img-1">
-                                    <span class="match-badge">92% Match</span>
-                                </div>
-                                <div class="course-content">
-                                    <div class="course-meta">
-                                        <span class="category">Web Development</span>
-                                        <span class="rating"><i class="fa-solid fa-star"></i> 4.8</span>
-                                    </div>
-                                    <h4 class="course-title">Full Stack Web Development Boot Camp</h4>
-                                    <p class="instructor">Dr. Angela Yu</p>
-                                    
-                                    <div class="course-details">
-                                        <span><i class="fa-solid fa-clock"></i> 40h</span>
-                                        <span><i class="fa-solid fa-layer-group"></i> Intermediate</span>
-                                    </div>
-                                    
-                                    <div class="course-skills">
-                                        <span class="chip-sm">HTML</span>
-                                        <span class="chip-sm">CSS</span>
-                                        <span class="chip-sm">React</span>
-                                    </div>
-                                    
-                                    <div class="why-course">
-                                        <p><i class="fa-solid fa-check"></i> Matches your career goal</p>
-                                        <p><i class="fa-solid fa-check"></i> Builds missing JavaScript skills</p>
-                                    </div>
-                                    
-                                    <button class="btn-outline-full">View Course</button>
+                        <div class="recommendation-grid" id="recommendationGrid">
+                            <!-- Dynamic recommendations or clean empty state -->
+                            <div class="empty-state-card" style="grid-column: 1 / -1;">
+                                <div class="empty-icon"><i class="fa-solid fa-compass"></i></div>
+                                <h4>No personalized recommendations yet</h4>
+                                <p>Complete your profile and assessment to receive personalized course recommendations.</p>
+                                <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.25rem;">
+                                    <a href="assessment.html" class="btn-primary-small">Take Assessment →</a>
+                                    <a href="profile.html" class="btn-outline-full" style="width: auto; padding: 0.55rem 1.25rem;">Complete Profile</a>
                                 </div>
                             </div>
-                            
-                            <!-- Course Card 2 -->
-                            <div class="course-card">
-                                <div class="course-img placeholder-img-2">
-                                    <span class="match-badge">88% Match</span>
-                                </div>
-                                <div class="course-content">
-                                    <div class="course-meta">
-                                        <span class="category">Backend</span>
-                                        <span class="rating"><i class="fa-solid fa-star"></i> 4.7</span>
-                                    </div>
-                                    <h4 class="course-title">Node.js, Express, MongoDB & More</h4>
-                                    <p class="instructor">Jonas Schmedtmann</p>
-                                    
-                                    <div class="course-details">
-                                        <span><i class="fa-solid fa-clock"></i> 32h</span>
-                                        <span><i class="fa-solid fa-layer-group"></i> Beginner</span>
-                                    </div>
-                                    
-                                    <div class="course-skills">
-                                        <span class="chip-sm">Node.js</span>
-                                        <span class="chip-sm">Express</span>
-                                        <span class="chip-sm">MongoDB</span>
-                                    </div>
-                                    
-                                    <div class="why-course">
-                                        <p><i class="fa-solid fa-check"></i> Fits your learning preference</p>
-                                    </div>
-                                    
-                                    <button class="btn-outline-full">View Course</button>
-                                </div>
-                            </div>
-                            
                         </div>
                     </div>
                 </div>
@@ -225,103 +183,53 @@
                 <!-- Right Column -->
                 <div class="side-column">
                     
-                    <!-- Career Goal -->
+                    <!-- Career Goal Card -->
                     <div class="dashboard-card feature-card">
-                        <h3>Your Career Goal</h3>
-                        <h2 class="career-highlight" id="dashCareer">Not set</h2>
-                        <div class="progress-container mb-3">
-                            <div class="progress-labels">
-                                <span>Progress</span>
-                                <span>68%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" style="width: 68%;"></div>
-                            </div>
-                        </div>
-                        <button class="btn-primary-full">View Learning Path →</button>
+                        <div class="card-badge-pill">Target Career</div>
+                        <h2 class="career-highlight" id="dashCareer">Career goal not set</h2>
+                        <p class="career-desc" id="dashCareerNote">Set your target career goal in Profile to customize your learning path.</p>
+                        <a href="learning-path.html" class="btn-primary-full" id="careerGoalBtn">View Learning Path →</a>
                     </div>
                     
-                    <!-- Profile Completion -->
+                    <!-- Profile Completion Card -->
                     <div class="dashboard-card">
                         <div class="profile-completion">
                             <div class="completion-header">
                                 <h3>Profile Completion</h3>
-                                <span class="completion-value">85%</span>
+                                <span class="completion-value" id="dashProfileCompletion">0%</span>
                             </div>
                             <div class="progress-bar-bg mb-3">
-                                <div class="progress-bar-fill" style="width: 85%;"></div>
+                                <div class="progress-bar-fill" id="profileCompletionFill" style="width: 0%;"></div>
                             </div>
-                            <button class="btn-outline-full">Complete Profile</button>
+                            <div id="profileCompletionAction">
+                                <a href="profile.html" class="btn-outline-full" id="profileCompletionBtn">Complete Profile →</a>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Skill Gaps -->
+                    <!-- Skill Gaps Card -->
                     <div class="dashboard-card">
                         <div class="card-header">
                             <h3>Your Skill Gaps</h3>
                         </div>
-                        <p class="card-subtitle mb-3">Skills missing for your career goal.</p>
+                        <p class="card-subtitle mb-3" id="skillGapsSubtitle">Missing skills for your target career goal.</p>
                         
-                        <div class="skill-gap-item">
-                            <div class="gap-labels">
-                                <span>TypeScript</span>
-                                <span>40%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill gap-fill" style="width: 40%;"></div>
-                            </div>
+                        <div id="skillGapsContainer">
+                            <!-- Dynamic Skill Gaps or Clean Empty State -->
+                            <p style="font-size: 13px; color: var(--secondary-text);">Select a career goal to view missing skill gaps.</p>
                         </div>
                         
-                        <div class="skill-gap-item">
-                            <div class="gap-labels">
-                                <span>Node.js</span>
-                                <span>60%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill gap-fill" style="width: 60%;"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="skill-gap-item">
-                            <div class="gap-labels">
-                                <span>AWS</span>
-                                <span>30%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill gap-fill" style="width: 30%;"></div>
-                            </div>
-                        </div>
-                        
-                        <button class="btn-outline-full mt-3">View Gap Analysis</button>
+                        <a href="skill-gaps.html" class="btn-outline-full mt-3">View Gap Analysis →</a>
                     </div>
 
-                    <!-- Learning Path Timeline -->
+                    <!-- Learning Path Timeline Card -->
                     <div class="dashboard-card">
                         <div class="card-header">
                             <h3>Learning Path</h3>
                         </div>
                         
-                        <div class="timeline">
-                            <div class="timeline-item completed">
-                                <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-                                <div class="timeline-content">HTML & CSS</div>
-                            </div>
-                            <div class="timeline-item completed">
-                                <div class="timeline-marker"><i class="fa-solid fa-check"></i></div>
-                                <div class="timeline-content">JavaScript</div>
-                            </div>
-                            <div class="timeline-item current">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">React.js</div>
-                            </div>
-                            <div class="timeline-item upcoming">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">Node.js</div>
-                            </div>
-                            <div class="timeline-item upcoming">
-                                <div class="timeline-marker"></div>
-                                <div class="timeline-content">SQL</div>
-                            </div>
+                        <div class="timeline" id="learningPathTimeline">
+                            <!-- Dynamic Learning Path Milestones -->
                         </div>
                     </div>
                     
@@ -331,7 +239,8 @@
         </div>
     </main>
 
-    <script src="../js/api.js?v=3"></script>`n    <script src="../js/dashboard.js?v=3"></script>
+    <!-- Scripts -->
+    <script src="../js/api.js?v=12.0"></script>
+    <script src="../js/dashboard.js?v=12.0"></script>
 </body>
 </html>
-
