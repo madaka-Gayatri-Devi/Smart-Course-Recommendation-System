@@ -1,1 +1,163 @@
-<!-- frontend/admin/courses.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Catalog Management - Admin Portal</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- 🛡️ ADMIN SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="courses.html" class="nav-item active"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="career-goals.html#assessments" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
+            <a href="reports.html#enrollments" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="reports.html#analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Course Catalog Management</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Curriculum Management 📚</h1>
+                    <p>Review, activate, publish, and edit system-wide courses.</p>
+                </div>
+                <a href="course-editor.html" class="btn-primary" style="padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-plus mr-1"></i> Add New Course</a>
+            </div>
+
+            <!-- Controls -->
+            <div class="dashboard-card" style="padding: 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div class="search-box" style="flex: 1; min-width: 260px;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="adminCourseSearchInput" placeholder="Search catalog by title, instructor, category, skills...">
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="adminStatusFilters">
+                        <button class="filter-btn active" data-status="all">All Statuses</button>
+                        <button class="filter-btn" data-status="published">Published</button>
+                        <button class="filter-btn" data-status="draft">Drafts</button>
+                        <button class="filter-btn" data-status="deactivated">Deactivated</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid #F1F5F9;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="adminCategoryFilter" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-folder-open mr-1"></i> Category:</label>
+                        <select id="adminCategoryFilter" style="padding: 0.45rem 0.75rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none; min-width: 160px;">
+                            <option value="all">All Categories</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="adminDifficultyFilter" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-layer-group mr-1"></i> Level:</label>
+                        <select id="adminDifficultyFilter" style="padding: 0.45rem 0.75rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="all">All Levels</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                        <label for="adminSortSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sort:</label>
+                        <select id="adminSortSelect" style="padding: 0.45rem 0.75rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="rating">Highest Rated</option>
+                            <option value="enrollment">Most Enrollments</option>
+                            <option value="title">Course Title (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Table -->
+            <div class="dashboard-card" style="padding: 1.5rem;">
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Course Title</th>
+                                <th>Category</th>
+                                <th>Instructor</th>
+                                <th>Level</th>
+                                <th>Rating</th>
+                                <th>Enrollments</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCoursesTableBody">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading course catalog...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>

@@ -1,1 +1,337 @@
-<!-- frontend/admin/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 🛡️ ADMIN SIDEBAR -->
+        <!-- 🛡️ ADMIN SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="career-goals.html#assessments" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
+            <a href="reports.html#enrollments" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="reports.html#analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Admin Command Center</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- 1. SYSTEM OVERVIEW -->
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>System Overview & Platform Health 🛡️</h1>
+                    <p>Real-time governance, user access moderation, and curriculum analytics.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="courses.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-book-open mr-1"></i> Manage Catalog</a>
+                    <a href="users.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border: 1px solid #D1D5DB; border-radius: 8px; color: #4B5563; font-weight: 600;"><i class="fa-solid fa-users mr-1"></i> Manage Users</a>
+                </div>
+            </div>
+
+            <!-- Overview Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Users</span>
+                        <h3 class="stat-value" id="kpiTotalUsers">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper blue"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Students</span>
+                        <h3 class="stat-value" id="kpiTotalStudents">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper amber"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Instructors</span>
+                        <h3 class="stat-value" id="kpiTotalInstructors">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-book-bookmark"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Courses</span>
+                        <h3 class="stat-value" id="kpiTotalCourses">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper pink"><i class="fa-solid fa-certificate"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Enrollments</span>
+                        <h3 class="stat-value" id="kpiTotalEnrollments">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. USER MANAGEMENT (Students, Instructors, Status) -->
+            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-users-gear mr-1" style="color: var(--primary-purple);"></i> User Management</h3>
+                    <a href="users.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Full User Management Directory →</a>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminRecentUsersBody">
+                            <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading user records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. COURSE CATALOG MANAGEMENT (Total, Published, Draft) -->
+            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <div>
+                        <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-book-open mr-1" style="color: var(--primary-purple);"></i> Course Catalog Management</h3>
+                        <p style="font-size: 12.5px; color: var(--secondary-text); margin: 2px 0 0;" id="kpiCourseBreakdown">0 Published • 0 Draft</p>
+                    </div>
+                    <a href="courses.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Complete Catalog →</a>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Course Title</th>
+                                <th>Category</th>
+                                <th>Instructor</th>
+                                <th>Enrollments</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Moderation Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCoursesBody">
+                            <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading catalog courses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: CATEGORIES, SKILLS, CAREER GOALS, ASSESSMENTS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 4. COURSE CATEGORIES -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-layer-group mr-1" style="color: var(--primary-purple);"></i> Course Categories</h3>
+                        <a href="categories.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Manage</a>
+                    </div>
+                    <div id="adminCategoryDistribution">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading categories...</div>
+                    </div>
+                </div>
+
+                <!-- 5 & 6. SKILLS & CAREER GOALS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bullseye mr-1" style="color: #EC4899;"></i> Skills & Career Goals</h3>
+                        <a href="career-goals.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Taxonomy</a>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="background: #F8F7FF; border: 1px solid #EDE9FE; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <span style="font-size: 12px; color: var(--secondary-text);">Total Skills</span>
+                            <h4 style="font-size: 20px; color: var(--dark-navy); margin: 4px 0;" id="kpiTotalSkills">0</h4>
+                            <a href="skills.html" style="font-size: 11px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View Skills →</a>
+                        </div>
+                        <div style="background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <span style="font-size: 12px; color: var(--secondary-text);">Career Goals</span>
+                            <h4 style="font-size: 20px; color: var(--dark-navy); margin: 4px 0;" id="kpiTotalCareers">0</h4>
+                            <a href="career-goals.html" style="font-size: 11px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View Goals →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: 7. ASSESSMENTS & 8. SYSTEM-WIDE ENROLLMENTS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 7. ASSESSMENT QUESTIONS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-clipboard-question mr-1" style="color: #059669;"></i> Assessment Questions</h3>
+                    </div>
+                    <div style="background: #F0FDF4; border: 1px solid #DCFCE7; border-radius: 10px; padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 13px; color: #166534; font-weight: 600;">Total Questions Evaluated</span>
+                            <strong style="font-size: 18px; color: #166534;" id="kpiTotalAssessments">0</strong>
+                        </div>
+                        <p style="font-size: 12px; color: #15803D; margin: 4px 0 0;">Diagnostics automatically benchmark learner proficiencies.</p>
+                    </div>
+                </div>
+
+                <!-- 8. SYSTEM-WIDE ENROLLMENTS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-graduation-cap mr-1" style="color: #6366F1;"></i> System-wide Enrollments</h3>
+                    </div>
+                    <div style="background: #EEF2FF; border: 1px solid #E0E7FF; border-radius: 10px; padding: 1.25rem;" id="kpiEnrollmentBreakdown">
+                        <span>0 Active • 0 Completed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. PLATFORM STATISTICS -->
+            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0 0 1rem 0;"><i class="fa-solid fa-chart-pie mr-1" style="color: var(--primary-purple);"></i> Platform Statistics</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="background: #F8F7FF; border: 1px solid #EDE9FE; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: var(--secondary-text);">Overall Completion Rate</span>
+                        <h4 style="font-size: 20px; color: var(--dark-navy); margin: 4px 0;" id="kpiCompletionRate">0%</h4>
+                    </div>
+                    <div style="background: #FFFBEB; border: 1px solid #FEF3C7; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: #92400E;">Platform Avg Rating</span>
+                        <h4 style="font-size: 20px; color: #92400E; margin: 4px 0;">4.8 ⭐</h4>
+                    </div>
+                    <div style="background: #F0FDF4; border: 1px solid #DCFCE7; border-radius: 8px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: #166534;">System Health</span>
+                        <h4 style="font-size: 20px; color: #166534; margin: 4px 0;">100% Online</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: 10. SYSTEM REPORTS & 11. SYSTEM ANALYTICS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 10. SYSTEM REPORTS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-file-lines mr-1" style="color: var(--primary-purple);"></i> System Reports</h3>
+                        <a href="reports.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">View All</a>
+                    </div>
+                    <div style="font-size: 13px; color: var(--secondary-text);">
+                        <p style="margin-bottom: 0.5rem;">• <strong>Audit Log:</strong> All user role permissions and access tokens operational.</p>
+                        <p style="margin-bottom: 0.5rem;">• <strong>Telemetry Report:</strong> Zero authentication errors detected.</p>
+                    </div>
+                </div>
+
+                <!-- 11. SYSTEM ANALYTICS (Popular Courses) -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-trophy mr-1" style="color: #F59E0B;"></i> Popular Courses Leaderboard</h3>
+                    </div>
+                    <div id="adminPopularCourses">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading leaderboard...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: 12. RECOMMENDATION MONITORING & 13. PLATFORM SETTINGS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 12. RECOMMENDATION MONITORING -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-brain mr-1" style="color: #7C3AED;"></i> Recommendation Monitoring</h3>
+                        <a href="recommendations.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Engine Telemetry</a>
+                    </div>
+                    <div style="background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 1rem; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span>Engine Status:</span>
+                            <strong style="color: #059669;">● Active & Ready</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Scoring Algorithm:</span>
+                            <span>TF-IDF + Career Gap Weights</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. PLATFORM SETTINGS -->
+                <div class="dashboard-card" style="padding: 1.75rem;" id="settings">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-gear mr-1" style="color: #4B5563;"></i> Platform Settings</h3>
+                    </div>
+                    <div style="font-size: 13px; color: var(--secondary-text);">
+                        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #EDE9FE;">
+                            <span>Public Registration:</span>
+                            <span class="badge-role student">Enabled (Student/Instructor)</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
+                            <span>Database Version:</span>
+                            <span>SQLite (Live)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>

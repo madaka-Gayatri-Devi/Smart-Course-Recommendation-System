@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Courses - SmartLearn</title>
+    <title>Course Catalog - SmartLearn</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS -->
+    <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/courses.css">
 </head>
 <body class="dashboard-body">
 
-    <!-- Mobile Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
+    <!-- 🎓 STUDENT SIDEBAR -->
     <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <!-- Ambient Glow Orbs -->
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
 
@@ -32,7 +31,8 @@
         <nav class="sidebar-nav">
             <div class="nav-label">LEARNING</div>
             <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
-            <a href="courses.html" class="nav-item active"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="courses.html" class="nav-item active"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="my-courses.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i> <span class="nav-text">My Courses</span></a>
             <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
             <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
             
@@ -44,10 +44,9 @@
             
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
-        <!-- Sidebar Bottom Footer - Student Account Card -->
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
@@ -57,147 +56,209 @@
                 </div>
             </div>
             <div class="sidebar-footer-links">
-                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
-                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="dashboard-main">
-        
-        <!-- Topbar -->
         <header class="dashboard-topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-                <h2 class="page-title">My Courses & Catalog</h2>
+                <h2 class="page-title">Course Catalog</h2>
             </div>
             
             <div class="topbar-right">
-                <div class="search-box">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="courseSearchInput" placeholder="Search courses...">
-                </div>
-                
-                <div class="topbar-icon">
-                    <i class="fa-solid fa-bell"></i>
-                    <span class="notification-dot"></span>
-                </div>
-                
                 <div class="profile-dropdown">
                     <div class="avatar" id="topAvatar">ST</div>
                     <span class="profile-name" id="topName">Student</span>
-                    <i class="fa-solid fa-chevron-down"></i>
                 </div>
             </div>
         </header>
 
-        <!-- Page Content -->
         <div class="dashboard-content fade-in-up">
-            
+            <!-- Page Header -->
             <div class="welcome-section" style="margin-bottom: 1.5rem;">
-                <h1>Courses & Active Learning 📚</h1>
-                <p>Track your enrolled course progress or explore the complete curriculum catalog.</p>
+                <h1>Course Catalog 📚</h1>
+                <p>Explore courses that match your skills, interests, and career goals.</p>
             </div>
 
-            <!-- Tab Buttons -->
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <a href="recommendations.html" class="filter-btn">Explore Recommended</a>
-                <button class="filter-btn active">All Catalog Courses</button>
+            <!-- Large Search Card -->
+            <div class="catalog-search-card">
+                <div class="catalog-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="courseSearchInput" class="catalog-search-input" placeholder="Search courses, skills, or career goals..." autocomplete="off">
+                    <button type="button" id="courseSearchClear" class="catalog-search-clear" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" id="courseSearchBtn" class="btn-primary-small" style="padding: 0.45rem 1.1rem; border-radius: 8px; margin-left: 0.5rem; font-weight: 600; cursor: pointer;">Search</button>
+                </div>
             </div>
 
-            <!-- Courses Grid -->
-            <div class="recommendation-grid" id="allCoursesGrid" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
-                <!-- Dynamically loaded from recommendations API -->
+            <!-- Mobile / Tablet Filter Button -->
+            <div class="mobile-filter-bar">
+                <button type="button" class="mobile-filter-btn" id="mobileFilterToggle">
+                    <i class="fa-solid fa-sliders"></i> Filters <span id="mobileFilterCountBadge" style="background: var(--primary-purple); color: #fff; border-radius: 10px; padding: 2px 7px; font-size: 11px; display: none;">0</span>
+                </button>
             </div>
 
+            <!-- 2-Column Catalog Layout -->
+            <div class="catalog-layout">
+                <!-- Left Sidebar Filters -->
+                <aside class="catalog-sidebar" id="catalogSidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-title">
+                            <i class="fa-solid fa-sliders"></i> Filters
+                        </div>
+                        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="categoryFilter"><i class="fa-solid fa-layer-group mr-1"></i> Category</label>
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="all">All Categories</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Frontend Development">Frontend Development</option>
+                            <option value="Backend Development">Backend Development</option>
+                            <option value="Data Science & AI">Data Science & AI</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Cloud & DevOps">Cloud & DevOps</option>
+                            <option value="Cyber Security">Cyber Security</option>
+                            <option value="UI/UX Design">UI/UX Design</option>
+                            <option value="Mobile Development">Mobile Development</option>
+                        </select>
+                    </div>
+
+                    <!-- Difficulty Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="difficultyFilter"><i class="fa-solid fa-gauge-high mr-1"></i> Difficulty</label>
+                        <select id="difficultyFilter" class="filter-select">
+                            <option value="all">All Difficulties</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                        </select>
+                    </div>
+
+                    <!-- Duration Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="durationFilter"><i class="fa-solid fa-clock mr-1"></i> Duration</label>
+                        <select id="durationFilter" class="filter-select">
+                            <option value="all">Any Duration</option>
+                            <option value="<10">Less than 10 hours</option>
+                            <option value="10-20">10–20 hours</option>
+                            <option value="20-40">20–40 hours</option>
+                            <option value="40+">40+ hours</option>
+                        </select>
+                    </div>
+
+                    <!-- Rating Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="ratingFilter"><i class="fa-solid fa-star mr-1"></i> Rating</label>
+                        <select id="ratingFilter" class="filter-select">
+                            <option value="all">Any Rating</option>
+                            <option value="4.5">4.5+ ⭐</option>
+                            <option value="4.0">4.0+ ⭐</option>
+                            <option value="3.0">3.0+ ⭐</option>
+                        </select>
+                    </div>
+
+                    <!-- Price / Course Access Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="priceFilter"><i class="fa-solid fa-tag mr-1"></i> Course Access</label>
+                        <select id="priceFilter" class="filter-select">
+                            <option value="all">All Courses</option>
+                            <option value="free">Free Only</option>
+                            <option value="paid">Paid Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Skills Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="skillFilter"><i class="fa-solid fa-bolt mr-1"></i> Skills</label>
+                        <select id="skillFilter" class="filter-select">
+                            <option value="all">All Skills</option>
+                            <!-- Dynamically loaded -->
+                        </select>
+                    </div>
+
+                    <!-- Career Goal Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="careerGoalFilter"><i class="fa-solid fa-bullseye mr-1"></i> Career Goal / Role</label>
+                        <select id="careerGoalFilter" class="filter-select">
+                            <option value="all">All Career Goals</option>
+                            <!-- Dynamically loaded -->
+                        </select>
+                    </div>
+
+                    <!-- Clear Filters Button -->
+                    <button type="button" id="clearFiltersBtn" class="btn-clear-filters">
+                        <i class="fa-solid fa-rotate-left"></i> Clear All Filters
+                    </button>
+                </aside>
+
+                <!-- Right Results & Grid Area -->
+                <div class="catalog-main-content">
+                    <!-- Active Filter Chips -->
+                    <div class="active-chips-bar" id="activeFilterChips" style="display: none;">
+                        <!-- Injected dynamically -->
+                    </div>
+
+                    <!-- Results Summary & Sorting Bar -->
+                    <div class="catalog-results-header">
+                        <div class="catalog-count-text">
+                            Showing <span class="catalog-count-number" id="coursesCountDisplay">0</span> courses
+                        </div>
+
+                        <div class="catalog-sort-group">
+                            <label class="catalog-sort-label" for="sortBy"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sort By:</label>
+                            <select id="sortBy" class="catalog-sort-select">
+                                <option value="recommended" selected>Recommended</option>
+                                <option value="newest">Newest</option>
+                                <option value="rating">Highest Rated</option>
+                                <option value="enrollment">Most Popular</option>
+                                <option value="shortest_duration">Shortest Duration</option>
+                                <option value="longest_duration">Longest Duration</option>
+                                <option value="price_asc">Price: Low to High</option>
+                                <option value="price_desc">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Courses Grid -->
+                    <div class="courses-catalog-grid" id="catalogCoursesGrid">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--secondary-text);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-purple); margin-bottom: 1rem;"></i>
+                            <p>Loading course catalog...</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="catalog-pagination" id="catalogPagination" style="display: none;">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <!-- Scripts -->
+    <!-- Modal for Preview Lesson -->
+    <div id="lessonPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="background: #FFFFFF; width: 92%; max-width: 800px; max-height: 88vh; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem;">
+                <div>
+                    <span style="font-size: 11px; font-weight: 700; color: #059669; background: #ECFDF5; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">Free Sample Lesson</span>
+                    <h3 id="previewModalTitle" style="margin: 0.25rem 0 0 0; font-size: 1.2rem; color: var(--dark-navy);">Lesson Preview</h3>
+                </div>
+                <button type="button" onclick="closeLessonPreviewModal()" style="border: none; background: none; font-size: 22px; color: #64748b; cursor: pointer; padding: 4px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="previewModalBody" style="flex: 1; overflow-y: auto; padding: 0.5rem 0;">
+                <!-- Preview player content -->
+            </div>
+        </div>
+    </div>
+
     <script src="../js/api.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            let currentUser = null;
-            let profileData = null;
-            try {
-                currentUser = await window.api.getMe();
-                profileData = await window.api.getProfile().catch(() => ({}));
-                const fullName = currentUser.full_name || 'Student';
-                const roleName = currentUser.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Student';
-                
-                document.getElementById('topName').textContent = fullName;
-                document.getElementById('sidebarName').textContent = fullName;
-                document.getElementById('sidebarRole').textContent = roleName;
-
-                const names = fullName.trim().split(' ');
-                let initials = names[0].charAt(0);
-                if (names.length > 1) initials += names[1].charAt(0);
-                initials = initials.toUpperCase();
-
-                if (profileData && profileData.profile_image) {
-                    const imgUrl = window.api.getImageUrl(profileData.profile_image);
-                    document.getElementById('topAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-                    document.getElementById('sidebarAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-                } else {
-                    document.getElementById('topAvatar').textContent = initials;
-                    document.getElementById('sidebarAvatar').textContent = initials;
-                }
-            } catch (_) {
-                window.location.href = '../login.html';
-                return;
-            }
-
-            // Load all courses
-            try {
-                const data = await window.api.getRecommendations({ limit: 10 });
-                const courses = (data && data.recommendations) ? data.recommendations : [];
-                const grid = document.getElementById('allCoursesGrid');
-                if (grid && courses.length > 0) {
-                    grid.innerHTML = courses.map(course => {
-                        const skillsTags = (course.skills || []).slice(0, 4).map(s => `<span class="rec-skill-tag">${s}</span>`).join('');
-                        return `
-                            <div class="rec-card">
-                                <div>
-                                    <div class="rec-header">
-                                        <span class="rec-category-badge">${course.category}</span>
-                                        <span class="rec-match-pill"><i class="fa-solid fa-star"></i> ${course.rating} Rating</span>
-                                    </div>
-                                    <h3 class="rec-title">${course.title}</h3>
-                                    <p class="rec-desc">${course.description}</p>
-                                    <div class="rec-meta">
-                                        <span><i class="fa-solid fa-clock"></i> ${course.duration}</span>
-                                        <span><i class="fa-solid fa-layer-group"></i> ${course.level}</span>
-                                        <span><i class="fa-solid fa-book-open"></i> ${course.lessons_count || 30} lessons</span>
-                                    </div>
-                                    <div class="rec-skills">${skillsTags}</div>
-                                </div>
-                                <div class="rec-footer">
-                                    <span class="rec-instructor"><i class="fa-solid fa-chalkboard-user mr-1"></i> ${course.instructor}</span>
-                                    <button class="btn-enroll-card" onclick="alert('Enrolled in ${course.title}! Start learning from Dashboard.')">Enroll Now →</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            } catch (e) {
-                console.error(e);
-            }
-
-            // Toggle & Logout
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('dashboardSidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', () => { sidebar.classList.add('active'); overlay.classList.add('active'); });
-                overlay.addEventListener('click', () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); });
-            }
-            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.api.clearToken();
-                window.location.href = '../login.html';
-            });
-        });
-    </script>
+    <script src="../js/courses.js"></script>
 </body>
 </html>

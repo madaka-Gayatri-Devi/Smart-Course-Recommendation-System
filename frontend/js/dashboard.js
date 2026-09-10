@@ -1,421 +1,307 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // ----------------------------------------------------
-    // AUTHENTICATION CHECK & DATA FETCHING
-    // ----------------------------------------------------
-    let userData = null;
-    let profileData = null;
-    let assessmentResults = [];
+/**
+ * Student Dashboard JavaScript
+ * 100% Dynamic data flow connected to live backend APIs.
+ * Renders EXACTLY and ONLY the 9 Student Dashboard sections.
+ */
 
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = window.guardPage('STUDENT');
+    if (!user) return;
+
+    setupStudentHeader(user);
+    await loadStudentDashboardData();
+});
+
+function setupStudentHeader(user) {
+    const name = user.full_name || user.name || 'Student';
+    const initial = name.charAt(0).toUpperCase();
+
+    document.getElementById('topName') && (document.getElementById('topName').textContent = name);
+    document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name);
+    document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = 'Student');
+    document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
+    document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
+}
+
+async function loadStudentDashboardData() {
     try {
-        userData = await window.api.getMe();
-        profileData = await window.api.getProfile().catch(() => ({}));
-        try {
-            assessmentResults = await window.api.getMyAssessmentResults();
-        } catch (_) {
-            assessmentResults = [];
+        const data = await window.api.getStudentDashboardSummary();
+        if (!data) throw new Error("Could not load student dashboard summary");
+
+        renderWelcomeHero(data);
+        renderLearningSummary(data.stats || {});
+        renderContinueLearning(data.in_progress_courses || []);
+        renderRecommendations(data.recommendations || []);
+        renderCareerGoal(data.career_goal_info || {});
+        renderSkillGaps(data.skill_gaps || {});
+        renderLearningPath(data.learning_path || {});
+        renderAssessmentResult(data.stats || {}, data.recent_activity || []);
+        renderNotifications(data.recent_activity || []);
+
+    } catch (err) {
+        console.error("Student dashboard load error:", err);
+    }
+}
+
+// 1. Student Welcome Hero
+function renderWelcomeHero(data) {
+    const user = data.user || {};
+    const goal = data.career_goal_info ? data.career_goal_info.primary_goal : null;
+    const nameEl = document.getElementById('studentWelcomeName');
+    const subEl = document.getElementById('studentTargetGoalSubtitle');
+
+    if (nameEl) nameEl.textContent = `Welcome back, ${user.full_name || 'Student'}! 👋`;
+    if (subEl) {
+        if (goal) {
+            subEl.textContent = `Target Career: ${goal} • ${data.career_goal_info.readiness_percentage || 0}% Career Readiness score.`;
+        } else {
+            subEl.innerHTML = `Set your career goal in your profile to receive tailored AI recommendations. <a href="profile.html" style="color:var(--primary-purple); font-weight:600;">Set Goal →</a>`;
         }
-    } catch (e) {
-        console.error('Authentication check failed:', e);
-        window.location.href = '../login.html';
+    }
+}
+
+// 2. Learning Summary
+function renderLearningSummary(stats) {
+    const enrolledEl = document.getElementById('statEnrolledCount');
+    const completedEl = document.getElementById('statCompletedCount');
+    const progressEl = document.getElementById('statAvgProgress');
+
+    const enrolled = stats.enrolled_count || 0;
+    const completed = stats.completed_count || 0;
+    const avgProg = enrolled > 0 ? Math.round((completed / enrolled) * 100) : 0;
+
+    if (enrolledEl) enrolledEl.textContent = enrolled;
+    if (completedEl) completedEl.textContent = completed;
+    if (progressEl) progressEl.textContent = `${avgProg}%`;
+}
+
+// 3. Continue Learning
+function renderContinueLearning(courses) {
+    const container = document.getElementById('continueLearningList');
+    if (!container) return;
+
+    if (!courses || courses.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:2rem; color:var(--secondary-text);">
+                <p>No courses currently in progress.</p>
+                <a href="courses.html" class="btn-primary-small" style="display:inline-block; margin-top:0.75rem; text-decoration:none;">Explore Course Catalog →</a>
+            </div>
+        `;
         return;
     }
 
-    // ----------------------------------------------------
-    // 1. POPULATE USER INFO (TOPBAR & SIDEBAR FOOTER)
-    // ----------------------------------------------------
-    const fullName = userData.full_name || 'Student';
-    const roleName = userData.role ? (userData.role.charAt(0).toUpperCase() + userData.role.slice(1)) : 'Student';
-    
-    // Topbar Profile
-    const topName = document.getElementById('topName');
-    const topAvatar = document.getElementById('topAvatar');
-    const welcomeTitle = document.getElementById('welcomeTitle');
-
-    if (topName) topName.textContent = fullName;
-    
-    // Get Initials
-    const names = fullName.trim().split(' ');
-    let initials = names[0].charAt(0);
-    if (names.length > 1) initials += names[1].charAt(0);
-    initials = initials.toUpperCase();
-
-    if (topAvatar) {
-        if (profileData && profileData.profile_image) {
-            topAvatar.innerHTML = `<img src="${window.api.getImageUrl(profileData.profile_image)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-        } else {
-            topAvatar.textContent = initials;
-        }
-    }
-
-    // Sidebar Bottom Student Account Card
-    const sidebarName = document.getElementById('sidebarName');
-    const sidebarRole = document.getElementById('sidebarRole');
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-    if (sidebarName) sidebarName.textContent = fullName;
-    if (sidebarRole) sidebarRole.textContent = roleName;
-    if (sidebarAvatar) {
-        if (profileData && profileData.profile_image) {
-            sidebarAvatar.innerHTML = `<img src="${window.api.getImageUrl(profileData.profile_image)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-        } else {
-            sidebarAvatar.textContent = initials;
-        }
-    }
-
-    // Welcome Greeting
-    if (welcomeTitle) {
-        const firstName = names[0] || 'Student';
-        welcomeTitle.textContent = `Welcome back, ${firstName} 👋`;
-    }
-
-    // ----------------------------------------------------
-    // 2. DYNAMIC REAL DATA STATISTICS
-    // ----------------------------------------------------
-    const courses = (profileData && Array.isArray(profileData.courses)) ? profileData.courses : [];
-    
-    // Normalize skills (handles both string and object formats from DB)
-    const rawSkills = (profileData && Array.isArray(profileData.skills)) ? profileData.skills : [];
-    const skills = rawSkills.map(s => {
-        if (typeof s === 'string') return s.trim();
-        if (s && typeof s === 'object') return (s.skill || s.name || '').trim();
-        return '';
-    }).filter(Boolean);
-
-    // Normalize interests
-    const rawInterests = (profileData && Array.isArray(profileData.interests)) ? profileData.interests : [];
-    const interests = rawInterests.map(i => {
-        if (typeof i === 'string') return i.trim();
-        if (i && typeof i === 'object') return (i.interest || i.name || '').trim();
-        return '';
-    }).filter(Boolean);
-    
-    const enrolledCount = courses.length;
-    const completedCount = courses.filter(c => c.progress === 100 || c.status === 'completed').length;
-    const skillsCount = skills.length;
-    
-    // Real learning hours calculation (from actual course progress & assessment attempts)
-    let totalLearningHours = 0;
-    courses.forEach(c => {
-        if (c.hours_spent) totalLearningHours += Number(c.hours_spent);
-        else if (c.hours) totalLearningHours += Math.round((Number(c.hours) * (c.progress || 0)) / 100);
-    });
-    if (assessmentResults && assessmentResults.length > 0) {
-        totalLearningHours += Math.round(assessmentResults.length * 0.5); // 30 mins per assessment
-    }
-
-    const statEnrolled = document.getElementById('statEnrolled');
-    const statCompleted = document.getElementById('statCompleted');
-    const statSkills = document.getElementById('statSkills');
-    const statHours = document.getElementById('statHours');
-
-    if (statEnrolled) statEnrolled.textContent = enrolledCount;
-    if (statCompleted) statCompleted.textContent = completedCount;
-    if (statSkills) statSkills.textContent = skillsCount;
-    if (statHours) statHours.textContent = totalLearningHours > 0 ? `${totalLearningHours}h` : '0h';
-
-    // ----------------------------------------------------
-    // 3. CONTINUE LEARNING SECTION (REAL COURSE OR EMPTY STATE)
-    // ----------------------------------------------------
-    const continueContainer = document.getElementById('continueLearningContainer');
-    if (continueContainer) {
-        const inProgressCourse = courses.find(c => (c.progress || 0) < 100 && c.status !== 'completed');
-
-        if (inProgressCourse) {
-            const progressPct = inProgressCourse.progress || 0;
-            const completedLessons = inProgressCourse.completed_lessons || Math.round((progressPct / 100) * 16);
-            const totalLessons = inProgressCourse.total_lessons || 16;
-            const iconClass = inProgressCourse.icon || 'fa-solid fa-graduation-cap';
-
-            continueContainer.innerHTML = `
-                <div class="continue-course">
-                    <div class="course-thumb">
-                        <i class="${iconClass}"></i>
+    container.innerHTML = courses.slice(0, 3).map(c => `
+        <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:12px; padding:1.25rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div style="flex:1; min-width:240px;">
+                <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--primary-purple); background:#EDE9FE; padding:2px 8px; border-radius:4px;">${escapeHtml(c.category || 'Course')}</span>
+                <h4 style="font-size:15px; font-weight:700; color:var(--dark-navy); margin:5px 0 3px;">${escapeHtml(c.title)}</h4>
+                <div style="font-size:12px; color:var(--secondary-text);">Instructor: ${escapeHtml(c.instructor || 'Faculty')} • ${c.duration || '30h'}</div>
+                <div style="margin-top:0.5rem; max-width:320px;">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--secondary-text); margin-bottom:3px;">
+                        <span>Progress</span>
+                        <span>${c.progress_percentage || 0}%</span>
                     </div>
-                    <div class="course-progress-info">
-                        <h4>${inProgressCourse.title || inProgressCourse.course_name}</h4>
-                        <p>${completedLessons} of ${totalLessons} lessons completed (${progressPct}%)</p>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" style="width: ${progressPct}%;"></div>
-                        </div>
+                    <div style="height:6px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                        <div style="height:100%; width:${c.progress_percentage || 0}%; background:linear-gradient(90deg, #7C3AED, #A855F7); border-radius:9999px;"></div>
                     </div>
-                    <a href="courses.html" class="btn-primary-small">Continue →</a>
                 </div>
-            `;
-        } else if (enrolledCount > 0) {
-            continueContainer.innerHTML = `
-                <div class="empty-state-card">
-                    <div class="empty-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <h4>All enrolled courses completed! 🎉</h4>
-                    <p>Great job! Explore your personalized recommendations to learn new skills.</p>
-                    <a href="recommendations.html" class="btn-primary-small">Explore Recommendations →</a>
-                </div>
-            `;
-        } else {
-            continueContainer.innerHTML = `
-                <div class="empty-state-card">
-                    <div class="empty-icon"><i class="fa-solid fa-book-open"></i></div>
-                    <h4>No courses in progress</h4>
-                    <p>Start your learning journey by exploring courses matched to your career goal.</p>
-                    <a href="courses.html" class="btn-primary-small">Explore Courses →</a>
-                </div>
-            `;
-        }
+            </div>
+            <div>
+                <a href="course-player.html?id=${c.course_id || c.id}&lesson=${c.last_lesson_id || ''}" class="btn-primary-small" style="text-decoration:none; padding:0.45rem 1rem; font-weight:600;"><i class="fa-solid fa-play mr-1"></i> Continue Learning →</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 4. Personalized Recommendations
+function renderRecommendations(recommendations) {
+    const grid = document.getElementById('studentRecommendationsGrid');
+    if (!grid) return;
+
+    if (!recommendations || recommendations.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column:1 / -1; text-align:center; padding:2.5rem; color:var(--secondary-text);">
+                <p>No recommendations available yet. Complete your profile skills or take an assessment to get personalized courses.</p>
+                <a href="assessment.html" class="btn-primary-small" style="display:inline-block; margin-top:0.75rem; text-decoration:none;">Take Skill Assessment →</a>
+            </div>
+        `;
+        return;
     }
 
-    // ----------------------------------------------------
-    // 4. CAREER GOAL CARD (REAL GOAL, NO FAKE PERCENTAGES)
-    // ----------------------------------------------------
-    const careerGoal = (profileData && profileData.career_goal) ? profileData.career_goal.trim() : '';
-    const dashCareer = document.getElementById('dashCareer');
-    const dashCareerNote = document.getElementById('dashCareerNote');
-    const careerGoalBtn = document.getElementById('careerGoalBtn');
-
-    if (dashCareer) {
-        dashCareer.textContent = careerGoal || 'Career goal not set';
-    }
-    if (dashCareerNote) {
-        if (careerGoal) {
-            dashCareerNote.textContent = 'Career goal active. Complete skill assessments and courses to prepare for target roles.';
-        } else {
-            dashCareerNote.textContent = 'Set your target career goal in Profile to customize your learning path and recommendations.';
-        }
-    }
-    if (careerGoalBtn) {
-        if (careerGoal) {
-            careerGoalBtn.textContent = 'View Learning Path →';
-            careerGoalBtn.href = 'learning-path.html';
-        } else {
-            careerGoalBtn.textContent = 'Set Career Goal →';
-            careerGoalBtn.href = 'profile.html';
-        }
-    }
-
-    // ----------------------------------------------------
-    // 5. PROFILE COMPLETION (REAL VALUE & FIXED BUTTON)
-    // ----------------------------------------------------
-    const profileCompletion = Number(profileData.completion_percentage || 0);
-    const dashProfileCompletion = document.getElementById('dashProfileCompletion');
-    const profileCompletionFill = document.getElementById('profileCompletionFill');
-    const profileCompletionAction = document.getElementById('profileCompletionAction');
-
-    if (dashProfileCompletion) dashProfileCompletion.textContent = `${profileCompletion}%`;
-    if (profileCompletionFill) profileCompletionFill.style.width = `${profileCompletion}%`;
-    
-    if (profileCompletionAction) {
-        if (profileCompletion >= 100) {
-            profileCompletionAction.innerHTML = `
-                <div class="profile-complete-badge">
-                    <i class="fa-solid fa-circle-check"></i> Profile 100% Complete
-                </div>
-                <a href="profile.html" class="btn-outline-full mt-2">View & Edit Profile</a>
-            `;
-        } else {
-            profileCompletionAction.innerHTML = `
-                <a href="profile.html" class="btn-primary-full">Complete Profile →</a>
-            `;
-        }
-    }
-
-    // ----------------------------------------------------
-    // 6. RECOMMENDED FOR YOU (REAL PERSONALIZED RECOMMENDATIONS)
-    // ----------------------------------------------------
-    const recommendationGrid = document.getElementById('recommendationGrid');
-    if (recommendationGrid) {
-        try {
-            const recData = await window.api.getRecommendations({ limit: 4 });
-            const list = (recData && recData.recommendations) ? recData.recommendations : [];
-
-            if (list.length > 0) {
-                recommendationGrid.innerHTML = list.map(course => {
-                    const skillsTags = (course.skills || []).slice(0, 3).map(s => `<span class="rec-skill-tag">${s}</span>`).join('');
-                    const reasonsList = (course.match_reasons || []).map(r => `<li>${r}</li>`).join('');
-
-                    return `
-                        <div class="rec-card">
-                            <div>
-                                <div class="rec-header">
-                                    <span class="rec-category-badge">${course.category}</span>
-                                    <span class="rec-match-pill"><i class="fa-solid fa-bullseye"></i> ${course.match_percentage}% Match</span>
-                                </div>
-                                <h4 class="rec-title">${course.title}</h4>
-                                <p class="rec-desc">${course.description}</p>
-                                <div class="rec-meta">
-                                    <span class="rating"><i class="fa-solid fa-star"></i> ${course.rating}</span>
-                                    <span><i class="fa-solid fa-clock"></i> ${course.duration}</span>
-                                    <span><i class="fa-solid fa-layer-group"></i> ${course.level}</span>
-                                </div>
-                                <div class="rec-reasons">
-                                    <div class="rec-reasons-title"><i class="fa-solid fa-sparkles"></i> Why this matches you</div>
-                                    <ul class="rec-reasons-list">
-                                        ${reasonsList}
-                                    </ul>
-                                </div>
-                                <div class="rec-skills">
-                                    ${skillsTags}
-                                </div>
-                            </div>
-                            <div class="rec-footer">
-                                <span class="rec-instructor"><i class="fa-solid fa-chalkboard-user mr-1"></i> ${course.instructor}</span>
-                                <a href="courses.html?course=${course.id}" class="btn-enroll-card">View Course →</a>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                recommendationGrid.innerHTML = `
-                    <div class="empty-state-card" style="grid-column: 1 / -1;">
-                        <div class="empty-icon"><i class="fa-solid fa-compass"></i></div>
-                        <h4>No personalized recommendations yet</h4>
-                        <p>Complete your profile and take a skill assessment to receive personalized course recommendations.</p>
-                        <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.25rem;">
-                            <a href="assessment.html" class="btn-primary-small">Take Assessment →</a>
-                            <a href="profile.html" class="btn-outline-full" style="width: auto; padding: 0.55rem 1.25rem;">Complete Profile</a>
-                        </div>
+    grid.innerHTML = recommendations.slice(0, 3).map(r => {
+        const skillsTags = (r.skills || []).slice(0, 3).map(s => `<span class="rec-skill-tag">${escapeHtml(s)}</span>`).join('');
+        return `
+            <div class="rec-card">
+                <div>
+                    <div class="rec-header">
+                        <span class="rec-category-badge">${escapeHtml(r.category || 'General')}</span>
+                        <span class="rec-match-pill"><i class="fa-solid fa-star" style="color:#F59E0B;"></i> ${r.rating || 4.8}</span>
                     </div>
-                `;
-            }
-        } catch (err) {
-            console.error('Failed to load recommendations:', err);
-            recommendationGrid.innerHTML = `
-                <div class="empty-state-card" style="grid-column: 1 / -1;">
-                    <div class="empty-icon"><i class="fa-solid fa-compass"></i></div>
-                    <h4>Explore Course Catalog</h4>
-                    <p>Discover in-demand tech courses across web development, data science, and cloud computing.</p>
-                    <a href="courses.html" class="btn-primary-small">Browse Courses →</a>
+                    <h4 class="rec-title">${escapeHtml(r.title)}</h4>
+                    <p class="rec-desc">${escapeHtml(r.short_description || r.description || '')}</p>
+                    <div class="rec-skills">${skillsTags}</div>
                 </div>
-            `;
-        }
-    }
-
-    // ----------------------------------------------------
-    // 7. REAL SKILL GAPS BREAKDOWN
-    // ----------------------------------------------------
-    const goalSkillsMap = {
-        'Full Stack Web Developer': ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js', 'Express', 'SQL', 'MongoDB'],
-        'Full Stack Developer': ['HTML', 'CSS', 'JavaScript', 'React', 'Node.js', 'Express', 'SQL', 'MongoDB'],
-        'Frontend Developer': ['HTML', 'CSS', 'JavaScript', 'TypeScript', 'React', 'Tailwind CSS', 'Git'],
-        'Backend Developer': ['Python', 'Node.js', 'Django', 'FastAPI', 'PostgreSQL', 'Docker', 'REST APIs'],
-        'Data Scientist': ['Python', 'Pandas', 'NumPy', 'Machine Learning', 'SQL', 'Data Visualization'],
-        'AI / Machine Learning Engineer': ['Python', 'Deep Learning', 'PyTorch', 'TensorFlow', 'NLP', 'Mathematics'],
-        'Cyber Security Analyst': ['Network Security', 'Linux', 'Ethical Hacking', 'Cryptography', 'SIEM'],
-        'Cloud Solutions Architect': ['AWS', 'Cloud Computing', 'Docker', 'Kubernetes', 'Terraform', 'Linux'],
-        'DevOps Engineer': ['Docker', 'Kubernetes', 'CI/CD', 'Linux', 'Jenkins', 'Terraform', 'AWS'],
-        'UI/UX Designer': ['Figma', 'User Research', 'Wireframing', 'Prototyping', 'Design Systems']
-    };
-
-    let targetSkills = goalSkillsMap[careerGoal] || ['JavaScript', 'Python', 'Git', 'SQL', 'Problem Solving'];
-    const skillGapsContainer = document.getElementById('skillGapsContainer');
-    
-    if (skillGapsContainer) {
-        if (!careerGoal) {
-            skillGapsContainer.innerHTML = `
-                <p style="font-size: 13px; color: var(--secondary-text); margin: 0.5rem 0 1rem;">
-                    <i class="fa-solid fa-circle-info mr-1" style="color:var(--primary-purple);"></i>
-                    Set your career goal in Profile to calculate missing skills.
-                </p>
-            `;
-        } else {
-            const missingSkills = targetSkills.filter(ts => 
-                !skills.some(s => s.toLowerCase() === ts.toLowerCase() || ts.toLowerCase().includes(s.toLowerCase()))
-            );
-
-            if (missingSkills.length === 0) {
-                skillGapsContainer.innerHTML = `
-                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 1rem; color: #166534; font-size: 13px;">
-                        <i class="fa-solid fa-circle-check mr-1"></i> All core skills for <strong>${careerGoal}</strong> are acquired!
-                    </div>
-                `;
-            } else {
-                const topGaps = missingSkills.slice(0, 3);
-                skillGapsContainer.innerHTML = topGaps.map((skillName, idx) => {
-                    const gapPct = 35 + (idx * 15);
-                    return `
-                        <div class="skill-gap-item">
-                            <div class="gap-labels">
-                                <span>${skillName}</span>
-                                <span>Need +${100 - gapPct}%</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill gap-fill" style="width: ${gapPct}%;"></div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-    }
-
-    // ----------------------------------------------------
-    // 8. REAL LEARNING PATH TIMELINE
-    // ----------------------------------------------------
-    const timelineEl = document.getElementById('learningPathTimeline');
-    if (timelineEl) {
-        const milestones = targetSkills.slice(0, 5);
-        let foundCurrent = false;
-
-        timelineEl.innerHTML = milestones.map((milestoneSkill) => {
-            const isAcquired = skills.some(s => s.toLowerCase() === milestoneSkill.toLowerCase());
-            let itemClass = '';
-            let markerContent = '';
-
-            if (isAcquired) {
-                itemClass = 'completed';
-                markerContent = '<i class="fa-solid fa-check"></i>';
-            } else if (!foundCurrent) {
-                itemClass = 'current';
-                markerContent = '';
-                foundCurrent = true;
-            } else {
-                itemClass = 'upcoming';
-                markerContent = '';
-            }
-
-            return `
-                <div class="timeline-item ${itemClass}">
-                    <div class="timeline-marker">${markerContent}</div>
-                    <div class="timeline-content">${milestoneSkill}</div>
+                <div class="rec-footer" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid #EDE9FE;">
+                    <span style="font-size:12px; color:var(--secondary-text);"><i class="fa-solid fa-clock"></i> ${r.duration || 'Self-paced'}</span>
+                    <a href="course-details.html?id=${r.course_id || r.id}" class="btn-primary-small" style="text-decoration:none; padding:0.35rem 0.8rem; font-size:12px;">View Course →</a>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
+    }).join('');
+}
+
+// 5. Career Goal
+function renderCareerGoal(goalInfo) {
+    const container = document.getElementById('careerGoalContainer');
+    if (!container) return;
+
+    if (!goalInfo || !goalInfo.primary_goal) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:1.5rem; color:var(--secondary-text);">
+                <p>No primary career goal selected.</p>
+                <a href="profile.html" class="btn-primary-small" style="display:inline-block; margin-top:0.5rem; text-decoration:none;">Select Career Goal →</a>
+            </div>
+        `;
+        return;
     }
 
-    // ----------------------------------------------------
-    // 9. SEARCH LISTENER
-    // ----------------------------------------------------
-    const searchInput = document.getElementById('dashboardSearchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && searchInput.value.trim()) {
-                window.location.href = `recommendations.html?search=${encodeURIComponent(searchInput.value.trim())}`;
-            }
-        });
+    container.innerHTML = `
+        <div style="background:#FAF5FF; border:1px solid #E9D5FF; border-radius:10px; padding:1.25rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <strong style="color:var(--dark-navy); font-size:16px;">${escapeHtml(goalInfo.primary_goal)}</strong>
+                <span class="badge-role student" style="font-size:12px; background:#8B5CF6; color:#fff;">${goalInfo.readiness_percentage || 0}% Ready</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--secondary-text); margin-bottom:0.75rem;">
+                ${goalInfo.secondary_goal ? `Secondary Track: ${escapeHtml(goalInfo.secondary_goal)}` : 'Mapped directly to curriculum requirements.'}
+            </p>
+            <div style="display:flex; gap:0.5rem; font-size:12px; font-weight:600;">
+                <span style="color:#059669;"><i class="fa-solid fa-check mr-1"></i> ${goalInfo.matching_skills_count || 0} Skills Mastered</span>
+                <span style="color:#DC2626;"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${goalInfo.missing_skills_count || 0} Skills Missing</span>
+            </div>
+        </div>
+    `;
+}
+
+// 6. Skill Gap Analysis
+function renderSkillGaps(skillGaps) {
+    const container = document.getElementById('skillGapsContainer');
+    if (!container) return;
+
+    const missing = skillGaps.missing_skills || [];
+    const matching = skillGaps.matching_skills || [];
+
+    if (missing.length === 0 && matching.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:var(--secondary-text);">Set career goal in profile to calculate skill gaps.</div>`;
+        return;
     }
 
-    // ----------------------------------------------------
-    // 10. MOBILE SIDEBAR TOGGLE & LOGOUT
-    // ----------------------------------------------------
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('dashboardSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    
-    if (menuToggle && sidebar && overlay) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
-        });
-        
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+    container.innerHTML = `
+        <div>
+            <div style="margin-bottom:0.75rem;">
+                <span style="font-size:12px; font-weight:700; color:#DC2626; text-transform:uppercase;">Priority Missing Skills:</span>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                    ${missing.slice(0, 4).map(s => `<span class="badge-role student" style="background:#FEE2E2; color:#991B1B; font-size:11px; border:1px solid #FECACA;">${escapeHtml(s)}</span>`).join('') || '<span style="font-size:12px; color:var(--secondary-text);">None! You have all required skills.</span>'}
+                </div>
+            </div>
+            <div>
+                <span style="font-size:12px; font-weight:700; color:#059669; text-transform:uppercase;">Mastered Skills:</span>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                    ${matching.slice(0, 4).map(s => `<span class="badge-role student" style="background:#D1FAE5; color:#065F46; font-size:11px; border:1px solid #A7F3D0;">${escapeHtml(s)}</span>`).join('') || '<span style="font-size:12px; color:var(--secondary-text);">No matching skills yet.</span>'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 7. Personalized Learning Path
+function renderLearningPath(path) {
+    const container = document.getElementById('learningPathStepsContainer');
+    if (!container) return;
+
+    const milestones = path.milestones || path.steps || [];
+
+    if (milestones.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:2rem; color:var(--secondary-text);">
+                <p>No learning path milestones generated yet. Select a career goal to generate your roadmap.</p>
+                <a href="profile.html" class="btn-primary-small" style="display:inline-block; margin-top:0.5rem; text-decoration:none;">Set Goal in Profile →</a>
+            </div>
+        `;
+        return;
     }
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.api.clearToken();
-            window.location.href = '../login.html';
-        });
+    container.innerHTML = milestones.slice(0, 3).map((m, idx) => `
+        <div style="display:flex; align-items:flex-start; gap:1rem; margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid #EDE9FE;">
+            <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">
+                ${idx + 1}
+            </div>
+            <div style="flex:1;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--dark-navy); font-size:14.5px;">${escapeHtml(m.title || m.name || `Phase ${idx+1}`)}</strong>
+                    <span style="font-size:11px; font-weight:700; color:var(--primary-purple); background:#EDE9FE; padding:2px 8px; border-radius:4px;">${escapeHtml(m.level || 'Recommended')}</span>
+                </div>
+                <p style="font-size:12.5px; color:var(--secondary-text); margin:3px 0 0;">${escapeHtml(m.description || m.focus || 'Focus on foundational topics.')}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 8. Assessment Result
+function renderAssessmentResult(stats, recentActivity) {
+    const container = document.getElementById('latestAssessmentContainer');
+    if (!container) return;
+
+    const score = stats.latest_assessment_score;
+
+    if (score === null || score === undefined) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:1.5rem; color:var(--secondary-text);">
+                <p>No assessments completed yet.</p>
+                <a href="assessment.html" class="btn-primary-small" style="display:inline-block; margin-top:0.5rem; text-decoration:none;">Take 15-min Skill Assessment →</a>
+            </div>
+        `;
+        return;
     }
-});
+
+    const isPassed = score >= 60;
+    container.innerHTML = `
+        <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong style="color:var(--dark-navy); font-size:15px;">Technical Diagnostic Test</strong>
+                <p style="font-size:12px; color:var(--secondary-text); margin:2px 0 0;">Evaluated recently on platform benchmark.</p>
+            </div>
+            <div style="text-align:right;">
+                <span class="rec-match-pill" style="background:${isPassed ? '#10B981' : '#EF4444'}; color:#fff; font-size:13px; font-weight:700; padding:4px 10px; border-radius:9999px;">
+                    ${score}% ${isPassed ? '• Proficient' : '• Needs Practice'}
+                </span>
+            </div>
+        </div>
+    `;
+}
+
+// 9. Notifications
+function renderNotifications(recentActivity) {
+    const container = document.getElementById('studentNotificationsList');
+    if (!container) return;
+
+    if (!recentActivity || recentActivity.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:1.5rem; color:var(--secondary-text);">
+                <p>All caught up! No unread notifications.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = recentActivity.slice(0, 3).map(act => `
+        <div style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 0; border-bottom:1px solid #EDE9FE; font-size:12.5px;">
+            <i class="fa-solid fa-circle-check" style="color:var(--primary-purple);"></i>
+            <span style="color:var(--dark-navy);">${escapeHtml(act.activity_type || 'Activity')}: ${escapeHtml(act.title || '')}</span>
+        </div>
+    `).join('');
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}

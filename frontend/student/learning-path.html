@@ -10,18 +10,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS -->
+    <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css?v=15.0">
+    <link rel="stylesheet" href="../css/dashboard.css">
 </head>
 <body class="dashboard-body">
 
-    <!-- Mobile Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
+    
+        <!-- 🎓 STUDENT SIDEBAR -->
     <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <!-- Ambient Glow Orbs -->
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
 
@@ -32,7 +31,8 @@
         <nav class="sidebar-nav">
             <div class="nav-label">LEARNING</div>
             <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
-            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="my-courses.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i> <span class="nav-text">My Courses</span></a>
             <a href="learning-path.html" class="nav-item active"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
             <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
             
@@ -44,10 +44,9 @@
             
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="nav-badge">3</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
-        <!-- Sidebar Bottom Footer - Student Account Card -->
         <div class="sidebar-footer">
             <div class="sidebar-user-card">
                 <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
@@ -57,132 +56,60 @@
                 </div>
             </div>
             <div class="sidebar-footer-links">
-                <a href="profile.html" class="sidebar-mini-link" title="Profile & Settings"><i class="fa-solid fa-gear"></i> Settings</a>
-                <a href="#" class="sidebar-mini-link text-danger" id="logoutBtn" title="Log Out"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
             </div>
         </div>
     </aside>
+    
 
-    <!-- Main Content -->
     <main class="dashboard-main">
-        
-        <!-- Topbar -->
         <header class="dashboard-topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-                <h2 class="page-title">Personalized Learning Roadmap</h2>
+                <h2 class="page-title">Personalized Learning Path</h2>
             </div>
             
             <div class="topbar-right">
-                <div class="topbar-icon">
-                    <i class="fa-solid fa-bell"></i>
-                    <span class="notification-dot"></span>
-                </div>
-                
                 <div class="profile-dropdown">
                     <div class="avatar" id="topAvatar">ST</div>
                     <span class="profile-name" id="topName">Student</span>
-                    <i class="fa-solid fa-chevron-down"></i>
                 </div>
             </div>
         </header>
 
-        <!-- Page Content -->
         <div class="dashboard-content fade-in-up">
-            
             <div class="welcome-section" style="margin-bottom: 2rem;">
-                <h1>Milestone-Based Career Roadmap 🗺️</h1>
-                <p id="roadmapSubtitle">Custom pathway calibrated to bridge your technical skill gaps and achieve your target role.</p>
+                <h1>Structured Career Roadmap 🗺️</h1>
+                <p>Ordered step-by-step milestones taking you from fundamentals to production mastery.</p>
             </div>
 
-            <!-- Learning Path Milestones -->
-            <div class="dashboard-card" style="padding: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <!-- Path Header Card -->
+            <div class="dashboard-card" style="padding: 2rem; margin-bottom: 2.5rem; background: linear-gradient(135deg, #FAF8FF, #F3EEFF); border: 1px solid #EDE9FE;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
-                        <h3 id="targetGoalTitle" style="font-size: 18px; color: var(--dark-navy);">Target Goal: Loading...</h3>
-                        <p style="color: var(--secondary-text); font-size: 13px;">Follow these sequential milestones to master all core competencies.</p>
+                        <span style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--primary-purple); letter-spacing: 0.5px;">Target Roadmap</span>
+                        <h2 id="pathCareerGoal" style="font-size: 24px; color: var(--dark-navy); margin-top: 0.25rem;">Full Stack Web Developer</h2>
                     </div>
-                    <a href="profile.html" class="btn-primary-small">Update Career Goal</a>
+                    <div>
+                        <span style="font-size: 13px; color: var(--secondary-text);">Roadmap Progress</span>
+                        <h2 id="pathOverallProgress" style="font-size: 28px; color: var(--primary-purple); font-weight: 800;">0%</h2>
+                    </div>
                 </div>
 
-                <div class="learning-path-timeline" id="fullTimeline" style="margin-top: 1.5rem;">
-                    <!-- Timeline items generated by JS -->
+                <div class="progress-bar-bg" style="height: 10px; border-radius: 5px;">
+                    <div class="progress-bar-fill" id="pathProgressBarFill" style="width: 0%; background: var(--gradient-primary); height: 100%; border-radius: 5px;"></div>
                 </div>
             </div>
 
+            <!-- Milestones Steps -->
+            <div id="learningPathMilestones" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto;">
+                <p style="color: var(--secondary-text); text-align: center; padding: 2rem;">Generating your personalized learning path...</p>
+            </div>
         </div>
     </main>
 
-    <!-- Scripts -->
     <script src="../js/api.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            let currentUser = null;
-            let profileData = null;
-            try {
-                currentUser = await window.api.getMe();
-                profileData = await window.api.getProfile().catch(() => ({}));
-                const fullName = currentUser.full_name || 'Student';
-                const roleName = currentUser.role ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) : 'Student';
-                
-                document.getElementById('topName').textContent = fullName;
-                document.getElementById('sidebarName').textContent = fullName;
-                document.getElementById('sidebarRole').textContent = roleName;
-
-                const names = fullName.trim().split(' ');
-                let initials = names[0].charAt(0);
-                if (names.length > 1) initials += names[1].charAt(0);
-                initials = initials.toUpperCase();
-
-                if (profileData && profileData.profile_image) {
-                    const imgUrl = window.api.getImageUrl(profileData.profile_image);
-                    document.getElementById('topAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-                    document.getElementById('sidebarAvatar').innerHTML = `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Profile">`;
-                } else {
-                    document.getElementById('topAvatar').textContent = initials;
-                    document.getElementById('sidebarAvatar').textContent = initials;
-                }
-            } catch (_) {
-                window.location.href = '../login.html';
-                return;
-            }
-
-            const careerGoal = (profileData && profileData.career_goal) ? profileData.career_goal.trim() : 'Software Developer';
-            document.getElementById('targetGoalTitle').textContent = `Target Career: ${careerGoal}`;
-
-            const goalSkillsMap = {
-                'Full Stack Web Developer': ['1. Web Foundations (HTML/CSS)', '2. Advanced JavaScript ES6+', '3. React & Modern UI State', '4. Node.js & Express REST APIs', '5. SQL & MongoDB Database Architecture', '6. Cloud Deployment & CI/CD Pipelines'],
-                'Full Stack Developer': ['1. Web Foundations (HTML/CSS)', '2. Advanced JavaScript ES6+', '3. React & Modern UI State', '4. Node.js & Express REST APIs', '5. SQL & MongoDB Database Architecture', '6. Cloud Deployment & CI/CD Pipelines'],
-                'Data Scientist': ['1. Python Programming & Data Structures', '2. Exploratory Data Analysis with Pandas', '3. Applied Statistics & SQL Querying', '4. Supervised Machine Learning', '5. Deep Neural Networks', '6. Model Deployment in Production'],
-                'Cyber Security Analyst': ['1. Network Protocols & Linux OS', '2. Threat Modeling & Vulnerability Scanning', '3. Ethical Hacking Methodologies', '4. Cryptography & Key Management', '5. SIEM Monitoring & Incident Response', '6. Security Auditing & Compliance']
-            };
-
-            const milestones = goalSkillsMap[careerGoal] || ['1. Core Programming Fundamentals', '2. Data Structures & Algorithms', '3. Framework Architecture', '4. Database Design & APIs', '5. Production Deployment'];
-            
-            const timelineEl = document.getElementById('fullTimeline');
-            if (timelineEl) {
-                timelineEl.innerHTML = milestones.map((m, idx) => `
-                    <div class="timeline-item ${idx === 0 ? 'completed' : (idx === 1 ? 'current' : 'upcoming')}">
-                        <div class="timeline-marker">${idx === 0 ? '<i class="fa-solid fa-check"></i>' : ''}</div>
-                        <div class="timeline-content" style="font-weight: 600;">${m}</div>
-                    </div>
-                `).join('');
-            }
-
-            // Toggle & Logout
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('dashboardSidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', () => { sidebar.classList.add('active'); overlay.classList.add('active'); });
-                overlay.addEventListener('click', () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); });
-            }
-            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                window.api.clearToken();
-                window.location.href = '../login.html';
-            });
-        });
-    </script>
+    <script src="../js/learning-path.js"></script>
 </body>
 </html>

@@ -1,1 +1,1023 @@
-/* frontend/css/courses.css */
+/* ==============================================================================
+   SMARTLEARN - COURSE CATALOG & MANAGEMENT STYLES (courses.css)
+   ============================================================================== */
+
+:root {
+    --primary-purple: #5B3FE8;
+    --primary-purple-hover: #4F32D6;
+    --primary-purple-light: #EEF2FF;
+    --magenta-pink: #E83FA5;
+    --magenta-pink-light: #FDF2F8;
+    --dark-navy: #172033;
+    --secondary-text: #64748B;
+    --card-bg: #FFFFFF;
+    --border-color: #E2E8F0;
+    --border-light: #EDE9FE;
+    --success-green: #10B981;
+    --warning-amber: #F59E0B;
+    --info-blue: #06B6D4;
+}
+
+/* ----------------------------------------------------
+   1. CATALOG LAYOUT (2-COLUMN RESPONSIVE)
+   ---------------------------------------------------- */
+
+.catalog-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.75rem;
+    align-items: start;
+    margin-top: 1rem;
+}
+
+@media (max-width: 992px) {
+    .catalog-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ----------------------------------------------------
+   2. FILTER SIDEBAR & MOBILE DRAWER
+   ---------------------------------------------------- */
+
+.catalog-sidebar {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+}
+
+.catalog-sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+.catalog-sidebar::-webkit-scrollbar-thumb {
+    background: #DDD6FE;
+    border-radius: 4px;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: 1.25rem;
+}
+
+.sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--dark-navy);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-title i {
+    color: var(--primary-purple);
+}
+
+.filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.filter-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.45rem;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--dark-navy);
+    outline: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-select:hover {
+    border-color: #CBD5E1;
+    background: #FFFFFF;
+}
+
+.filter-select:focus {
+    border-color: var(--primary-purple);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.12);
+}
+
+.btn-clear-filters {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    background: #FAF5FF;
+    border: 1px solid #E9D5FF;
+    color: var(--primary-purple);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.btn-clear-filters:hover {
+    background: var(--primary-purple);
+    color: #FFFFFF;
+    border-color: var(--primary-purple);
+    box-shadow: 0 4px 12px rgba(91, 63, 232, 0.2);
+}
+
+/* Mobile Filter Toggle Button & Drawer */
+.mobile-filter-bar {
+    display: none;
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+}
+
+@media (max-width: 992px) {
+    .mobile-filter-bar {
+        display: flex;
+        align-items: center;
+    }
+
+    .catalog-sidebar {
+        position: fixed;
+        top: 0;
+        left: -320px;
+        width: 300px;
+        height: 100vh;
+        max-height: 100vh;
+        z-index: 1050;
+        border-radius: 0;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .catalog-sidebar.active {
+        left: 0;
+    }
+
+    .sidebar-close-btn {
+        display: block !important;
+    }
+}
+
+.sidebar-close-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--secondary-text);
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.mobile-filter-btn {
+    flex: 1;
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    color: var(--dark-navy);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(91, 63, 232, 0.06);
+}
+
+.mobile-filter-btn i {
+    color: var(--primary-purple);
+}
+
+/* ----------------------------------------------------
+   3. CATALOG SEARCH & CONTROLS HEADER
+   ---------------------------------------------------- */
+
+.catalog-search-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+}
+
+.catalog-search-wrap {
+    display: flex;
+    align-items: center;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 0.35rem 0.5rem 0.35rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.catalog-search-wrap:focus-within {
+    background: #FFFFFF;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.12);
+}
+
+.catalog-search-wrap i.search-icon {
+    color: #94A3B8;
+    font-size: 1.1rem;
+    margin-right: 0.75rem;
+}
+
+.catalog-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    color: var(--dark-navy);
+    outline: none;
+    padding: 0.4rem 0;
+}
+
+.catalog-search-input::placeholder {
+    color: #94A3B8;
+}
+
+.catalog-search-clear {
+    background: none;
+    border: none;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.catalog-search-clear:hover {
+    color: var(--dark-navy);
+    background: #E2E8F0;
+}
+
+/* ----------------------------------------------------
+   4. ACTIVE FILTER CHIPS BAR
+   ---------------------------------------------------- */
+
+.active-chips-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    padding: 0.25rem 0;
+}
+
+.active-chip {
+    background: #FAF5FF;
+    border: 1px solid #DDD6FE;
+    color: #6B21A8;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease;
+}
+
+.active-chip:hover {
+    background: #F3E8FF;
+}
+
+.active-chip-remove {
+    border: none;
+    background: none;
+    color: #9333EA;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 2px;
+}
+
+.active-chip-remove:hover {
+    color: #DC2626;
+}
+
+.chip-clear-all {
+    color: var(--secondary-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+}
+
+.chip-clear-all:hover {
+    color: var(--dark-navy);
+}
+
+/* ----------------------------------------------------
+   5. RESULTS SUMMARY & SORTING BAR
+   ---------------------------------------------------- */
+
+.catalog-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.catalog-count-text {
+    font-size: 0.92rem;
+    color: var(--secondary-text);
+    font-weight: 500;
+}
+
+.catalog-count-number {
+    font-weight: 700;
+    color: var(--dark-navy);
+}
+
+.catalog-sort-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.catalog-sort-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--secondary-text);
+    white-space: nowrap;
+}
+
+.catalog-sort-select {
+    padding: 0.5rem 0.85rem;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--dark-navy);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.catalog-sort-select:hover {
+    border-color: #CBD5E1;
+}
+
+.catalog-sort-select:focus {
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.12);
+}
+
+/* ----------------------------------------------------
+   6. COURSE CARDS GRID & UNIFORM CARD STYLING
+   ---------------------------------------------------- */
+
+.courses-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .courses-catalog-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 680px) {
+    .courses-catalog-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.smart-course-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+
+.smart-course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(91, 63, 232, 0.1);
+    border-color: #D8B4FE;
+}
+
+.card-thumb-banner {
+    height: 120px;
+    background: linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 60%, #E83FA5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 34px;
+    position: relative;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.card-thumb-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(255,255,255,0.2) 0%, transparent 60%);
+}
+
+.card-difficulty-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    color: #FFFFFF;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    z-index: 2;
+}
+
+.card-match-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.card-body-content {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.45rem;
+    gap: 0.5rem;
+}
+
+.card-category-tag {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--primary-purple);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.card-rating-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #92400E;
+    background: #FEF3C7;
+    padding: 2px 7px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark-navy);
+    line-height: 1.4;
+    margin-bottom: 0.45rem;
+    min-height: 2.8rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.card-title a:hover {
+    color: var(--primary-purple);
+}
+
+.card-desc {
+    font-size: 0.83rem;
+    color: #64748B;
+    line-height: 1.5;
+    margin-bottom: 0.85rem;
+    min-height: 2.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-meta-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    color: #64748B;
+    margin-bottom: 0.85rem;
+}
+
+.card-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.card-meta-item i {
+    color: var(--primary-purple);
+    font-size: 0.8rem;
+}
+
+.card-skills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+    min-height: 1.6rem;
+}
+
+.card-skill-pill {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.card-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 0.85rem;
+    border-top: 1px solid #F1F5F9;
+    gap: 0.5rem;
+}
+
+.card-instructor-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.card-instructor-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--dark-navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-price-tag {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary-purple);
+}
+
+.card-price-tag.free {
+    color: #059669;
+    font-size: 0.95rem;
+}
+
+.card-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-wishlist-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    background: #FFFFFF;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.85rem;
+}
+
+.btn-wishlist-icon:hover {
+    border-color: #FDA4AF;
+    color: #E11D48;
+    background: #FFF1F2;
+}
+
+.btn-wishlist-icon.active {
+    color: #E11D48;
+    background: #FFF1F2;
+    border-color: #FDA4AF;
+}
+
+.btn-view-course {
+    padding: 0.45rem 0.9rem;
+    background: var(--primary-purple);
+    color: #FFFFFF;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-view-course:hover {
+    background: var(--primary-purple-hover);
+    box-shadow: 0 4px 10px rgba(91, 63, 232, 0.25);
+}
+
+/* ----------------------------------------------------
+   7. PAGINATION COMPONENT
+   ---------------------------------------------------- */
+
+.catalog-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #F1F5F9;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.6rem;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--dark-navy);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.page-btn.active {
+    background: var(--primary-purple);
+    color: #FFFFFF;
+    border-color: var(--primary-purple);
+    box-shadow: 0 4px 10px rgba(91, 63, 232, 0.2);
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ----------------------------------------------------
+   8. EMPTY STATES & SKELETON LOADERS
+   ---------------------------------------------------- */
+
+.empty-catalog-state {
+    grid-column: 1 / -1;
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 4rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+}
+
+.empty-catalog-icon {
+    font-size: 3rem;
+    color: #CBD5E1;
+    margin-bottom: 1rem;
+}
+
+.empty-catalog-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--dark-navy);
+    margin-bottom: 0.4rem;
+}
+
+.empty-catalog-desc {
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+    max-width: 420px;
+    margin: 0 auto 1.5rem auto;
+}
+
+/* ----------------------------------------------------
+   9. COURSE DETAILS PAGE STYLES
+   ---------------------------------------------------- */
+
+.course-details-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .course-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.details-hero-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 2.25rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+}
+
+.details-badge-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.details-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--dark-navy);
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+}
+
+.details-short-desc {
+    font-size: 1rem;
+    color: #64748B;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.details-meta-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    border-top: 1px solid #EDE9FE;
+    border-bottom: 1px solid #EDE9FE;
+    margin-bottom: 1.75rem;
+    font-size: 0.9rem;
+}
+
+.details-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--dark-navy);
+    margin: 1.75rem 0 0.75rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.details-section-title i {
+    color: var(--primary-purple);
+}
+
+.details-req-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.details-req-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--dark-navy);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.details-req-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    font-size: 0.88rem;
+    color: #475569;
+    line-height: 1.8;
+}
+
+.details-req-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.details-empty-text {
+    color: #94A3B8;
+    font-style: italic;
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+.details-action-box {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(91, 63, 232, 0.08);
+    position: sticky;
+    top: 2rem;
+}
+
+/* ----------------------------------------------------
+   MY COURSES GRID & COMPACT CARDS
+   ---------------------------------------------------- */
+.my-courses-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .my-courses-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .my-courses-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.my-course-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.my-course-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(91, 63, 232, 0.08);
+}
+
+.my-course-thumb {
+    height: 100px;
+    background: linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 60%, #E83FA5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 28px;
+    position: relative;
+    padding: 0.75rem 1rem;
+}
+
+.my-course-badge-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+    z-index: 2;
+}
+
+.my-course-badge-status.in_progress {
+    background: #FFFBEB;
+    color: #D97706;
+    border: 1px solid #FDE68A;
+}
+
+.my-course-badge-status.completed {
+    background: #ECFDF5;
+    color: #059669;
+    border: 1px solid #A7F3D0;
+}
+
+.my-course-badge-status.not_started {
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+}
+
+.my-course-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* ----------------------------------------------------
+   REVIEWS & RATINGS COMPONENT
+   ---------------------------------------------------- */
+.review-submission-box {
+    background: #FAF5FF;
+    border: 1px solid #EDE9FE;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.star-rating-picker {
+    display: flex;
+    gap: 0.35rem;
+    font-size: 1.5rem;
+    color: #CBD5E1;
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+}
+
+.star-rating-picker .star.active {
+    color: #F59E0B;
+}
+
+.review-item-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+}
+

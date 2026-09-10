@@ -11,7 +11,8 @@ class RecommendationEngine:
         profile_data: Optional[Dict[str, Any]] = None,
         assessment_attempts: Optional[List[Dict[str, Any]]] = None,
         limit: int = 6,
-        category: Optional[str] = None
+        category: Optional[str] = None,
+        courses_catalog: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         
         profile = profile_data or {}
@@ -51,7 +52,8 @@ class RecommendationEngine:
 
         scored_courses: List[Dict[str, Any]] = []
 
-        for course in COURSE_CATALOG:
+        catalog = courses_catalog if courses_catalog is not None else COURSE_CATALOG
+        for course in catalog:
             # Filter by category if requested
             if category and category.lower() != "all":
                 course_cat = course.get("category", "").lower()

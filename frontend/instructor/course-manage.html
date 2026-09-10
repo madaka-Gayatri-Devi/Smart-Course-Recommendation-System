@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Management Studio - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        .studio-sticky-bar {
+            position: sticky;
+            top: 70px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .section-nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .section-nav-btn {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            color: #475569;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .section-nav-btn:hover, .section-nav-btn.active {
+            background: #4F46E5;
+            color: #FFFFFF;
+            border-color: #4F46E5;
+        }
+        .studio-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .studio-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.15rem;
+            color: var(--dark-navy);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #F1F5F9;
+        }
+        .module-item {
+            border: 1px solid #DDD6FE;
+            background: #FAFAFF;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .lesson-item {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            background: #EDE9FE;
+            color: #5B21B6;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 12.5px;
+            font-weight: 600;
+            gap: 0.4rem;
+        }
+        .tag-pill button {
+            background: none;
+            border: none;
+            color: #7C3AED;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .preview-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 12px;
+            font-weight: 600;
+            color: #059669;
+            background: #ECFDF5;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- INSTRUCTOR SIDEBAR -->
+        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item active"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title" id="studioPageTitle">Course Management Studio</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- Sticky Studio Control Bar -->
+            <div class="studio-sticky-bar">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                        <h2 id="stickyCourseTitle" style="font-size: 1.25rem; font-weight: 700; color: var(--dark-navy); margin: 0;">Loading Course...</h2>
+                        <span id="stickyStatusBadge" class="status-pill badge-status-draft">Draft</span>
+                        <span id="stickyPriceBadge" class="tag-pill" style="background: #E0E7FF; color: #4338CA;">Free</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; font-size: 12.5px; color: #64748b;">
+                        <span>Completeness: <strong id="completenessScore" style="color: #4F46E5;">0%</strong></span>
+                        <div style="width: 120px; height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                            <div id="completenessProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4F46E5, #10B981); transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <a id="previewCourseBtn" href="#" target="_blank" class="btn-outline" style="text-decoration: none; padding: 0.6rem 1rem; font-size: 13px; border-radius: 8px;">
+                        <i class="fa-solid fa-eye mr-1"></i> Preview as Student
+                    </a>
+                    <button type="button" id="saveStudioBtn" class="btn-primary" style="padding: 0.6rem 1.4rem; font-size: 13px; font-weight: 600; border-radius: 8px;">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Tabs -->
+            <div class="section-nav-tabs">
+                <button type="button" class="section-nav-btn active" onclick="scrollToSection('sec-basic')">1. Basic Info</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-description')">2. Description</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-requirements')">3. Requirements</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-skills')">4. Skills & Career</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-curriculum')">5. Course Content</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-demo')">6. Demo Video</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-pricing')">7. Pricing</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-preview')">8. Preview Lessons</button>
+                <button type="button" class="section-nav-btn" onclick="scrollToSection('sec-publishing')">9. Publishing</button>
+            </div>
+
+            <form id="studioForm">
+                <input type="hidden" id="courseIdHidden" value="">
+
+                <!-- 1. COURSE INFORMATION -->
+                <div class="studio-card" id="sec-basic">
+                    <h3><i class="fa-solid fa-circle-info" style="color:#4F46E5;"></i> 1. Course Information</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Course Title *</label>
+                            <input type="text" id="courseTitle" required placeholder="e.g. Master React & Redux Toolkit" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Category *</label>
+                            <select id="courseCategory" required class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                                <option value="Web Development">Web Development</option>
+                                <option value="Frontend Development">Frontend Development</option>
+                                <option value="Backend Development">Backend Development</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                                <option value="Cloud Computing">Cloud Computing</option>
+                                <option value="DevOps & CI/CD">DevOps & CI/CD</option>
+                                <option value="Cybersecurity">Cybersecurity</option>
+                                <option value="Database Engineering">Database Engineering</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Subcategory / Track</label>
+                            <input type="text" id="courseSubcategory" placeholder="e.g. Full Stack JavaScript" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Difficulty Level *</label>
+                            <select id="courseDifficulty" required class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                                <option value="All Levels">All Levels</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Estimated Duration *</label>
+                            <input type="text" id="courseDuration" required placeholder="e.g. 24 hours (6 weeks)" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Language</label>
+                            <input type="text" id="courseLanguage" value="English" placeholder="e.g. English" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. COURSE DESCRIPTION -->
+                <div class="studio-card" id="sec-description">
+                    <h3><i class="fa-solid fa-align-left" style="color:#4F46E5;"></i> 2. Course Description</h3>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Short Description (1-2 sentences) *</label>
+                        <textarea id="courseShortDesc" rows="2" required placeholder="Engaging summary for search catalogs and cards..." class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Detailed Course Description (Comprehensive overview, syllabus overview, and student benefits)</label>
+                        <textarea id="courseDetailedDesc" rows="6" placeholder="Provide full details about topics covered, real-world projects, hands-on labs, and key takeaways..." class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                    </div>
+                </div>
+
+                <!-- 3. REQUIREMENTS -->
+                <div class="studio-card" id="sec-requirements">
+                    <h3><i class="fa-solid fa-list-check" style="color:#4F46E5;"></i> 3. Requirements & Prerequisites</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                        <!-- Prerequisites -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Prerequisites</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputPrereq" placeholder="e.g. Basic HTML & CSS" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <button type="button" onclick="addListTag('prereq')" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerPrereq" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+
+                        <!-- Technical Requirements -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Technical Requirements</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputTechReq" placeholder="e.g. Node.js 18+, VS Code" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <button type="button" onclick="addListTag('techReq')" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerTechReq" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+
+                        <!-- Recommended Knowledge -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Recommended Knowledge</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputRecKnowledge" placeholder="e.g. Familiarity with ES6 JavaScript" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <button type="button" onclick="addListTag('recKnowledge')" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerRecKnowledge" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. SKILLS & CAREER RELEVANCE -->
+                <div class="studio-card" id="sec-skills">
+                    <h3><i class="fa-solid fa-bolt" style="color:#4F46E5;"></i> 4. Skills & Career Relevance</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                        <!-- Skills Taught -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Skills Taught & Level</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputSkillName" placeholder="e.g. React Hooks" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <select id="inputSkillLevel" class="form-input" style="width: 100px; padding: 0.5rem; font-size: 12px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                    <option value="Advanced">Advanced</option>
+                                    <option value="Intermediate" selected>Intermediate</option>
+                                    <option value="Beginner">Beginner</option>
+                                </select>
+                                <button type="button" onclick="addSkillWithLevel()" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerSkillsTaught" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+
+                        <!-- Target Roles -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Target Job Roles</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputTargetRole" placeholder="e.g. Frontend Engineer" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <button type="button" onclick="addListTag('targetRole')" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerTargetRoles" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+
+                        <!-- Career Goals -->
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; color: #1E293B; margin-bottom: 0.4rem; display: block;">Target Career Goals</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="inputCareerGoal" placeholder="e.g. Build Production Apps" class="form-input" style="flex: 1; padding: 0.5rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 6px;">
+                                <button type="button" onclick="addListTag('careerGoal')" class="btn-primary-small" style="padding: 0.5rem 0.8rem; border-radius: 6px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="containerCareerGoals" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. COURSE CONTENT (CURRICULUM STUDIO) -->
+                <div class="studio-card" id="sec-curriculum">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 0.75rem;">
+                        <h3 style="margin: 0; border: none; padding: 0;"><i class="fa-solid fa-layer-group" style="color:#4F46E5;"></i> 5. Course Content & Curriculum</h3>
+                        <button type="button" onclick="addNewModule()" class="btn-primary-small" style="padding: 0.5rem 1rem; font-size: 12.5px; border-radius: 6px;">
+                            <i class="fa-solid fa-plus mr-1"></i> Add New Module
+                        </button>
+                    </div>
+                    
+                    <div id="curriculumModulesContainer">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- 6. DEMO VIDEO -->
+                <div class="studio-card" id="sec-demo">
+                    <h3><i class="fa-solid fa-film" style="color:#4F46E5;"></i> 6. Course Demo Video</h3>
+                    <p style="font-size: 13px; color: #64748b; margin-top: -0.5rem; margin-bottom: 1rem;">
+                        A short preview video that prospective students can watch on the public course page without enrolling.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Demo Video URL (or upload below)</label>
+                            <input type="text" id="demoVideoUrl" placeholder="https://example.com/demo.mp4 or /uploads/videos/..." class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; margin-bottom: 0.75rem;" onchange="updateDemoPreview(this.value)">
+                            
+                            <label style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Upload Video File (Max 150MB)</label>
+                            <input type="file" id="demoVideoFile" accept="video/mp4,video/webm,video/ogg" class="form-input" style="width: 100%; padding: 0.5rem; border: 1px dashed #CBD5E1; border-radius: 8px;" onchange="handleDemoVideoUpload(this)">
+                            <div id="demoUploadStatus" style="font-size: 12px; margin-top: 0.3rem; color: #64748b;"></div>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Live Preview Player</label>
+                            <div id="demoVideoPlayerContainer" style="background: #0F172A; border-radius: 8px; min-height: 180px; display: flex; align-items: center; justify-content: center; color: #94A3B8; overflow: hidden;">
+                                <span>No demo video provided yet</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. PRICING -->
+                <div class="studio-card" id="sec-pricing">
+                    <h3><i class="fa-solid fa-indian-rupee-sign" style="color:#4F46E5;"></i> 7. Pricing & Access</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: center;">
+                        <div>
+                            <label style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Access Type</label>
+                            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; font-size: 13.5px;">
+                                    <input type="radio" name="priceType" value="free" id="priceTypeFree" checked onchange="togglePricingFields(true)">
+                                    <span style="color: #059669;"><i class="fa-solid fa-gift mr-1"></i> Free Course</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600; font-size: 13.5px;">
+                                    <input type="radio" name="priceType" value="paid" id="priceTypePaid" onchange="togglePricingFields(false)">
+                                    <span style="color: #4F46E5;"><i class="fa-solid fa-tag mr-1"></i> Paid Course</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="priceInputWrapper" style="display: none;">
+                            <label style="font-weight: 600; font-size: 13px; margin-bottom: 0.35rem; display: block;">Course Price (in ₹ INR) *</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 12px; font-weight: 700; color: #64748b;">₹</span>
+                                <input type="number" id="coursePrice" min="0" step="1" placeholder="499" class="form-input" style="width: 100%; padding: 0.75rem 0.75rem 0.75rem 2rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. PREVIEW LESSONS -->
+                <div class="studio-card" id="sec-preview">
+                    <h3><i class="fa-solid fa-unlock-keyhole" style="color:#4F46E5;"></i> 8. Free Preview Lessons</h3>
+                    <p style="font-size: 13px; color: #64748b; margin-top: -0.5rem; margin-bottom: 1rem;">
+                        Mark lessons in your curriculum as "Free Preview" so prospective learners can sample your teaching before enrolling.
+                    </p>
+                    <div id="previewLessonsSummaryList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <span style="font-size: 13px; color: #94A3B8;">No lessons created yet.</span>
+                    </div>
+                </div>
+
+                <!-- 9. PUBLISHING & GOVERNANCE -->
+                <div class="studio-card" id="sec-publishing">
+                    <h3><i class="fa-solid fa-cloud-arrow-up" style="color:#4F46E5;"></i> 9. Publishing & Governance</h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+                        <!-- Validation Checklist -->
+                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
+                            <div style="font-weight: 700; font-size: 13.5px; color: #1E293B; margin-bottom: 0.75rem;">Completeness Checklist:</div>
+                            <ul id="publishingChecklist" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 13px;">
+                                <!-- Checked dynamically -->
+                            </ul>
+                        </div>
+
+                        <!-- Status & Publish Toggle -->
+                        <div style="display: flex; flex-direction: column; justify-content: space-between; background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 8px; padding: 1.25rem;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 600; color: #7C3AED; text-transform: uppercase;">Current Publication Status</div>
+                                <div id="publishStatusDisplay" style="font-size: 1.3rem; font-weight: 800; color: #4C1D95; margin: 0.35rem 0;">Draft</div>
+                                <p style="font-size: 12.5px; color: #6B21A8; margin: 0;">
+                                    When published, your course will appear in the Public Catalog and Student Recommendations.
+                                </p>
+                            </div>
+
+                            <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+                                <button type="button" id="togglePublishBtn" onclick="handleStudioTogglePublish()" class="btn-primary" style="flex: 1; padding: 0.75rem; border-radius: 8px; font-weight: 700;">
+                                    Publish Course
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+    </main>
+
+    <!-- Modal for Lesson Quiz Editor -->
+    <div id="quizModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+        <div style="background: #FFFFFF; width: 90%; max-width: 650px; max-height: 85vh; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.5rem;">
+                <h3 style="margin: 0; font-size: 1.15rem; color: var(--dark-navy);">Interactive Quiz Questions</h3>
+                <button type="button" onclick="closeQuizModal()" style="border: none; background: none; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="quizQuestionsContainer" style="flex: 1; overflow-y: auto; padding-right: 0.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Quiz questions rendered here -->
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 1rem; border-top: 1px solid #E2E8F0; padding-top: 0.75rem;">
+                <button type="button" onclick="addQuizQuestion()" class="btn-outline" style="padding: 0.5rem 1rem; font-size: 12.5px; border-radius: 6px;"><i class="fa-solid fa-plus mr-1"></i> Add Question</button>
+                <button type="button" onclick="saveQuizModal()" class="btn-primary" style="padding: 0.5rem 1.25rem; font-size: 12.5px; border-radius: 6px;">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/course-manage.js"></script>
+</body>
+</html>

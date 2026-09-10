@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Studio - SmartLearn Instructor</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <style>
+        :root {
+            --brand-primary: #5B3FE8;
+            --brand-primary-light: #7C3AED;
+            --brand-violet: #8B4AD9;
+            --brand-bg: #F8F9FD;
+            --brand-card-border: #E2E8F0;
+            --brand-purple-border: #DDD6FE;
+            --brand-purple-bg: #F5F3FF;
+            --brand-dark: #0F172A;
+            --brand-muted: #64748B;
+        }
+
+        .editor-container {
+            max-width: 1060px;
+            margin: 0 auto;
+            padding-bottom: 5rem;
+        }
+
+        .editor-section-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            transition: border-color 0.2s;
+        }
+
+        .editor-section-card:hover {
+            border-color: #CBD5E1;
+        }
+
+        .section-header-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .section-title-box {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-badge-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #7C3AED, #5B3FE8);
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+        }
+
+        .section-title-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin: 0;
+        }
+
+        .section-subtext {
+            font-size: 12.5px;
+            color: #64748B;
+            margin-top: 0.2rem;
+        }
+
+        .form-label-custom {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-label-custom .req {
+            color: #EF4444;
+            margin-left: 2px;
+        }
+
+        .input-helper-text {
+            font-size: 11.5px;
+            color: #64748B;
+            margin-top: 0.35rem;
+            display: block;
+        }
+
+        .custom-input, .custom-select, .custom-textarea {
+            width: 100%;
+            padding: 0.75rem 0.9rem;
+            font-size: 13.5px;
+            font-family: inherit;
+            color: #1E293B;
+            background: #FFFFFF;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .custom-input:focus, .custom-select:focus, .custom-textarea:focus {
+            border-color: #7C3AED;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+        }
+
+        .custom-input.is-invalid, .custom-textarea.is-invalid {
+            border-color: #EF4444;
+            background-color: #FEF2F2;
+        }
+
+        .error-msg {
+            color: #DC2626;
+            font-size: 11.5px;
+            font-weight: 500;
+            margin-top: 0.3rem;
+            display: none;
+        }
+
+        /* Tag Chip UI */
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            align-items: center;
+            min-height: 48px;
+            padding: 0.45rem 0.65rem;
+            background: #FFFFFF;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .chip-container:focus-within {
+            border-color: #7C3AED;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+        }
+
+        .chip-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #EDE9FE;
+            color: #5B21B6;
+            padding: 0.3rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #DDD6FE;
+            animation: fadeInScale 0.2s ease;
+        }
+
+        .chip-pill .remove-chip-btn {
+            background: none;
+            border: none;
+            color: #7C3AED;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .chip-pill .remove-chip-btn:hover {
+            color: #EF4444;
+        }
+
+        .chip-input-field {
+            flex: 1;
+            min-width: 140px;
+            border: none;
+            outline: none;
+            font-size: 13.5px;
+            font-family: inherit;
+            color: #1E293B;
+            padding: 0.35rem 0.25rem;
+            background: transparent;
+        }
+
+        /* Outcome Row */
+        .outcome-row {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .outcome-index {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #F1F5F9;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Module & Lesson Card Architecture */
+        .module-block {
+            border: 1px solid #DDD6FE;
+            background: #FAFAFE;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(124, 58, 237, 0.05);
+            transition: all 0.2s;
+        }
+
+        .module-header {
+            background: #F5F3FF;
+            border-bottom: 1px solid #EDE9FE;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .module-body {
+            padding: 1.25rem;
+            background: #FFFFFF;
+        }
+
+        .lesson-card {
+            border: 1px solid #E2E8F0;
+            background: #FFFFFF;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .lesson-card:hover {
+            border-color: #CBD5E1;
+        }
+
+        .lesson-header {
+            background: #F8FAFC;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .lesson-body {
+            padding: 1.25rem;
+            background: #FFFFFF;
+        }
+
+        .type-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.4px;
+        }
+
+        .type-badge.video { background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; }
+        .type-badge.quiz { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+        .type-badge.hands-on, .type-badge.lab { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .type-badge.article, .type-badge.text { background: #F3E8FF; color: #6B21A8; border: 1px solid #E9D5FF; }
+        .type-badge.project, .type-badge.capstone { background: #FCE7F3; color: #9D174D; border: 1px solid #FBCFE8; }
+        .type-badge.document, .type-badge.pdf { background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; }
+        .type-badge.external { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+
+        /* Free Preview Toggle */
+        .preview-badge-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .preview-badge-toggle.is-active {
+            background: #ECFDF5;
+            color: #059669;
+            border: 1px solid #6EE7B7;
+        }
+
+        .preview-badge-toggle.is-inactive {
+            background: #F1F5F9;
+            color: #64748B;
+            border: 1px solid #E2E8F0;
+        }
+
+        /* Access & Pricing Radio Cards */
+        .pricing-card-option {
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #FFFFFF;
+        }
+
+        .pricing-card-option:hover {
+            border-color: #CBD5E1;
+        }
+
+        .pricing-card-option.selected {
+            border-color: #7C3AED;
+            background: #FAF8FF;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08);
+        }
+
+        /* Sticky Action Footer */
+        .sticky-action-bar {
+            position: sticky;
+            bottom: 1.25rem;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #CBD5E1;
+            border-radius: 14px;
+            padding: 1rem 1.75rem;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        .btn-outline-cancel {
+            padding: 0.65rem 1.3rem;
+            border: 1px solid #D1D5DB;
+            background: #FFFFFF;
+            color: #475569;
+            font-weight: 600;
+            font-size: 13.5px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-cancel:hover {
+            background: #F8FAFC;
+            color: #0F172A;
+            border-color: #94A3B8;
+        }
+
+        .btn-action-draft {
+            padding: 0.65rem 1.4rem;
+            border: 1px solid #7C3AED;
+            background: #F5F3FF;
+            color: #6D28D9;
+            font-weight: 600;
+            font-size: 13.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.2s;
+        }
+
+        .btn-action-draft:hover {
+            background: #EDE9FE;
+            color: #5B21B6;
+        }
+
+        .btn-action-preview {
+            padding: 0.65rem 1.4rem;
+            border: 1px solid #CBD5E1;
+            background: #FFFFFF;
+            color: #334155;
+            font-weight: 600;
+            font-size: 13.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.2s;
+        }
+
+        .btn-action-preview:hover {
+            background: #F1F5F9;
+            color: #0F172A;
+        }
+
+        .btn-action-publish {
+            padding: 0.65rem 1.8rem;
+            border: none;
+            background: linear-gradient(135deg, #7C3AED, #5B3FE8);
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-action-publish:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+        }
+
+        .btn-action-publish:disabled, .btn-action-draft:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Modal styling */
+        .preview-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            padding: 1.5rem;
+        }
+
+        .preview-modal-container {
+            background: #FFFFFF;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid-3col { grid-template-columns: 1fr !important; }
+            .grid-2col { grid-template-columns: 1fr !important; }
+            .sticky-action-bar { flex-direction: column; align-items: stretch; }
+            .sticky-action-bar .left-group, .sticky-action-bar .right-group { width: 100%; display: flex; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item active"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <a href="courses.html" style="color: #64748B; font-size: 13.5px; text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> My Courses</a>
+                    <span style="color: #CBD5E1;">/</span>
+                    <h2 class="page-title" id="editorHeaderTitle" style="font-size: 1.15rem; margin: 0;">Create New Course</h2>
+                </div>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown" style="display: flex; align-items: center; gap: 0.6rem;">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div class="editor-container">
+
+                <!-- Alert Box -->
+                <div id="editorAlert" style="display:none; padding:1rem 1.25rem; border-radius:10px; margin-bottom:1.75rem; font-size:14px; font-weight:500;"></div>
+
+                <form id="courseForm" novalidate>
+                    <input type="hidden" id="editingCourseId" value="">
+
+                    <!-- ========================================== -->
+                    <!-- 1. BASIC INFORMATION                       -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secBasic">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">1</span>
+                                <div>
+                                    <h3 class="section-title-text">Basic Information</h3>
+                                    <p class="section-subtext">Set the primary course identity, subject category, difficulty, and overview.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 1: Course Title -->
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="form-label-custom" for="courseTitle">Course Title <span class="req">*</span></label>
+                            <input type="text" id="courseTitle" required placeholder="e.g. Master React & Redux Toolkit with Modern Full-Stack Projects" class="custom-input">
+                            <span class="error-msg" id="errCourseTitle">Course title is required.</span>
+                            <span class="input-helper-text">Make your title descriptive, engaging, and clear for prospective learners.</span>
+                        </div>
+
+                        <!-- Row 2: Category, Level, Duration -->
+                        <div class="grid-3col" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label class="form-label-custom" for="courseCategory">Category <span class="req">*</span></label>
+                                <select id="courseCategory" required class="custom-select">
+                                    <option value="Web Development">Web Development</option>
+                                    <option value="Frontend Development">Frontend Development</option>
+                                    <option value="Backend Development">Backend Development</option>
+                                    <option value="Data Science & AI">Data Science & AI</option>
+                                    <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                    <option value="Cloud & DevOps">Cloud & DevOps</option>
+                                    <option value="Cyber Security">Cyber Security</option>
+                                    <option value="UI/UX Design">UI/UX Design</option>
+                                    <option value="Mobile Development">Mobile Development</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label-custom" for="courseLevel">Difficulty Level <span class="req">*</span></label>
+                                <select id="courseLevel" class="custom-select">
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate" selected>Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label-custom" for="courseDuration">Estimated Duration <span class="req">*</span></label>
+                                <input type="text" id="courseDuration" placeholder="e.g. 30 hours" value="30 hours" class="custom-input">
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Publish Status & Language -->
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label class="form-label-custom" for="courseStatus">Publish Status <span class="req">*</span></label>
+                                <select id="courseStatus" class="custom-select">
+                                    <option value="published">Published (Live & Visible in Catalog)</option>
+                                    <option value="draft">Draft (Private / In-Progress)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label-custom" for="courseLanguage">Course Language</label>
+                                <input type="text" id="courseLanguage" value="English" placeholder="e.g. English" class="custom-input">
+                            </div>
+                        </div>
+
+                        <!-- Short Description -->
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="form-label-custom" for="courseShortDesc">Short Description (Summary Teaser)</label>
+                            <input type="text" id="courseShortDesc" placeholder="Brief 1-2 sentence overview shown on catalog cards..." class="custom-input">
+                            <span class="input-helper-text">Shown in search recommendations, catalog cards, and course listings.</span>
+                        </div>
+
+                        <!-- Detailed Description -->
+                        <div>
+                            <label class="form-label-custom" for="courseDescription">Detailed Description <span class="req">*</span></label>
+                            <textarea id="courseDescription" rows="5" required placeholder="Comprehensive curriculum overview, objectives, prerequisite background, and learning approach..." class="custom-textarea"></textarea>
+                            <span class="error-msg" id="errCourseDesc">Detailed description is required for publishing.</span>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 2. SKILLS, CAREER RELEVANCE & REQUIREMENTS -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secSkills">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">2</span>
+                                <div>
+                                    <h3 class="section-title-text">Skills, Career Relevance & Requirements</h3>
+                                    <p class="section-subtext">Structured metadata powering the SmartLearn AI recommendation engine & skill gap analyzer.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Skills Taught (Chip Input) -->
+                        <div style="margin-bottom: 1.5rem;">
+                            <label class="form-label-custom">Skills Taught <span class="req">*</span></label>
+                            <div class="chip-container" id="skillsChipContainer" onclick="document.getElementById('skillInput').focus()">
+                                <div id="skillsListWrapper" style="display:flex; flex-wrap:wrap; gap:0.45rem;"></div>
+                                <input type="text" id="skillInput" class="chip-input-field" placeholder="Type a skill and press Enter or comma (e.g. React, Node.js, MongoDB)...">
+                            </div>
+                            <span class="error-msg" id="errSkills">Please add at least one skill.</span>
+                            <span class="input-helper-text"><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color:#7C3AED;"></i> Indexed directly by SmartLearn recommendation algorithms.</span>
+                        </div>
+
+                        <!-- Prerequisites -->
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="form-label-custom" for="coursePrereqs">Prerequisites (Prior knowledge recommended)</label>
+                            <textarea id="coursePrereqs" rows="2" placeholder="e.g. Basic HTML and CSS, Fundamental JavaScript ES6 syntax" class="custom-textarea"></textarea>
+                            <span class="input-helper-text">Enter 1 prerequisite per line or comma separated.</span>
+                        </div>
+
+                        <!-- Tech Reqs & Recommended Knowledge -->
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label class="form-label-custom" for="courseTechReqs">Technical Requirements (Tools & Environment)</label>
+                                <textarea id="courseTechReqs" rows="2" placeholder="e.g. VS Code, Node.js 18+, Modern Web Browser" class="custom-textarea"></textarea>
+                            </div>
+                            <div>
+                                <label class="form-label-custom" for="courseRecKnowledge">Recommended Knowledge (Helpful extras)</label>
+                                <textarea id="courseRecKnowledge" rows="2" placeholder="e.g. Basic Git command line, REST API concepts" class="custom-textarea"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Target Roles & Career Goals -->
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                            <div>
+                                <label class="form-label-custom">Target Roles</label>
+                                <div class="chip-container" id="rolesChipContainer" onclick="document.getElementById('roleInput').focus()">
+                                    <div id="rolesListWrapper" style="display:flex; flex-wrap:wrap; gap:0.45rem;"></div>
+                                    <input type="text" id="roleInput" class="chip-input-field" placeholder="Type role & press Enter...">
+                                </div>
+                                <span class="input-helper-text">e.g. Frontend Engineer, Full Stack Developer</span>
+                            </div>
+                            <div>
+                                <label class="form-label-custom">Career Goals</label>
+                                <div class="chip-container" id="goalsChipContainer" onclick="document.getElementById('goalInput').focus()">
+                                    <div id="goalsListWrapper" style="display:flex; flex-wrap:wrap; gap:0.45rem;"></div>
+                                    <input type="text" id="goalInput" class="chip-input-field" placeholder="Type career goal & press Enter...">
+                                </div>
+                                <span class="input-helper-text">e.g. Web Development Mastery, Cloud Career Path</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 3. LEARNING INFORMATION (OUTCOMES)        -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secLearning">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">3</span>
+                                <div>
+                                    <h3 class="section-title-text">Learning Information</h3>
+                                    <p class="section-subtext">Clear, measurable learning objectives students will master upon completion.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="addOutcomeBtn" class="btn-action-draft" style="font-size:12.5px; padding:0.4rem 0.85rem;">
+                                <i class="fa-solid fa-plus"></i> Add Outcome
+                            </button>
+                        </div>
+
+                        <div id="outcomesContainer">
+                            <!-- Dynamic outcome rows -->
+                        </div>
+                        <span class="error-msg" id="errOutcomes">Please add at least one learning outcome.</span>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 4. COURSE CURRICULUM (MODULES & LESSONS)   -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secCurriculum" style="border-color: #C4B5FD;">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num" style="background: linear-gradient(135deg, #6D28D9, #4F46E5);">4</span>
+                                <div>
+                                    <h3 class="section-title-text">Course Curriculum</h3>
+                                    <p class="section-subtext">Structure modules, lesson content, videos, quizzes, labs, and interactive materials.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="addModuleBtn" class="btn-action-publish" style="font-size:13px; padding:0.5rem 1.1rem;">
+                                <i class="fa-solid fa-folder-plus"></i> Add Module
+                            </button>
+                        </div>
+
+                        <div id="modulesContainer" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <!-- Dynamic module cards rendered here -->
+                        </div>
+                        <span class="error-msg" id="errCurriculum">Please add at least one module with valid lessons.</span>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 5. COURSE DEMO & PREVIEW                   -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secDemo">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">5</span>
+                                <div>
+                                    <h3 class="section-title-text">Course Demo & Preview Video</h3>
+                                    <p class="section-subtext">Public introductory video shown on the course details page prior to student enrollment.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; align-items: start;">
+                            <div>
+                                <div style="margin-bottom: 1rem;">
+                                    <label class="form-label-custom">Demo Video Source</label>
+                                    <div style="display:flex; gap:1.5rem; margin-top:0.4rem;">
+                                        <label style="display:flex; align-items:center; gap:0.4rem; font-size:13px; cursor:pointer;">
+                                            <input type="radio" name="demoVideoSource" value="url" checked onchange="toggleDemoVideoSource('url')">
+                                            <span>External Video URL</span>
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:0.4rem; font-size:13px; cursor:pointer;">
+                                            <input type="radio" name="demoVideoSource" value="upload" onchange="toggleDemoVideoSource('upload')">
+                                            <span>Upload Video File</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="demoUrlGroup" style="margin-bottom: 1rem;">
+                                    <label class="form-label-custom" for="demoVideoUrl">Demo Video URL</label>
+                                    <input type="url" id="demoVideoUrl" placeholder="e.g. https://www.youtube.com/watch?v=... or MP4 URL" class="custom-input" onchange="updateDemoPreview()">
+                                    <span class="input-helper-text">Supports YouTube, Vimeo, or direct MP4/WebM video links.</span>
+                                </div>
+
+                                <div id="demoUploadGroup" style="display:none; margin-bottom: 1rem;">
+                                    <label class="form-label-custom">Upload Demo Video File</label>
+                                    <div style="display:flex; gap:0.6rem; align-items:center;">
+                                        <input type="file" id="demoVideoFile" accept="video/mp4,video/webm,video/mov" class="custom-input" style="padding:0.45rem;">
+                                        <button type="button" id="uploadDemoBtn" class="btn-action-draft" style="white-space:nowrap; padding:0.65rem 1rem;" onclick="handleUploadDemoVideo()">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                        </button>
+                                    </div>
+                                    <span id="demoUploadStatus" style="font-size:12px; margin-top:0.3rem; display:block; color:#64748B;">Max 150MB (.mp4, .webm)</span>
+                                </div>
+
+                                <div style="margin-bottom: 1rem;">
+                                    <label class="form-label-custom" for="demoVideoTitle">Demo Title / Teaser Headline</label>
+                                    <input type="text" id="demoVideoTitle" placeholder="e.g. What you will learn in this course" class="custom-input">
+                                </div>
+                            </div>
+
+                            <!-- Video Preview Box -->
+                            <div>
+                                <label class="form-label-custom">Live Player Preview</label>
+                                <div id="demoVideoPreviewBox" style="background:#0F172A; border-radius:10px; overflow:hidden; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; color:#94A3B8; text-align:center; padding:1rem; border:1px solid #1E293B;">
+                                    <div>
+                                        <i class="fa-solid fa-circle-play" style="font-size:2.5rem; opacity:0.5; margin-bottom:0.5rem;"></i>
+                                        <div style="font-size:12.5px;">Enter video URL to test player</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 6. COURSE ACCESS & PRICING                 -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secPricing">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">6</span>
+                                <div>
+                                    <h3 class="section-title-text">Course Access & Pricing</h3>
+                                    <p class="section-subtext">Choose whether the course is completely free or set an enrollment fee in INR.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                            <!-- Option 1: Free -->
+                            <div class="pricing-card-option selected" id="optFreeCard" onclick="selectPricingOption('free')">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                    <strong style="font-size:15px; color:#0F172A;"><i class="fa-solid fa-gift mr-1" style="color:#10B981;"></i> Free Course</strong>
+                                    <input type="radio" name="courseAccessType" value="free" checked style="accent-color:#7C3AED;">
+                                </div>
+                                <p style="font-size:12.5px; color:#64748B; margin:0;">Open to all students with instant enrollment, certificates, and full curriculum access.</p>
+                            </div>
+
+                            <!-- Option 2: Paid -->
+                            <div class="pricing-card-option" id="optPaidCard" onclick="selectPricingOption('paid')">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                    <strong style="font-size:15px; color:#0F172A;"><i class="fa-solid fa-tag mr-1" style="color:#7C3AED;"></i> Paid Course</strong>
+                                    <input type="radio" name="courseAccessType" value="paid" style="accent-color:#7C3AED;">
+                                </div>
+                                <p style="font-size:12.5px; color:#64748B; margin:0;">Charge a custom price for access. Free preview lessons remain open to all visitors.</p>
+                            </div>
+                        </div>
+
+                        <div id="paidPricingFields" style="display:none; background:#FAF8FF; border:1px solid #EDE9FE; border-radius:10px; padding:1.25rem; animation:fadeIn 0.2s;">
+                            <div class="grid-2col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem;">
+                                <div>
+                                    <label class="form-label-custom" for="coursePrice">Price (₹ INR) <span class="req">*</span></label>
+                                    <div style="position:relative;">
+                                        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-weight:700; color:#64748B;">₹</span>
+                                        <input type="number" id="coursePrice" min="1" step="1" placeholder="e.g. 999" class="custom-input" style="padding-left:1.75rem;">
+                                    </div>
+                                    <span class="error-msg" id="errCoursePrice">Please enter a valid price greater than ₹0.</span>
+                                </div>
+                                <div>
+                                    <label class="form-label-custom" for="courseCurrency">Currency</label>
+                                    <select id="courseCurrency" class="custom-select">
+                                        <option value="INR" selected>INR (₹ Indian Rupee)</option>
+                                        <option value="USD">USD ($ US Dollar)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 7. COURSE THUMBNAIL & MEDIA                -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secThumbnail">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">7</span>
+                                <div>
+                                    <h3 class="section-title-text">Course Thumbnail & Cover</h3>
+                                    <p class="section-subtext">Featured image displayed on student course cards and catalog exploration.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2col" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; align-items: start;">
+                            <div>
+                                <div style="margin-bottom: 1rem;">
+                                    <label class="form-label-custom">Thumbnail Source</label>
+                                    <div style="display:flex; gap:0.6rem; align-items:center;">
+                                        <input type="file" id="thumbnailFileInput" accept="image/jpeg,image/png,image/webp" class="custom-input" style="padding:0.45rem;">
+                                        <button type="button" id="uploadThumbBtn" class="btn-action-draft" style="white-space:nowrap; padding:0.65rem 1rem;" onclick="handleUploadThumbnail()">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                        </button>
+                                    </div>
+                                    <span id="thumbUploadStatus" style="font-size:12px; margin-top:0.3rem; display:block; color:#64748B;">Recommended: 16:9 ratio, JPG/PNG/WEBP under 5MB.</span>
+                                </div>
+
+                                <div>
+                                    <label class="form-label-custom" for="courseThumbnailUrl">Or Image URL</label>
+                                    <input type="url" id="courseThumbnailUrl" placeholder="https://..." class="custom-input" onchange="updateThumbnailPreview()">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label-custom">Card Preview</label>
+                                <div id="thumbPreviewBox" style="background:#F1F5F9; border:1px solid #CBD5E1; border-radius:10px; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;">
+                                    <div id="thumbPlaceholder" style="text-align:center; color:#94A3B8;">
+                                        <i class="fa-solid fa-image" style="font-size:2rem; margin-bottom:0.3rem;"></i>
+                                        <div style="font-size:12px;">No image uploaded</div>
+                                    </div>
+                                    <img id="thumbImgDisplay" src="" style="display:none; width:100%; height:100%; object-fit:cover;" alt="Course Thumbnail Preview">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- 8. COURSE RESOURCES MANAGER                -->
+                    <!-- ========================================== -->
+                    <div class="editor-section-card" id="secResources">
+                        <div class="section-header-wrap">
+                            <div class="section-title-box">
+                                <span class="section-badge-num">8</span>
+                                <div>
+                                    <h3 class="section-title-text">Course Materials & Downloadables</h3>
+                                    <p class="section-subtext">Starter code repositories, slide decks, cheat sheets, and documents available to learners.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="addResourceBtn" class="btn-action-draft" style="font-size:12.5px; padding:0.4rem 0.85rem;" onclick="addCourseResourceRow()">
+                                <i class="fa-solid fa-paperclip"></i> Add Resource
+                            </button>
+                        </div>
+
+                        <div id="courseResourcesContainer" style="display:flex; flex-direction:column; gap:0.75rem;">
+                            <!-- Dynamic course resources rows -->
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================== -->
+                    <!-- STICKY ACTION FOOTER                       -->
+                    <!-- ========================================== -->
+                    <div class="sticky-action-bar">
+                        <div class="left-group" style="display:flex; gap:0.75rem; align-items:center;">
+                            <a href="courses.html" class="btn-outline-cancel">
+                                <i class="fa-solid fa-xmark"></i> Cancel
+                            </a>
+                            <button type="button" id="previewCourseBtn" class="btn-action-preview" onclick="openCoursePreviewModal()">
+                                <i class="fa-solid fa-eye"></i> Preview Course
+                            </button>
+                        </div>
+
+                        <div class="right-group" style="display:flex; gap:0.75rem; align-items:center;">
+                            <button type="button" id="saveDraftBtn" class="btn-action-draft" onclick="handleSaveCourse(true)">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Draft
+                            </button>
+                            <button type="button" id="publishCourseBtn" class="btn-action-publish" onclick="handleSaveCourse(false)">
+                                <i class="fa-solid fa-circle-check"></i> Publish Course
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- COURSE STUDENT PREVIEW MODAL               -->
+    <!-- ========================================== -->
+    <div class="preview-modal-overlay" id="coursePreviewModal">
+        <div class="preview-modal-container">
+            <div style="background:#0F172A; color:#FFFFFF; padding:1.25rem 1.75rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1E293B;">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <span style="background:#10B981; color:#FFFFFF; font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; text-transform:uppercase;">Student View Preview</span>
+                    <h3 style="margin:0; font-size:1.15rem; color:#F8FAFC;">Course Explorer Preview</h3>
+                </div>
+                <button type="button" onclick="closeCoursePreviewModal()" style="background:none; border:none; color:#94A3B8; font-size:1.4rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="coursePreviewModalBody" style="padding:2rem; overflow-y:auto; flex:1;">
+                <!-- Full dynamic course preview rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/instructor.js"></script>
+</body>
+</html>

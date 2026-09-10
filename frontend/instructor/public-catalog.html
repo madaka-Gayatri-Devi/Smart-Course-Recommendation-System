@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Course Catalog - Instructor Portal | SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/courses.css">
+    <link rel="stylesheet" href="../css/recommendations.css">
+    <style>
+        /* Modern LMS Public Catalog Styling */
+        .catalog-hero-bar {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #9333EA 100%);
+            border-radius: 16px;
+            padding: 2rem 2.25rem;
+            color: #FFFFFF;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.25);
+        }
+
+        .catalog-hero-text h1 {
+            font-size: 1.65rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem 0;
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+        }
+
+        .catalog-hero-text p {
+            margin: 0;
+            color: #EDE9FE;
+            font-size: 0.95rem;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .catalog-hero-btn {
+            background: #FFFFFF;
+            color: #4F46E5;
+            font-weight: 700;
+            padding: 0.75rem 1.4rem;
+            border-radius: 10px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .catalog-hero-btn:hover {
+            background: #F8FAFC;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            color: #3730A3;
+        }
+
+        /* Filter Controls */
+        .catalog-filter-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .filter-grid-row {
+            display: grid;
+            grid-template-columns: 2.2fr 1.2fr 1.1fr 1fr 1.1fr;
+            gap: 0.85rem;
+            align-items: center;
+        }
+
+        @media (max-width: 1100px) {
+            .filter-grid-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .filter-grid-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .filter-search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-search-box i {
+            position: absolute;
+            left: 1rem;
+            color: #94A3B8;
+            font-size: 0.95rem;
+        }
+
+        .filter-search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        .filter-search-box input:focus {
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .filter-select {
+            padding: 0.75rem 0.85rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 0.86rem;
+            color: #1E293B;
+            background-color: #FFFFFF;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .filter-select:focus {
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .filter-meta-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid #F1F5F9;
+            font-size: 0.85rem;
+            color: #64748B;
+        }
+
+        .reset-filter-link {
+            color: #6366F1;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .reset-filter-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Modern Course Cards Grid */
+        .platform-catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .catalog-course-card {
+            background: #FFFFFF;
+            border: 1px solid #EDE9FE;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(91, 63, 232, 0.05);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+            position: relative;
+        }
+
+        .catalog-course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(91, 63, 232, 0.12);
+            border-color: #C7D2FE;
+        }
+
+        .card-banner-wrapper {
+            position: relative;
+            height: 140px;
+            background: linear-gradient(135deg, #5B3FE8 0%, #7C3AED 50%, #EC4899 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            overflow: hidden;
+        }
+
+        .card-banner-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .card-banner-icon {
+            font-size: 42px;
+            color: rgba(255, 255, 255, 0.85);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-badge-category {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(6px);
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            z-index: 2;
+            letter-spacing: 0.3px;
+        }
+
+        .card-badge-price {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            z-index: 2;
+        }
+
+        .badge-free {
+            background: #10B981;
+            color: #FFFFFF;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-paid {
+            background: #FFFFFF;
+            color: #4F46E5;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-badge-my-course {
+            position: absolute;
+            bottom: 10px;
+            left: 12px;
+            background: #FEF3C7;
+            color: #B45309;
+            font-size: 10.5px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid #FCD34D;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .catalog-card-body {
+            padding: 1.25rem 1.4rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .catalog-course-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0F172A;
+            line-height: 1.4;
+            margin: 0 0 0.45rem 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.8rem;
+        }
+
+        .catalog-course-desc {
+            font-size: 0.83rem;
+            color: #64748B;
+            line-height: 1.45;
+            margin: 0 0 0.9rem 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.4rem;
+        }
+
+        .catalog-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: #475569;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid #F1F5F9;
+            margin-bottom: 0.85rem;
+        }
+
+        .catalog-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .catalog-meta-item.rating {
+            color: #D97706;
+            font-weight: 700;
+        }
+
+        .catalog-skills-section {
+            margin-bottom: 1rem;
+        }
+
+        .catalog-skills-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.45rem;
+        }
+
+        .catalog-skills-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            min-height: 1.8rem;
+        }
+
+        .catalog-skill-chip {
+            background: #EEF2FF;
+            color: #4F46E5;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 0.22rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #E0E7FF;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+
+        .catalog-card-footer {
+            margin-top: auto;
+            padding-top: 0.85rem;
+            border-top: 1px solid #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .instructor-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #334155;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .instructor-avatar-mini {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #EDE9FE;
+            color: #5B3FE8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .card-action-btns {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-shrink: 0;
+        }
+
+        .btn-card-action {
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-edit-course {
+            background: #5B3FE8;
+            color: #FFFFFF;
+        }
+
+        .btn-edit-course:hover {
+            background: #4A2FD6;
+            box-shadow: 0 4px 10px rgba(91, 63, 232, 0.25);
+        }
+
+        .btn-view-course {
+            background: #F1F5F9;
+            color: #475569;
+            border: 1px solid #CBD5E1;
+        }
+
+        .btn-view-course:hover {
+            background: #E2E8F0;
+            color: #0F172A;
+        }
+
+        /* Empty State */
+        .catalog-empty-state {
+            grid-column: 1 / -1;
+            background: #FFFFFF;
+            border: 2px dashed #CBD5E1;
+            border-radius: 16px;
+            padding: 3.5rem 2rem;
+            text-align: center;
+        }
+
+        .catalog-empty-icon {
+            font-size: 3rem;
+            color: #94A3B8;
+            margin-bottom: 1rem;
+        }
+
+        .catalog-empty-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin-bottom: 0.4rem;
+        }
+
+        .catalog-empty-desc {
+            font-size: 0.9rem;
+            color: #64748B;
+            max-width: 440px;
+            margin: 0 auto 1.5rem auto;
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item active"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Public Course Catalog</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <!-- Hero Banner -->
+            <div class="catalog-hero-bar">
+                <div class="catalog-hero-text">
+                    <h1>Explore Platform Curriculums 🌐</h1>
+                    <p>Browse published courses across all disciplines to benchmark curriculum structures, industry skills, and pricing standards.</p>
+                </div>
+                <a href="course-editor.html" class="catalog-hero-btn"><i class="fa-solid fa-plus-circle"></i> Create New Course</a>
+            </div>
+
+            <!-- Modern Filter Controls -->
+            <div class="catalog-filter-card">
+                <div class="filter-grid-row">
+                    <!-- Search Input -->
+                    <div class="filter-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="courseSearchInput" placeholder="Search by title, skills, instructor...">
+                    </div>
+
+                    <!-- Category Filter -->
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Frontend Development">Frontend Development</option>
+                        <option value="Backend Development">Backend Development</option>
+                        <option value="Data Science & AI">Data Science & AI</option>
+                        <option value="Artificial Intelligence">Artificial Intelligence</option>
+                        <option value="Cloud & DevOps">Cloud & DevOps</option>
+                        <option value="Cyber Security">Cyber Security</option>
+                        <option value="UI/UX Design">UI/UX Design</option>
+                        <option value="Mobile Development">Mobile Development</option>
+                    </select>
+
+                    <!-- Difficulty Filter -->
+                    <select id="difficultyFilter" class="filter-select">
+                        <option value="all">All Levels</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+
+                    <!-- Price Filter -->
+                    <select id="priceFilter" class="filter-select">
+                        <option value="all">All Pricing</option>
+                        <option value="free">Free Courses</option>
+                        <option value="paid">Paid Courses</option>
+                    </select>
+
+                    <!-- Sort By -->
+                    <select id="sortBy" class="filter-select">
+                        <option value="rating">⭐ Top Rated</option>
+                        <option value="enrollment">👥 Most Popular</option>
+                        <option value="title">🔤 Title (A-Z)</option>
+                    </select>
+                </div>
+
+                <div class="filter-meta-bar">
+                    <span id="catalogCountText">Loading platform courses...</span>
+                    <a href="javascript:void(0)" class="reset-filter-link" id="resetFiltersBtn"><i class="fa-solid fa-rotate-left"></i> Reset Filters</a>
+                </div>
+            </div>
+
+            <!-- Platform Courses Grid -->
+            <div class="platform-catalog-grid" id="instructorPublicGrid">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: #64748B;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.25rem; color: #5B3FE8; margin-bottom: 1rem;"></i>
+                    <p style="font-size: 1rem; font-weight: 500;">Loading live course catalog...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = window.guardPage('INSTRUCTOR');
+            if (!user) return;
+
+            const fullName = user.full_name || user.name || 'Instructor';
+            const initial = fullName.charAt(0).toUpperCase();
+
+            document.getElementById('topName') && (document.getElementById('topName').textContent = fullName);
+            document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = fullName);
+            document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = 'Instructor');
+            document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
+            document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
+
+            const grid = document.getElementById('instructorPublicGrid');
+            const searchInput = document.getElementById('courseSearchInput');
+            const catFilter = document.getElementById('categoryFilter');
+            const diffFilter = document.getElementById('difficultyFilter');
+            const priceFilter = document.getElementById('priceFilter');
+            const sortBy = document.getElementById('sortBy');
+            const countText = document.getElementById('catalogCountText');
+            const resetBtn = document.getElementById('resetFiltersBtn');
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function normalizeSkills(skills) {
+                if (!skills) return [];
+                if (Array.isArray(skills)) return skills;
+                if (typeof skills === 'string') {
+                    try {
+                        const parsed = JSON.parse(skills);
+                        if (Array.isArray(parsed)) return parsed;
+                    } catch (e) {}
+                    return skills.split(',').map(s => s.trim()).filter(Boolean);
+                }
+                return [];
+            }
+
+            function getCategoryIcon(cat) {
+                const c = (cat || '').toLowerCase();
+                if (c.includes('web')) return 'fa-solid fa-code';
+                if (c.includes('react') || c.includes('front')) return 'fa-brands fa-react';
+                if (c.includes('back') || c.includes('python')) return 'fa-brands fa-python';
+                if (c.includes('data') || c.includes('science')) return 'fa-solid fa-chart-pie';
+                if (c.includes('ai') || c.includes('intelligence') || c.includes('machine')) return 'fa-solid fa-brain';
+                if (c.includes('cloud') || c.includes('devops') || c.includes('aws')) return 'fa-solid fa-cloud';
+                if (c.includes('security') || c.includes('cyber')) return 'fa-solid fa-shield-halved';
+                if (c.includes('ui') || c.includes('design')) return 'fa-solid fa-palette';
+                if (c.includes('mobile') || c.includes('flutter')) return 'fa-solid fa-mobile-screen-button';
+                return 'fa-solid fa-graduation-cap';
+            }
+
+            async function loadCatalog() {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3.5rem 1rem; color: #64748B;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.25rem; color: #5B3FE8; margin-bottom: 1rem;"></i>
+                        <p style="font-size: 1rem; font-weight: 500;">Filtering courses...</p>
+                    </div>
+                `;
+
+                try {
+                    const params = {
+                        search: searchInput ? searchInput.value.trim() : '',
+                        category: catFilter ? catFilter.value : 'all',
+                        level: diffFilter ? diffFilter.value : 'all',
+                        sort_by: sortBy ? sortBy.value : 'rating'
+                    };
+
+                    let courses = await window.api.getCourses(params);
+                    if (!courses) courses = [];
+
+                    // Apply client-side price filter if needed
+                    const selectedPrice = priceFilter ? priceFilter.value : 'all';
+                    if (selectedPrice === 'free') {
+                        courses = courses.filter(c => c.is_free !== 0 && c.is_free !== false && (!c.price || Number(c.price) === 0));
+                    } else if (selectedPrice === 'paid') {
+                        courses = courses.filter(c => c.is_free === 0 || c.is_free === false || (c.price && Number(c.price) > 0));
+                    }
+
+                    if (countText) {
+                        countText.innerHTML = `Showing <strong>${courses.length}</strong> published courses across the platform`;
+                    }
+
+                    if (courses.length === 0) {
+                        grid.innerHTML = `
+                            <div class="catalog-empty-state">
+                                <div class="catalog-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                                <h3 class="catalog-empty-title">No matching courses found</h3>
+                                <p class="catalog-empty-desc">We couldn't find any courses matching your current filters. Try changing your search query or clearing your filter criteria.</p>
+                                <button onclick="window.resetCatalogFilters()" class="btn-primary" style="padding: 0.65rem 1.4rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none;"><i class="fa-solid fa-rotate-left mr-1"></i> Reset All Filters</button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    grid.innerHTML = courses.map(c => {
+                        const isOwnCourse = (c.instructor_id && Number(c.instructor_id) === Number(user.id)) || 
+                                            (c.instructor && c.instructor.trim().toLowerCase() === fullName.trim().toLowerCase());
+                        
+                        const isFree = c.is_free !== 0 && c.is_free !== false && (!c.price || Number(c.price) === 0);
+                        const priceBadgeHtml = isFree 
+                            ? `<span class="card-badge-price badge-free"><i class="fa-solid fa-tag"></i> Free</span>`
+                            : `<span class="card-badge-price badge-paid">₹${Number(c.price || 0).toLocaleString()}</span>`;
+
+                        const skillsArray = normalizeSkills(c.skills);
+                        const skillsChipsHtml = skillsArray.length > 0 
+                            ? skillsArray.slice(0, 4).map(s => `<span class="catalog-skill-chip">${escapeHtml(s)}</span>`).join('')
+                            : `<span style="font-size: 11.5px; color: #94A3B8;">General Fundamentals</span>`;
+
+                        const instructorName = c.instructor || c.instructor_name || 'SmartLearn Faculty';
+                        const instructorInitial = instructorName.charAt(0).toUpperCase();
+                        const ratingVal = typeof c.rating === 'number' ? c.rating.toFixed(1) : '4.8';
+                        const bannerIcon = getCategoryIcon(c.category);
+
+                        return `
+                            <div class="catalog-course-card">
+                                <div class="card-banner-wrapper">
+                                    ${c.thumbnail_url ? `<img src="${c.thumbnail_url}" alt="${escapeHtml(c.title)}" class="card-banner-img">` : ''}
+                                    <i class="${bannerIcon} card-banner-icon"></i>
+                                    <span class="card-badge-category">${escapeHtml(c.category || 'Curriculum')}</span>
+                                    ${priceBadgeHtml}
+                                    ${isOwnCourse ? `<span class="card-badge-my-course"><i class="fa-solid fa-user-check"></i> Your Authored Course</span>` : ''}
+                                </div>
+
+                                <div class="catalog-card-body">
+                                    <h3 class="catalog-course-title" title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</h3>
+                                    <p class="catalog-course-desc">${escapeHtml(c.short_description || c.description || 'Master key principles, practical workshops, and real-world milestones.')}</p>
+
+                                    <div class="catalog-meta-row">
+                                        <span class="catalog-meta-item"><i class="fa-solid fa-clock"></i> ${escapeHtml(c.duration || '30 hours')}</span>
+                                        <span class="catalog-meta-item"><i class="fa-solid fa-layer-group"></i> ${escapeHtml(c.level || c.difficulty || 'Intermediate')}</span>
+                                        <span class="catalog-meta-item"><i class="fa-solid fa-users"></i> ${c.enrollment_count || 0}</span>
+                                        <span class="catalog-meta-item rating"><i class="fa-solid fa-star"></i> ${ratingVal}</span>
+                                    </div>
+
+                                    <div class="catalog-skills-section">
+                                        <div class="catalog-skills-title">Target Skills & Tools</div>
+                                        <div class="catalog-skills-tags">${skillsChipsHtml}</div>
+                                    </div>
+
+                                    <div class="catalog-card-footer">
+                                        <div class="instructor-info" title="Instructor: ${escapeHtml(instructorName)}">
+                                            <div class="instructor-avatar-mini">${instructorInitial}</div>
+                                            <span>${escapeHtml(instructorName)}</span>
+                                        </div>
+
+                                        <div class="card-action-btns">
+                                            ${isOwnCourse ? `
+                                                <a href="course-editor.html?id=${c.id}" class="btn-card-action btn-edit-course" title="Edit in Course Studio"><i class="fa-solid fa-pen-to-square"></i> Studio</a>
+                                                <a href="course-manage.html?id=${c.id}" class="btn-card-action btn-view-course" title="Manage Lessons"><i class="fa-solid fa-list-check"></i> Lessons</a>
+                                            ` : `
+                                                <a href="../student/course-details.html?id=${c.id}" target="_blank" class="btn-card-action btn-view-course" title="View Public Course Details"><i class="fa-solid fa-eye"></i> View</a>
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                } catch (err) {
+                    console.error("Error loading public catalog:", err);
+                    grid.innerHTML = `
+                        <div class="catalog-empty-state" style="border-color: #FECACA; background: #FFF5F5;">
+                            <div class="catalog-empty-icon" style="color: #EF4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <h3 class="catalog-empty-title" style="color: #991B1B;">Failed to Load Course Catalog</h3>
+                            <p class="catalog-empty-desc">${escapeHtml(err.message || 'Unable to connect to the course catalog server.')}</p>
+                            <button onclick="location.reload()" class="btn-primary" style="padding: 0.65rem 1.4rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none;"><i class="fa-solid fa-arrow-rotate-right mr-1"></i> Try Again</button>
+                        </div>
+                    `;
+                }
+            }
+
+            window.resetCatalogFilters = function() {
+                if (searchInput) searchInput.value = '';
+                if (catFilter) catFilter.value = 'all';
+                if (diffFilter) diffFilter.value = 'all';
+                if (priceFilter) priceFilter.value = 'all';
+                if (sortBy) sortBy.value = 'rating';
+                loadCatalog();
+            };
+
+            let searchTimeout = null;
+            searchInput?.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadCatalog, 250);
+            });
+
+            catFilter?.addEventListener('change', loadCatalog);
+            diffFilter?.addEventListener('change', loadCatalog);
+            priceFilter?.addEventListener('change', loadCatalog);
+            sortBy?.addEventListener('change', loadCatalog);
+            resetBtn?.addEventListener('click', window.resetCatalogFilters);
+
+            loadCatalog();
+        });
+    </script>
+</body>
+</html>

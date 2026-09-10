@@ -66,3 +66,5 @@ update_profile_js.py
 backend/uploads/**
 !backend/uploads/.gitkeep
 
+# Scratch directory
+scratch/

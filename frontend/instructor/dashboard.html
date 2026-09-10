@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Dashboard - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Instructor Studio</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            
+            <!-- 1. INSTRUCTOR WELCOME / PROFILE -->
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 id="instructorWelcomeName">Welcome, Instructor! 👨‍🏫</h1>
+                    <p id="instructorSpecialization">Manage authored curriculums, monitor student progress, and inspect course ratings.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="course-editor.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-plus mr-1"></i> Create New Course</a>
+                    <a href="public-catalog.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border: 1px solid #D1D5DB; border-radius: 8px; color: #4B5563; font-weight: 600;"><i class="fa-solid fa-globe mr-1"></i> Public Catalog</a>
+                </div>
+            </div>
+
+            <!-- 2. COURSE SUMMARY TILES (My Courses, Published Courses, Draft Courses) -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-book-bookmark"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">My Courses</span>
+                        <h3 class="stat-value" id="statMyCourses">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Published Courses</span>
+                        <h3 class="stat-value" id="statPublishedCourses">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper blue"><i class="fa-solid fa-file-pen"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Draft Courses</span>
+                        <h3 class="stat-value" id="statDraftCourses">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. MY COURSES (TABLE) -->
+            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                    <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-book-open mr-1" style="color: var(--primary-purple);"></i> My Courses</h3>
+                    <a href="courses.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Manage All Courses →</a>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Course Title</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Students</th>
+                                <th>Rating</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instructorCoursesTableBody">
+                            <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading authored courses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. COURSE MANAGEMENT (QUICK ACTIONS) -->
+            <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 2rem; background: linear-gradient(135deg, #F8F7FF, #F3E8FF); border: 1px solid #E9D5FF;">
+                <h4 style="font-size: 15px; color: var(--dark-navy); margin: 0 0 0.75rem 0;"><i class="fa-solid fa-sliders mr-1" style="color: var(--primary-purple);"></i> Course Management Shortcuts</h4>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="course-editor.html" class="btn-primary-small" style="text-decoration: none; padding: 0.5rem 1rem;"><i class="fa-solid fa-plus mr-1"></i> Create New Course</a>
+                    <a href="courses.html?tab=skills" class="btn-outline" style="text-decoration: none; padding: 0.5rem 1rem; background: #fff;"><i class="fa-solid fa-bolt mr-1"></i> Edit Course Skills</a>
+                    <a href="courses.html?tab=requirements" class="btn-outline" style="text-decoration: none; padding: 0.5rem 1rem; background: #fff;"><i class="fa-solid fa-list-check mr-1"></i> Edit Prerequisites</a>
+                    <a href="courses.html?tab=assessments" class="btn-outline" style="text-decoration: none; padding: 0.5rem 1rem; background: #fff;"><i class="fa-solid fa-clipboard-question mr-1"></i> Course Quizzes</a>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: STUDENT ENROLLMENTS & STUDENT PROGRESS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 5. STUDENT ENROLLMENTS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-user-graduate mr-1" style="color: var(--primary-purple);"></i> Student Enrollments</h3>
+                        <span id="instTotalStudentsBadge" style="font-size: 12px; background: #EDE9FE; color: var(--primary-purple); font-weight: 700; padding: 2px 8px; border-radius: 4px;">0 Students</span>
+                    </div>
+                    <div id="instStudentEnrollmentsList">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading student enrollments...</div>
+                    </div>
+                </div>
+
+                <!-- 6. STUDENT PROGRESS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bars-progress mr-1" style="color: #059669;"></i> Student Progress Tracker</h3>
+                    </div>
+                    <div id="instStudentProgressList">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading progress tracker...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. COURSE COMPLETION STATISTICS -->
+            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
+                <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0 0 1rem 0;"><i class="fa-solid fa-chart-pie mr-1" style="color: #EC4899;"></i> Course Completion Statistics</h3>
+                <div id="instCompletionStatsContainer" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="background: #F8F7FF; border: 1px solid #EDE9FE; border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: var(--secondary-text);">Total Enrolled Learners</span>
+                        <h4 style="font-size: 20px; color: var(--dark-navy); margin: 4px 0;" id="instStatTotalLearners">0</h4>
+                    </div>
+                    <div style="background: #F0FDF4; border: 1px solid #DCFCE7; border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: #166534;">Completed Curriculums</span>
+                        <h4 style="font-size: 20px; color: #166534; margin: 4px 0;" id="instStatCompletedLearners">0</h4>
+                    </div>
+                    <div style="background: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 12px; color: #1E40AF;">Completion Velocity</span>
+                        <h4 style="font-size: 20px; color: #1E40AF; margin: 4px 0;" id="instStatCompletionRate">0%</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL GRID: RATINGS & REVIEWS and COURSE ANALYTICS -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                
+                <!-- 8. RATINGS & REVIEWS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-star mr-1" style="color: #F59E0B;"></i> Ratings & Reviews</h3>
+                        <span id="instAvgRatingBadge" style="font-size: 12px; background: #FEF3C7; color: #92400E; font-weight: 700; padding: 2px 8px; border-radius: 4px;">⭐ 5.0 Avg</span>
+                    </div>
+                    <div id="instReviewsFeed">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading reviews...</div>
+                    </div>
+                </div>
+
+                <!-- 9. COURSE ANALYTICS -->
+                <div class="dashboard-card" style="padding: 1.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-chart-column mr-1" style="color: #6366F1;"></i> Course Analytics</h3>
+                    </div>
+                    <div id="instCourseAnalyticsContainer">
+                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading course analytics...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/instructor.js"></script>
+</body>
+</html>

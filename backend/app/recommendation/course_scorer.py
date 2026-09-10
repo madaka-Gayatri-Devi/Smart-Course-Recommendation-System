@@ -196,9 +196,16 @@ class CourseScorer:
         career_goal_clean = (career_goal or "").strip().lower()
         secondary_goal_clean = (secondary_goal or "").strip().lower()
         
+        def _extract_token(item: Any) -> str:
+            if isinstance(item, dict):
+                return str(item.get("skill") or item.get("name") or item.get("title") or "").strip().lower()
+            elif isinstance(item, str):
+                return item.strip().lower()
+            return ""
+
         # Normalize student skills and interests
-        norm_skills = [s.strip().lower() for s in student_skills if s]
-        norm_interests = [i.strip().lower() for i in student_interests if i]
+        norm_skills = [_extract_token(s) for s in (student_skills or []) if _extract_token(s)]
+        norm_interests = [_extract_token(i) for i in (student_interests or []) if _extract_token(i)]
         
         course_skills = [s.lower() for s in course.get("skills", [])]
         course_roles = [r.lower() for r in course.get("target_roles", [])]

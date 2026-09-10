@@ -1525,3 +1525,29 @@ section {
         padding: 1.5rem;
     }
 }
+
+/* Strict User Avatar Sizing & Containment */
+.sidebar-user-avatar, .avatar, .topAvatar, .sidebarAvatar, .user-avatar, #topAvatar, #sidebarAvatar, #navAvatarInitial {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    max-width: 38px !important;
+    max-height: 38px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar-user-avatar img, .avatar img, .user-avatar img, #topAvatar img, #sidebarAvatar img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    display: block !important;
+}

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Player - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        body.player-page-body {
+            background-color: #F8FAFC;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            color: var(--dark-navy);
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        .player-topbar {
+            height: 60px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .player-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #475569;
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .player-back-btn:hover {
+            background: #F1F5F9;
+            color: var(--primary-purple);
+        }
+
+        /* 2-Column Responsive Layout (70% / 30%) */
+        .player-main-container {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            min-height: calc(100vh - 60px);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1024px) {
+            .player-main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Lesson Content Area */
+        .player-left-content {
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+            .player-left-content {
+                padding: 1rem;
+            }
+        }
+
+        .player-viewer-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            margin-bottom: 1.25rem;
+        }
+
+        .player-nav-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 0.85rem 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        /* Right Curriculum Sidebar */
+        .player-right-sidebar {
+            background: #FFFFFF;
+            border-left: 1px solid #E2E8F0;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 60px);
+            position: sticky;
+            top: 60px;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            .player-right-sidebar {
+                position: static;
+                height: auto;
+                border-left: none;
+                border-top: 1px solid #E2E8F0;
+            }
+        }
+
+        .player-curriculum-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .player-module-box {
+            border: 1px solid #EDE9FE;
+            border-radius: 10px;
+            margin-bottom: 0.85rem;
+            overflow: hidden;
+            background: #FFFFFF;
+        }
+
+        .player-module-head {
+            background: #FAF5FF;
+            padding: 0.75rem 1rem;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark-navy);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #EDE9FE;
+        }
+
+        .player-lesson-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.9rem;
+            border-top: 1px solid #F8FAFC;
+            font-size: 13px;
+            color: #334155;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .player-lesson-row:hover {
+            background: #F8FAFC;
+        }
+
+        .player-lesson-row.active {
+            background: #EEF2FF;
+            color: #4F46E5;
+            font-weight: 600;
+            border-left: 4px solid #4F46E5;
+        }
+
+        .lesson-status-icon {
+            font-size: 13px;
+            color: #CBD5E1;
+            margin-right: 0.4rem;
+        }
+
+        .lesson-status-icon.completed {
+            color: #10B981;
+        }
+
+        .quiz-choice-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            width: 100%;
+            padding: 0.85rem 1.15rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            background: #FFFFFF;
+            font-size: 13.5px;
+            color: #1E293B;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            margin-bottom: 0.6rem;
+        }
+
+        .quiz-choice-btn:hover {
+            border-color: #4F46E5;
+            background: #FAF5FF;
+        }
+
+        .quiz-choice-btn.selected {
+            border-color: #4F46E5;
+            background: #EEF2FF;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="player-page-body">
+
+    <!-- Top Navigation Header -->
+    <header class="player-topbar">
+        <div style="display: flex; align-items: center; gap: 1rem; flex: 1; overflow: hidden;">
+            <a href="my-courses.html" class="player-back-btn">
+                <i class="fa-solid fa-arrow-left"></i> <span>My Courses</span>
+            </a>
+            <span style="color: #CBD5E1;">|</span>
+            <h3 id="playerCourseTitle" style="font-size: 0.95rem; color: var(--dark-navy); margin: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Loading Course...
+            </h3>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="avatar" id="topAvatar" style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #5B3FE8, #E83FA5); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 12.5px;">ST</div>
+            <span class="profile-name" id="topName" style="font-size: 13px; font-weight: 600; color: var(--dark-navy);">Student</span>
+        </div>
+    </header>
+
+    <!-- Main 2-Column LMS Workspace (70% / 30%) -->
+    <div class="player-main-container">
+        
+        <!-- Left: Lesson Viewer & Content (70%) -->
+        <main class="player-left-content">
+            
+            <div class="player-viewer-card" id="lessonViewerCard">
+                <div style="text-align: center; padding: 4rem 1rem; color: #94A3B8;">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary-purple);"></i>
+                    <p style="margin-top: 1rem; font-size: 14px;">Loading lesson content...</p>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation Bar -->
+            <div class="player-nav-controls">
+                <button type="button" id="prevLessonBtn" class="btn-outline" style="padding: 0.55rem 1.2rem; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer;">
+                    <i class="fa-solid fa-chevron-left mr-1"></i> Previous Lesson
+                </button>
+                
+                <button type="button" id="completeLessonBtn" class="btn-primary" style="padding: 0.6rem 1.5rem; font-size: 13px; font-weight: 700; border-radius: 8px; background: #5B3FE8; border: none; cursor: pointer;">
+                    <i class="fa-solid fa-circle-check mr-1"></i> Mark as Complete
+                </button>
+
+                <button type="button" id="nextLessonBtn" class="btn-primary" style="padding: 0.55rem 1.2rem; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer;">
+                    Next Lesson <i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+
+        </main>
+
+        <!-- Right: Curriculum Syllabus & Progress (30%) -->
+        <aside class="player-right-sidebar">
+            
+            <!-- Progress Section -->
+            <div style="padding: 1.15rem 1.25rem; border-bottom: 1px solid #E2E8F0; background: #FAF5FF;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 0.4rem;">
+                    <span style="color: #6B21A8;">Course Completion</span>
+                    <span id="playerProgressPercent" style="color: #7C3AED;">0% (0/0)</span>
+                </div>
+                <div style="height: 6px; background: #E9D5FF; border-radius: 9999px; overflow: hidden;">
+                    <div id="playerProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #7C3AED, #10B981); transition: width 0.3s;"></div>
+                </div>
+            </div>
+
+            <!-- Curriculum Tree -->
+            <div class="player-curriculum-scroll" id="playerCurriculumTree">
+                <div style="text-align: center; padding: 2rem; color: #94A3B8;">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading curriculum...
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/course-player.js"></script>
+</body>
+</html>

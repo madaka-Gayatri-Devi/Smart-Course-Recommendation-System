@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Profile - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- INSTRUCTOR SIDEBAR -->
+        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Instructor Profile</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div style="max-width: 800px; margin: 0 auto;">
+                <div class="dashboard-card" style="padding: 2rem;">
+                    <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; border-bottom:1px solid #EDE9FE; padding-bottom:1.5rem;">
+                        <div id="profileAvatarBig" style="width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800;">IN</div>
+                        <div>
+                            <h2 style="margin:0 0 4px 0; color:var(--dark-navy);" id="profileDisplayName">Instructor Name</h2>
+                            <span class="badge-role instructor" style="font-size:12px;">Verified Instructor</span>
+                        </div>
+                    </div>
+
+                    <form id="instructorProfileForm">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Full Name</label>
+                                <input type="text" id="instFullName" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required>
+                            </div>
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Email (Read-only)</label>
+                                <input type="email" id="instEmail" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #E5E7EB; background:#F9FAFB; border-radius:8px;" readonly>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Phone Number</label>
+                                <input type="text" id="instPhone" placeholder="+1 (555) 000-0000" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                            </div>
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">City / Location</label>
+                                <input type="text" id="instCity" placeholder="San Francisco, CA" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:1.25rem;">
+                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Primary Teaching Specialization / Title</label>
+                            <input type="text" id="instTitle" placeholder="e.g. Senior Machine Learning Engineer & Cloud Architect" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                        </div>
+
+                        <div style="margin-bottom:1.5rem;">
+                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Instructor Bio & Credentials</label>
+                            <textarea id="instBio" rows="4" placeholder="Brief bio describing your academic and industrial background..." class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px; font-family:inherit;"></textarea>
+                        </div>
+
+                        <div id="profileMsg" style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:13.5px;"></div>
+
+                        <div style="text-align:right;">
+                            <button type="submit" id="saveProfileBtn" class="btn-primary" style="padding:0.75rem 2rem; border:none; cursor:pointer;">Save Profile Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = window.guardPage('INSTRUCTOR');
+            if (!user) return;
+
+            const fullName = user.full_name || user.name || 'Instructor';
+            document.getElementById('topName') && (document.getElementById('topName').textContent = fullName);
+            document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = fullName);
+            document.getElementById('profileDisplayName') && (document.getElementById('profileDisplayName').textContent = fullName);
+            document.getElementById('instFullName') && (document.getElementById('instFullName').value = fullName);
+            document.getElementById('instEmail') && (document.getElementById('instEmail').value = user.email || '');
+
+            let profile = {};
+            try {
+                profile = await window.api.getProfile();
+                if (profile) {
+                    document.getElementById('instPhone') && (document.getElementById('instPhone').value = profile.phone || '');
+                    document.getElementById('instCity') && (document.getElementById('instCity').value = profile.city || '');
+                    document.getElementById('instTitle') && (document.getElementById('instTitle').value = profile.career_goal || '');
+                    document.getElementById('instBio') && (document.getElementById('instBio').value = profile.learning_style || '');
+                }
+            } catch (_) {}
+
+            const form = document.getElementById('instructorProfileForm');
+            form?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveBtn = document.getElementById('saveProfileBtn');
+                const msgBox = document.getElementById('profileMsg');
+
+                if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+                try {
+                    const updatedData = {
+                        phone: document.getElementById('instPhone').value.trim(),
+                        city: document.getElementById('instCity').value.trim(),
+                        career_goal: document.getElementById('instTitle').value.trim(),
+                        learning_style: document.getElementById('instBio').value.trim()
+                    };
+
+                    await window.api.updateProfile(updatedData);
+
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#ECFDF5';
+                    msgBox.style.color = '#065F46';
+                    msgBox.style.border = '1px solid #A7F3D0';
+                    msgBox.textContent = 'Profile successfully updated!';
+                    setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
+                } catch (err) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = err.message || 'Failed to update profile.';
+                } finally {
+                    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Profile Changes'; }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

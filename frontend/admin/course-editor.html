@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Management - Admin Portal</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- 🛡️ ADMIN SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="courses.html" class="nav-item active"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="career-goals.html#assessments" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
+            <a href="reports.html#enrollments" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="reports.html#analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title" id="adminEditorHeaderTitle">Admin Course Creator</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div style="max-width: 900px; margin: 0 auto;">
+                <form id="adminCourseForm" class="dashboard-card" style="padding: 2rem;">
+                    <input type="hidden" id="adminEditingCourseId" value="">
+                    
+                    <h3 style="margin-bottom: 1.5rem; color: var(--dark-navy); border-bottom: 1px solid #EDE9FE; padding-bottom: 0.75rem;">1. Course Identification & Assignment</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Course Title *</label>
+                            <input type="text" id="adminCourseTitle" required placeholder="e.g. Advanced Cloud Systems & Security" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Assigned Instructor *</label>
+                            <input type="text" id="adminCourseInstructor" placeholder="e.g. Dr. Emily Watson or SmartLearn Faculty" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Category *</label>
+                            <select id="adminCourseCategory" required class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                                <option value="Web Development">Web Development</option>
+                                <option value="Frontend Development">Frontend Development</option>
+                                <option value="Backend Development">Backend Development</option>
+                                <option value="Data Science & AI">Data Science & AI</option>
+                                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                <option value="Cloud & DevOps">Cloud & DevOps</option>
+                                <option value="Cyber Security">Cyber Security</option>
+                                <option value="UI/UX Design">UI/UX Design</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Difficulty Level</label>
+                            <select id="adminCourseLevel" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate" selected>Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Publish Status</label>
+                            <select id="adminCourseStatus" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                                <option value="published">Published (Live to learners)</option>
+                                <option value="draft">Draft (Admin review)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Duration</label>
+                            <input type="text" id="adminCourseDuration" placeholder="e.g. 40 hours" value="35 hours" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Language</label>
+                            <input type="text" id="adminCourseLanguage" placeholder="English" value="English" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Short Summary</label>
+                        <input type="text" id="adminCourseShortDesc" placeholder="Brief 1-sentence description..." class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Detailed Curriculum Description *</label>
+                        <textarea id="adminCourseDescription" required rows="4" placeholder="Full overview, syllabus breakdown, objectives..." class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                    </div>
+
+                    <h3 style="margin-bottom: 1.5rem; color: var(--dark-navy); border-bottom: 1px solid #EDE9FE; padding-bottom: 0.75rem;">2. Skills, Career Relevance & Structured Requirements</h3>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Skills Taught (comma separated) *</label>
+                        <input type="text" id="adminCourseSkills" placeholder="AWS, Docker, Kubernetes, CI/CD, Terraform" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Prerequisites (Prior knowledge required, comma or line separated)</label>
+                        <textarea id="adminCoursePrereqs" rows="2" placeholder="Basic Linux, Networking fundamentals" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Technical Requirements (Tools / Environment)</label>
+                            <textarea id="adminCourseTechReqs" rows="2" placeholder="e.g. Laptop/Desktop, AWS Account, Docker Desktop, Terminal" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Recommended Knowledge (Helpful extras)</label>
+                            <textarea id="adminCourseRecKnowledge" rows="2" placeholder="e.g. Basic Python scripting, Cloud computing basics" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Target Roles & Career Goals (comma separated)</label>
+                        <input type="text" id="adminCourseRoles" placeholder="Cloud Architect, DevOps Engineer" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+                    </div>
+
+                    <h3 style="margin-bottom: 1.5rem; color: var(--dark-navy); border-bottom: 1px solid #EDE9FE; padding-bottom: 0.75rem;">3. Learning Outcomes & Modules</h3>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Learning Outcomes (1 per line or comma separated)</label>
+                        <textarea id="adminCourseOutcomes" rows="3" placeholder="e.g. Design multi-tier high-availability cloud infrastructure&#10;Automate provisioning with Terraform&#10;Implement zero-downtime CI/CD pipelines" class="form-input" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                            <label style="font-weight: 600; font-size: 13px; margin: 0;">Modules, Lessons & Course Materials</label>
+                            <button type="button" id="adminAddModuleBtn" class="btn-outline" style="padding: 0.35rem 0.8rem; font-size: 12px; border: 1px solid var(--primary-purple); color: var(--primary-purple); cursor: pointer; border-radius: 6px;"><i class="fa-solid fa-plus mr-1"></i> Add Module</button>
+                        </div>
+                        <div id="adminModulesContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- Dynamic module items rendered here -->
+                        </div>
+                    </div>
+
+                    <div id="adminEditorAlert" style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.5rem; font-size:13.5px;"></div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                        <a href="courses.html" class="btn-outline" style="padding: 0.75rem 1.5rem; text-decoration: none; border: 1px solid #D1D5DB; border-radius: 8px; color: #4B5563;">Cancel</a>
+                        <button type="submit" id="adminSaveCourseBtn" class="btn-primary" style="padding: 0.75rem 2rem; border: none; cursor: pointer; border-radius: 8px; background: linear-gradient(135deg, #7C3AED, #A855F7); color: #fff; font-weight: 600;">Save System Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>
