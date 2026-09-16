@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Analytics - Instructor Studio | SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/admin.css?v=20260915_indigo_theme">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+            <a href="analytics.html" class="nav-item active"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Course Analytics</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <!-- Header Section -->
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Course Performance & Insights 📊</h1>
+                    <p>In-depth analytics on course demand, completion rates, student progression, and rating distributions across your curriculums.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="courses.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600; background: #FFFFFF;"><i class="fa-solid fa-book-open mr-1"></i> My Courses</a>
+                    <a href="students.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-users mr-1"></i> View Students</a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-book"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Authored Courses</span>
+                        <h3 class="stat-value" id="instAnalyticsTotalCourses">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper blue" style="background:#EFF6FF; color:#2563EB;"><i class="fa-solid fa-user-graduate"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Unique Students</span>
+                        <h3 class="stat-value" id="instAnalyticsTotalStudents">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Overall Completion Rate</span>
+                        <h3 class="stat-value" id="instAnalyticsCompletionRate">0%</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper orange" style="background:#FEF3C7; color:#D97706;"><i class="fa-solid fa-star"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Average Rating</span>
+                        <h3 class="stat-value" id="instAnalyticsAvgRating">⭐ 5.0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Highlights -->
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.25rem; border-left: 4px solid #7C3AED;">
+                    <span style="font-size: 11.5px; color: var(--secondary-text); font-weight: 700; text-transform: uppercase;">🔥 Most Enrolled Course</span>
+                    <h4 style="font-size: 14px; color: #0F172A; margin: 6px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="topEnrolledName">Loading...</h4>
+                    <span style="font-size: 13px; font-weight: 700; color: #7C3AED;" id="topEnrolledCount">0 Students</span>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.25rem; border-left: 4px solid #F59E0B;">
+                    <span style="font-size: 11.5px; color: var(--secondary-text); font-weight: 700; text-transform: uppercase;">⭐ Highest Rated Course</span>
+                    <h4 style="font-size: 14px; color: #0F172A; margin: 6px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="topRatedName">Loading...</h4>
+                    <span style="font-size: 13px; font-weight: 700; color: #D97706;" id="topRatedScore">⭐ 5.0</span>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.25rem; border-left: 4px solid #10B981;">
+                    <span style="font-size: 11.5px; color: var(--secondary-text); font-weight: 700; text-transform: uppercase;">🎯 Highest Completion Rate</span>
+                    <h4 style="font-size: 14px; color: #0F172A; margin: 6px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="topCompletionName">Loading...</h4>
+                    <span style="font-size: 13px; font-weight: 700; color: #059669;" id="topCompletionScore">0% Completion</span>
+                </div>
+            </div>
+
+            <!-- Controls: Search -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="search-box" style="min-width: 260px; max-width: 400px;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="analyticsSearchInput" placeholder="Search course title or category...">
+                </div>
+            </div>
+
+            <!-- Course Analytics Table -->
+            <div class="dashboard-card" style="padding: 1.5rem;">
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Course Title</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Students</th>
+                                <th>Completions</th>
+                                <th>Completion Rate</th>
+                                <th>Avg Progress</th>
+                                <th>Rating & Reviews</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instructorAnalyticsTableBody">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 3rem 1rem; color: var(--secondary-text);">
+                                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading course analytics...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/instructor.js"></script>
+</body>
+</html>

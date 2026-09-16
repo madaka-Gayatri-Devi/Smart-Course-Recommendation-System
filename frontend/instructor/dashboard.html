@@ -11,8 +11,8 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
 </head>
 <body class="dashboard-body">
 
@@ -20,7 +20,7 @@
 
     <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
         <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
 
@@ -35,12 +35,13 @@
             <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
             <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
             <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
-            <a href="courses.html?tab=students" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
-            <a href="courses.html?tab=analytics" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
             
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="profile.html#notifications" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
         <div class="sidebar-footer">
@@ -66,7 +67,12 @@
                 <h2 class="page-title">Instructor Studio</h2>
             </div>
             
-            <div class="topbar-right">
+            <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="topNotificationBadge" style="display: none;"></span>
+                </a>
+
                 <div class="profile-dropdown">
                     <div class="avatar" id="topAvatar">IN</div>
                     <span class="profile-name" id="topName">Instructor</span>
@@ -224,6 +230,7 @@
     <!-- Scripts -->
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
     <script src="../js/instructor.js"></script>
 </body>
 </html>

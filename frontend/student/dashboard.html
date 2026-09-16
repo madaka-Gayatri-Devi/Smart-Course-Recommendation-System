@@ -10,211 +10,355 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/recommendations.css">
+    <!-- Styles with Cache Busters -->
+    <link rel="stylesheet" href="../css/style.css?v=20260915_compact_theme">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_compact_theme">
+    <link rel="stylesheet" href="../css/recommendations.css?v=20260915_compact_theme">
 </head>
 <body class="dashboard-body">
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- 🎓 STUDENT SIDEBAR -->
-        <!-- 🎓 STUDENT SIDEBAR -->
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        <div class="sidebar-glow-1"></div>
-        <div class="sidebar-glow-2"></div>
+    <div class="app-layout">
+        <!-- 🎓 STUDENT PINK SIDEBAR -->
+        <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+            <div class="sidebar-glow-1"></div>
+            <div class="sidebar-glow-2"></div>
 
-        <div class="sidebar-brand">
-            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
-        </div>
-        
-        <nav class="sidebar-nav">
-            <div class="nav-label">LEARNING</div>
-            <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
-            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
-            <a href="my-courses.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i> <span class="nav-text">My Courses</span></a>
-            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
-            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
-            
-            <div class="nav-label">DISCOVER</div>
-            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
-            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
-            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
-            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
-            
-            <div class="nav-label">ACCOUNT</div>
-            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
-        </nav>
-        
-        <div class="sidebar-footer">
-            <div class="sidebar-user-card">
-                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
-                <div class="sidebar-user-info">
-                    <span class="sidebar-user-name" id="sidebarName">Student</span>
-                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
-                </div>
-            </div>
-            <div class="sidebar-footer-links">
-                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
-                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="dashboard-main">
-        <header class="dashboard-topbar">
-            <div class="topbar-left">
-                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-                <h2 class="page-title">Student Dashboard</h2>
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-graduation-cap"></i> SmartLearn
             </div>
             
-            <div class="topbar-right">
-                <div class="profile-dropdown">
-                    <div class="avatar" id="topAvatar">ST</div>
-                    <span class="profile-name" id="topName">Student</span>
-                </div>
-            </div>
-        </header>
-
-        <div class="dashboard-content fade-in-up">
-            
-            <!-- 1. STUDENT WELCOME / PROFILE HERO -->
-            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <h1 id="studentWelcomeName">Welcome back, Student! 👋</h1>
-                    <p id="studentTargetGoalSubtitle">Target Career: Full Stack Web Developer • Personalized curriculum generated for your learning pace.</p>
-                </div>
-                <div style="display: flex; gap: 0.75rem;">
-                    <a href="assessment.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-clipboard-question mr-1"></i> Take Skill Assessment</a>
-                    <a href="courses.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border: 1px solid #D1D5DB; border-radius: 8px; color: #4B5563; font-weight: 600;"><i class="fa-solid fa-compass mr-1"></i> Explore Catalog</a>
-                </div>
-            </div>
-
-            <!-- 2. LEARNING SUMMARY TILES (Enrolled, Completed, Progress %) -->
-            <div class="stats-grid" style="margin-bottom: 2rem;">
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-graduation-cap"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Courses Enrolled</span>
-                        <h3 class="stat-value" id="statEnrolledCount">0</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Courses Completed</span>
-                        <h3 class="stat-value" id="statCompletedCount">0</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper pink"><i class="fa-solid fa-chart-pie"></i></div>
-                    <div class="stat-info">
-                        <span class="stat-label">Course Progress</span>
-                        <h3 class="stat-value" id="statAvgProgress">0%</h3>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. CONTINUE LEARNING -->
-            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                    <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-play-circle mr-1" style="color: var(--primary-purple);"></i> Continue Learning</h3>
-                    <a href="my-courses.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View All My Courses →</a>
-                </div>
-                <div id="continueLearningList">
-                    <div style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading active courses...</div>
-                </div>
-            </div>
-
-            <!-- 4. PERSONALIZED COURSE RECOMMENDATIONS -->
-            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                    <div>
-                        <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color: #F59E0B;"></i> Recommended For You</h3>
-                        <p style="font-size: 12.5px; color: var(--secondary-text); margin: 3px 0 0;">Mapped to your current skills, skill gaps, and career goals.</p>
-                    </div>
-                    <a href="recommendations.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View Full Recommendations →</a>
-                </div>
-                <div class="recommendation-grid" id="studentRecommendationsGrid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--secondary-text);">Loading recommendations...</div>
-                </div>
-            </div>
-
-            <!-- DUAL GRID: CAREER GOAL & SKILL GAP ANALYSIS -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <nav class="sidebar-nav">
+                <div class="nav-label">LEARNING</div>
+                <a href="dashboard.html" class="nav-item active"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
+                <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+                <a href="my-courses.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i> <span class="nav-text">My Courses</span></a>
+                <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
+                <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
                 
-                <!-- 5. CAREER GOAL -->
-                <div class="dashboard-card" style="padding: 1.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bullseye mr-1" style="color: var(--primary-purple);"></i> Career Goal</h3>
-                        <a href="profile.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Change Goal</a>
-                    </div>
-                    <div id="careerGoalContainer">
-                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading career goal...</div>
-                    </div>
-                </div>
-
-                <!-- 6. SKILL GAP ANALYSIS -->
-                <div class="dashboard-card" style="padding: 1.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-layer-group mr-1" style="color: #EC4899;"></i> Skill Gap Analysis</h3>
-                        <a href="skill-gaps.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Full Analysis →</a>
-                    </div>
-                    <div id="skillGapsContainer">
-                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading skill gaps...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 7. PERSONALIZED LEARNING PATH -->
-            <div class="dashboard-card" style="padding: 1.75rem; margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                    <div>
-                        <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-road mr-1" style="color: #10B981;"></i> Personalized Learning Path</h3>
-                        <p style="font-size: 12.5px; color: var(--secondary-text); margin: 3px 0 0;">Step-by-step milestone progression to master your target role.</p>
-                    </div>
-                    <a href="learning-path.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View Roadmap →</a>
-                </div>
-                <div id="learningPathStepsContainer">
-                    <div style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading learning path milestones...</div>
-                </div>
-            </div>
-
-            <!-- DUAL GRID: ASSESSMENT RESULT & NOTIFICATIONS -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="nav-label">DISCOVER</div>
+                <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
+                <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
+                <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
+                <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
                 
-                <!-- 8. ASSESSMENT RESULT -->
-                <div class="dashboard-card" style="padding: 1.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-clipboard-check mr-1" style="color: #6366F1;"></i> Latest Assessment Result</h3>
-                        <a href="assessment.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">Take Quiz</a>
-                    </div>
-                    <div id="latestAssessmentContainer">
-                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading assessment results...</div>
+                <div class="nav-label">ACCOUNT</div>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+                <a href="payment-history.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Payment History</span></a>
+                <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
+                    <div class="sidebar-user-info">
+                        <span class="sidebar-user-name" id="sidebarName">Student</span>
+                        <span class="sidebar-user-role" id="sidebarRole">STUDENT</span>
                     </div>
                 </div>
-
-                <!-- 9. NOTIFICATIONS -->
-                <div class="dashboard-card" style="padding: 1.75rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bell mr-1" style="color: #F59E0B;"></i> Learning Notifications</h3>
-                        <a href="notifications.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none;">View All</a>
-                    </div>
-                    <div id="studentNotificationsList">
-                        <div style="text-align: center; padding: 1.5rem; color: var(--secondary-text);">Loading notifications...</div>
-                    </div>
+                <div class="sidebar-footer-links">
+                    <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                    <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
                 </div>
             </div>
+        </aside>
 
+        <!-- MAIN APPLICATION AREA -->
+        <div class="app-main dashboard-main">
+            <!-- Top Bar Header -->
+            <header class="dashboard-topbar app-header">
+                <div class="topbar-left">
+                    <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                    <h2 class="page-title">Student Dashboard</h2>
+                </div>
+                
+                <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                    <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="topNotificationBadge" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;"></span>
+                    </a>
+
+                    <div class="profile-dropdown-container" style="position: relative;">
+                        <div class="profile-dropdown" id="topProfileDropdownToggle" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: #FFFFFF; border: 1px solid var(--border-light);">
+                            <div class="avatar" id="topAvatar">ST</div>
+                            <span class="profile-name" id="topName" style="font-size: 13.5px; font-weight: 600; color: var(--dark-navy);">Student</span>
+                            <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: var(--secondary-text); margin-left: 2px;"></i>
+                        </div>
+
+                        <!-- Profile Dropdown Menu (hidden by default) -->
+                        <div class="profile-dropdown-menu" id="topProfileDropdownMenu" style="display: none !important;">
+                            <div style="padding: 0.65rem 1.15rem 0.45rem; border-bottom: 1px solid var(--border-light);">
+                                <strong id="dropdownUserName" style="font-size: 13.5px; color: var(--dark-navy); display: block;">Student</strong>
+                                <span id="dropdownUserRole" style="font-size: 10.5px; color: var(--primary-purple); font-weight: 700; text-transform: uppercase;">STUDENT</span>
+                            </div>
+                            <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+                            <a href="learning-path.html" class="dropdown-item"><i class="fa-solid fa-road"></i> Learning Path</a>
+                            <a href="payment-history.html" class="dropdown-item"><i class="fa-solid fa-receipt"></i> Payment History</a>
+                            <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item text-danger logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content app-content fade-in-up" id="mainDashboardContent">
+                
+                <!-- 1. STUDENT WELCOME / PROFILE HERO -->
+                <div class="welcome-section" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h1 id="studentWelcomeName">Welcome back, Student! 👋</h1>
+                        <p id="studentTargetGoalSubtitle">Target Career: Loading career goal...</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;" id="topHeaderQuickButtons">
+                        <a href="courses.html" class="btn-primary"><i class="fa-solid fa-compass mr-1"></i> Explore Courses</a>
+                        <a href="assessment.html" class="btn-outline"><i class="fa-solid fa-clipboard-question mr-1"></i> Take Assessment</a>
+                    </div>
+                </div>
+
+                <!-- 2. TOP SUMMARY CARDS GRID -->
+                <div class="stats-grid" style="margin-bottom: 1.5rem;" id="topSummaryGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper purple"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Courses Enrolled</span>
+                            <h3 class="stat-value" id="statEnrolledCount">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Courses Completed</span>
+                            <h3 class="stat-value" id="statCompletedCount">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper pink"><i class="fa-solid fa-chart-pie"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Overall Progress</span>
+                            <h3 class="stat-value" id="statAvgProgress">0%</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper orange"><i class="fa-solid fa-fire"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Learning Streak</span>
+                            <h3 class="stat-value" id="statStreakCount">0 days</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper indigo"><i class="fa-solid fa-bullseye"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Career Readiness</span>
+                            <h3 class="stat-value" id="statCareerReadiness">0%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. DYNAMIC NEXT BEST ACTION BANNER -->
+                <div id="nextBestActionContainer"></div>
+
+                <!-- 4. CONTINUE LEARNING -->
+                <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <div>
+                            <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-circle-play mr-1" style="color: var(--primary-purple);"></i> Continue Learning</h3>
+                            <p style="font-size: 12.5px; color: var(--secondary-text); margin: 2px 0 0;">Pick up directly from your last active lesson module.</p>
+                        </div>
+                        <a href="my-courses.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View All Enrolled Courses →</a>
+                    </div>
+                    <div class="course-grid" id="continueLearningList">
+                        <div class="skeleton skeleton-card"></div>
+                    </div>
+                </div>
+
+                <!-- 5. PERSONALIZED COURSE RECOMMENDATIONS -->
+                <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color: #F59E0B;"></i> Recommended For You</h3>
+                            <p style="font-size: 12.5px; color: var(--secondary-text); margin: 3px 0 0;">AI-driven recommendations based on your profile, skill gaps, and career goals.</p>
+                        </div>
+                        <a href="recommendations.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">View Full Recommendations →</a>
+                    </div>
+                    <div class="recommendation-grid" id="studentRecommendationsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+                        <div class="skeleton skeleton-card"></div>
+                        <div class="skeleton skeleton-card"></div>
+                    </div>
+                </div>
+
+                <!-- 6. DUAL GRID: CAREER GOAL & SKILL GAP ANALYSIS -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;" class="responsive-split">
+                    <!-- CAREER READINESS CARD -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bullseye mr-1" style="color: var(--primary-purple);"></i> Career Readiness</h3>
+                            <a href="profile.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Change Goal</a>
+                        </div>
+                        <div id="careerGoalContainer">
+                            <div class="skeleton skeleton-text medium"></div>
+                        </div>
+                    </div>
+
+                    <!-- SKILL GAP ANALYSIS CARD -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-layer-group mr-1" style="color: #EC4899;"></i> Skill Gap Analysis</h3>
+                            <a href="skill-gaps.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Full Analysis →</a>
+                        </div>
+                        <div id="skillGapsContainer">
+                            <div class="skeleton skeleton-text medium"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. PERSONALIZED LEARNING PATH ROADMAP -->
+                <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-road mr-1" style="color: #10B981;"></i> Personalized Learning Path</h3>
+                            <p style="font-size: 12.5px; color: var(--secondary-text); margin: 3px 0 0;">Step-by-step milestone progression to master your target role.</p>
+                        </div>
+                        <a href="learning-path.html" class="btn-outline-small"><i class="fa-solid fa-map mr-1"></i> View Full Path</a>
+                    </div>
+                    <div id="learningPathStepsContainer">
+                        <div class="skeleton skeleton-card"></div>
+                    </div>
+                </div>
+
+                <!-- 8. DUAL GRID: SKILL ASSESSMENT & WEEKLY GOAL -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;" class="responsive-split">
+                    <!-- SKILL ASSESSMENT RESULT -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-clipboard-check mr-1" style="color: #6366F1;"></i> Skill Assessment</h3>
+                            <a href="assessment.html" style="font-size: 12.5px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Take Diagnostic</a>
+                        </div>
+                        <div id="latestAssessmentContainer">
+                            <div class="skeleton skeleton-text medium"></div>
+                        </div>
+                    </div>
+
+                    <!-- WEEKLY LEARNING GOAL -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bullseye-arrow mr-1" style="color: #F59E0B;"></i> Weekly Learning Goal</h3>
+                            <span style="font-size: 12px; color: var(--secondary-text);">Current Week</span>
+                        </div>
+                        <div id="weeklyGoalContainer">
+                            <div class="skeleton skeleton-text medium"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. DUAL GRID: RECENT ACTIVITY & ACHIEVEMENTS -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;" class="responsive-split">
+                    <!-- RECENT ACTIVITY TIMELINE -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-clock-rotate-left mr-1" style="color: var(--primary-purple);"></i> Recent Learning Activity</h3>
+                        </div>
+                        <div id="recentActivityContainer">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+
+                    <!-- ACHIEVEMENTS & CERTIFICATES -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-award mr-1" style="color: #E83FA5;"></i> Earned Achievements</h3>
+                        </div>
+                        <div id="achievementsContainer">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. SECONDARY GRID: WISHLIST, NOTIFICATIONS, PAYMENTS & PROFILE -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <!-- WISHLIST / SAVED COURSES -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-heart mr-1" style="color: #EC4899;"></i> Saved Courses</h3>
+                            <a href="wishlist.html" style="font-size: 12px; color: var(--primary-purple); text-decoration: none;">View Wishlist →</a>
+                        </div>
+                        <div id="wishlistContainer">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+
+                    <!-- RECENT NOTIFICATIONS -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-bell mr-1" style="color: #F59E0B;"></i> Notifications</h3>
+                            <a href="notifications.html" style="font-size: 12px; color: var(--primary-purple); text-decoration: none;">View All →</a>
+                        </div>
+                        <div id="studentNotificationsList">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+
+                    <!-- RECENT PAYMENT -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-receipt mr-1" style="color: #10B981;"></i> Recent Transaction</h3>
+                            <a href="payment-history.html" style="font-size: 12px; color: var(--primary-purple); text-decoration: none;">History →</a>
+                        </div>
+                        <div id="recentPaymentContainer">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+
+                    <!-- PROFILE COMPLETION METER -->
+                    <div class="dashboard-card" style="padding: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 16px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-user-check mr-1" style="color: var(--primary-purple);"></i> Profile Completeness</h3>
+                            <a href="profile.html" style="font-size: 12px; color: var(--primary-purple); text-decoration: none;">Update →</a>
+                        </div>
+                        <div id="profileCompletionContainer">
+                            <div class="skeleton skeleton-text short"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. QUICK ACTIONS BAR -->
+                <div class="dashboard-card" style="padding: 1.25rem 1.5rem; margin-bottom: 2rem;">
+                    <h4 style="font-size: 14px; font-weight: 700; color: var(--dark-navy); margin: 0 0 0.5rem;"><i class="fa-solid fa-bolt mr-1" style="color: #F59E0B;"></i> Quick Actions</h4>
+                    <div class="quick-actions-bar" id="quickActionsBar">
+                        <a href="courses.html" class="quick-action-pill"><i class="fa-solid fa-compass"></i> Explore Course Catalog</a>
+                        <a href="my-courses.html" class="quick-action-pill"><i class="fa-solid fa-play"></i> Continue Learning</a>
+                        <a href="assessment.html" class="quick-action-pill"><i class="fa-solid fa-clipboard-question"></i> Take Skill Assessment</a>
+                        <a href="learning-path.html" class="quick-action-pill"><i class="fa-solid fa-road"></i> View Learning Path</a>
+                        <a href="skill-gaps.html" class="quick-action-pill"><i class="fa-solid fa-layer-group"></i> View Skill Gaps</a>
+                        <a href="profile.html" class="quick-action-pill"><i class="fa-solid fa-user-pen"></i> Update Profile</a>
+                    </div>
+                </div>
+
+            </main>
         </div>
-    </main>
+    </div>
+
+    <!-- "WHY RECOMMENDED?" INTERACTIVE MODAL (HIDDEN BY DEFAULT) -->
+    <div class="modal-overlay" id="whyRecommendedModal" style="display: none !important;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: #F59E0B;"></i> Why Recommended For You</h3>
+                <button class="modal-close-btn" id="closeWhyModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="whyModalCourseTitle" style="font-size: 16px; color: var(--dark-navy); margin: 0 0 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Course Title</h4>
+                <div id="whyModalContent">
+                    <!-- Dynamic breakdown -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
-    <script src="../js/dashboard.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/dashboard.js?v=20260915_compact_theme"></script>
 </body>
 </html>

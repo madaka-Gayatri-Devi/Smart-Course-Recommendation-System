@@ -16,7 +16,7 @@ let selectedPricingMode = 'free'; // 'free' | 'paid'
 let uploadedThumbnailUrl = '';
 let uploadedDemoVideoUrl = '';
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initInstructorApp() {
     const user = window.guardPage('INSTRUCTOR');
     if (!user) return;
 
@@ -36,7 +36,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('courseForm')) {
         await setupCourseStudio(user);
     }
-});
+
+    // 4. Students & Enrollments Page (students.html)
+    if (document.getElementById('instructorStudentsTableBody')) {
+        await loadInstructorStudentsPage();
+    }
+
+    // 5. Ratings & Reviews Page (reviews.html)
+    if (document.getElementById('instructorReviewsContainer')) {
+        await loadInstructorReviewsPage();
+    }
+
+    // 6. Course Analytics Page (analytics.html)
+    if (document.getElementById('instructorAnalyticsTableBody')) {
+        await loadInstructorAnalyticsPage();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInstructorApp);
+} else {
+    initInstructorApp();
+}
 
 function setupInstructorHeader(user) {
     const name = user.full_name || user.name || 'Instructor';
@@ -1717,3 +1738,623 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+// =========================================================================
+// 5. STUDENTS / ENROLLMENTS PAGE FUNCTIONS
+// =========================================================================
+
+// =========================================================================
+// 5. STUDENTS / ENROLLMENTS PAGE FUNCTIONS
+// =========================================================================
+
+let allInstructorStudents = [];
+
+async function loadInstructorStudentsPage() {
+    const tbody = document.getElementById('instructorStudentsTableBody');
+    if (!tbody) return;
+
+    const courseFilter = document.getElementById('courseFilterSelect');
+    const searchInput = document.getElementById('studentsSearchInput');
+    const statusFilter = document.getElementById('statusFilterSelect');
+    const sortSelect = document.getElementById('studentsSortSelect');
+
+    // 1. Populate course dropdown dynamically from instructor's authored courses
+    try {
+        if (courseFilter) {
+            courseFilter.innerHTML = `<option value="all">Loading courses...</option>`;
+            const courses = await window.api.getInstructorCourses();
+            let optionsHtml = `<option value="all">All Courses</option>`;
+            if (Array.isArray(courses)) {
+                courses.forEach(c => {
+                    optionsHtml += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
+                });
+            }
+            courseFilter.innerHTML = optionsHtml;
+        }
+    } catch (err) {
+        console.warn("Could not load instructor courses for filter dropdown:", err);
+        if (courseFilter) {
+            courseFilter.innerHTML = `<option value="all">All Courses</option>`;
+        }
+    }
+
+    // Filter function for client-side search, status, and sort
+    const applyFilters = () => {
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const statusVal = statusFilter ? statusFilter.value : 'all';
+        const sortVal = sortSelect ? sortSelect.value : 'newest';
+
+        let filtered = allInstructorStudents.filter(s => {
+            const matchesSearch = !query || 
+                (s.student_name && s.student_name.toLowerCase().includes(query)) ||
+                (s.student_email && s.student_email.toLowerCase().includes(query)) ||
+                (s.course_title && s.course_title.toLowerCase().includes(query));
+
+            const matchesStatus = statusVal === 'all' || 
+                (statusVal === 'completed' && (s.status === 'completed' || s.progress_percentage === 100)) ||
+                (statusVal === 'in_progress' && s.progress_percentage > 0 && s.progress_percentage < 100) ||
+                (statusVal === 'not_started' && (s.progress_percentage === 0 || !s.progress_percentage));
+
+            return matchesSearch && matchesStatus;
+        });
+
+        if (sortVal === 'newest') {
+            filtered.sort((a, b) => (b.enrollment_id || 0) - (a.enrollment_id || 0));
+        } else if (sortVal === 'oldest') {
+            filtered.sort((a, b) => (a.enrollment_id || 0) - (b.enrollment_id || 0));
+        } else if (sortVal === 'progress_high') {
+            filtered.sort((a, b) => (b.progress_percentage || 0) - (a.progress_percentage || 0));
+        } else if (sortVal === 'progress_low') {
+            filtered.sort((a, b) => (a.progress_percentage || 0) - (b.progress_percentage || 0));
+        } else if (sortVal === 'name_asc') {
+            filtered.sort((a, b) => (a.student_name || '').localeCompare(b.student_name || ''));
+        }
+
+        renderInstructorStudentsTable(filtered);
+    };
+
+    // 2. Fetch student enrollments for selected course scope
+    const fetchAndRender = async (courseId = 'all') => {
+        try {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: var(--secondary-text);">
+                        <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading student enrollments...
+                    </td>
+                </tr>
+            `;
+
+            const data = await window.api.getInstructorStudents(courseId);
+            if (!data) throw new Error("Could not load student enrollments");
+
+            document.getElementById('instStatTotalStudents') && (document.getElementById('instStatTotalStudents').textContent = data.total_students || 0);
+            document.getElementById('instStatActiveLearners') && (document.getElementById('instStatActiveLearners').textContent = data.active_learners || 0);
+            document.getElementById('instStatCompletedStudents') && (document.getElementById('instStatCompletedStudents').textContent = data.completed_students || 0);
+            document.getElementById('instStatAvgProgress') && (document.getElementById('instStatAvgProgress').textContent = `${data.avg_progress || 0}%`);
+
+            allInstructorStudents = data.students || [];
+            applyFilters();
+        } catch (err) {
+            console.error("Error loading instructor students:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        Unable to load student enrollments. Please try again.
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    // Initial load for all courses
+    await fetchAndRender('all');
+
+    // Bind event listeners
+    if (courseFilter) {
+        courseFilter.addEventListener('change', async () => {
+            await fetchAndRender(courseFilter.value);
+        });
+    }
+
+    searchInput && searchInput.addEventListener('input', applyFilters);
+    statusFilter && statusFilter.addEventListener('change', applyFilters);
+    sortSelect && sortSelect.addEventListener('change', applyFilters);
+}
+
+function renderInstructorStudentsTable(students) {
+    const tbody = document.getElementById('instructorStudentsTableBody');
+    if (!tbody) return;
+
+    if (!students || students.length === 0) {
+        const courseFilter = document.getElementById('courseFilterSelect');
+        const searchInput = document.getElementById('studentsSearchInput');
+        const isFiltered = (courseFilter && courseFilter.value !== 'all') || (searchInput && searchInput.value.trim() !== '');
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                    <div style="font-size:2.2rem; margin-bottom:0.5rem;">🎓</div>
+                    <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">
+                        ${isFiltered ? 'No students found for this course.' : 'No students enrolled in your courses yet.'}
+                    </div>
+                    <div style="font-size:13.5px; color:#64748b;">
+                        ${isFiltered ? 'Try selecting a different course or clearing your search filter.' : 'Learners who enroll in your courses will be listed here automatically.'}
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = students.map((s, idx) => {
+        const isCompleted = s.status === 'completed' || s.progress_percentage === 100;
+        const pct = s.progress_percentage || 0;
+
+        let statusBadge = '';
+        if (isCompleted) {
+            statusBadge = `<span class="badge-status-published" style="background:#ECFDF5; color:#047857; font-weight:600; font-size:11.5px; padding:3px 10px; border-radius:12px;"><i class="fa-solid fa-circle-check mr-1"></i> Completed</span>`;
+        } else if (pct > 0) {
+            statusBadge = `<span style="background:#EFF6FF; color:#1D4ED8; font-weight:600; font-size:11.5px; padding:3px 10px; border-radius:12px;"><i class="fa-solid fa-spinner fa-spin mr-1"></i> In Progress</span>`;
+        } else {
+            statusBadge = `<span style="background:#F1F5F9; color:#64748B; font-weight:600; font-size:11.5px; padding:3px 10px; border-radius:12px;"><i class="fa-solid fa-clock mr-1"></i> Not Started</span>`;
+        }
+
+        const initials = (s.student_name || 'Student').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+
+        return `
+            <tr style="cursor:pointer;" onclick="openStudentDetailModal(${idx})">
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; flex-shrink:0;">
+                            ${initials}
+                        </div>
+                        <div>
+                            <strong style="color:var(--dark-navy); font-size:14px; display:block;">${escapeHtml(s.student_name)}</strong>
+                            <span style="font-size:12px; color:#64748b;">${escapeHtml(s.student_email)}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <strong style="font-size:13.5px; color:#1E293B; display:block;">${escapeHtml(s.course_title)}</strong>
+                    <span class="badge-category" style="font-size:11px;">${escapeHtml(s.course_category || 'General')}</span>
+                </td>
+                <td>
+                    <span style="font-size:13px; color:#475569;">${escapeHtml(s.enrolled_at || 'Recent')}</span>
+                </td>
+                <td>
+                    <div style="min-width:130px;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:4px;">
+                            <span style="color:#64748B;">${s.completed_lessons || 0}/${s.total_lessons || 24} lessons</span>
+                            <span style="color:#7C3AED;">${pct}%</span>
+                        </div>
+                        <div style="height:6px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                            <div style="height:100%; width:${pct}%; background:${isCompleted ? '#10B981' : 'linear-gradient(90deg, #7C3AED, #A855F7)'}; border-radius:9999px; transition:width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${statusBadge}</td>
+                <td>
+                    <span style="font-size:12.5px; color:#64748B;"><i class="fa-regular fa-clock mr-1"></i> ${escapeHtml(s.last_active || 'Recent')}</span>
+                </td>
+                <td style="text-align:right;">
+                    <button class="btn-outline" style="padding:0.35rem 0.65rem; font-size:11.5px; border-radius:6px;" onclick="event.stopPropagation(); openStudentDetailModal(${idx});">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Details
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.openStudentDetailModal = function(idx) {
+    const s = allInstructorStudents[idx];
+    if (!s) return;
+
+    let modal = document.getElementById('studentDetailModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'studentDetailModal';
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:1100; display:flex; align-items:center; justify-content:center; padding:1rem;';
+        document.body.appendChild(modal);
+    }
+
+    const isCompleted = s.status === 'completed' || s.progress_percentage === 100;
+    const pct = s.progress_percentage || 0;
+    const initials = (s.student_name || 'Student').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+
+    modal.innerHTML = `
+        <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:550px; padding:2rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); position:relative; animation:fadeIn 0.2s ease;">
+            <button onclick="closeStudentDetailModal()" style="position:absolute; top:1.25rem; right:1.25rem; background:none; border:none; font-size:1.25rem; color:#64748B; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #E2E8F0;">
+                <div style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">
+                    ${initials}
+                </div>
+                <div>
+                    <h3 style="font-size:18px; color:#0F172A; margin:0 0 2px;">${escapeHtml(s.student_name)}</h3>
+                    <div style="font-size:13px; color:#64748B;">${escapeHtml(s.student_email)}</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem;">
+                    <span style="font-size:11.5px; color:#64748B; display:block;">Enrolled Course</span>
+                    <strong style="font-size:13.5px; color:#1E293B; display:block; margin-top:2px;">${escapeHtml(s.course_title)}</strong>
+                </div>
+                <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem;">
+                    <span style="font-size:11.5px; color:#64748B; display:block;">Enrollment Date</span>
+                    <strong style="font-size:13.5px; color:#1E293B; display:block; margin-top:2px;">${escapeHtml(s.enrolled_at || 'Recent')}</strong>
+                </div>
+                <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem;">
+                    <span style="font-size:11.5px; color:#64748B; display:block;">Completion Status</span>
+                    <strong style="font-size:13.5px; color:${isCompleted ? '#059669' : '#1D4ED8'}; display:block; margin-top:2px;">${isCompleted ? 'Completed' : (pct > 0 ? 'In Progress' : 'Not Started')}</strong>
+                </div>
+                <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem;">
+                    <span style="font-size:11.5px; color:#64748B; display:block;">Last Activity</span>
+                    <strong style="font-size:13.5px; color:#1E293B; display:block; margin-top:2px;">${escapeHtml(s.last_active || 'Recent')}</strong>
+                </div>
+            </div>
+
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; font-size:13px; font-weight:700;">
+                    <span>Overall Progress</span>
+                    <span style="color:#7C3AED;">${pct}%</span>
+                </div>
+                <div style="height:8px; background:#E2E8F0; border-radius:9999px; overflow:hidden; margin-bottom:0.5rem;">
+                    <div style="height:100%; width:${pct}%; background:${isCompleted ? '#10B981' : 'linear-gradient(90deg, #7C3AED, #A855F7)'}; border-radius:9999px;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#64748B;">
+                    <span>Completed Lessons: <strong>${s.completed_lessons || 0}</strong></span>
+                    <span>Total Lessons: <strong>${s.total_lessons || 24}</strong></span>
+                </div>
+            </div>
+
+            <div style="text-align:right;">
+                <button onclick="closeStudentDetailModal()" class="btn-primary" style="padding:0.55rem 1.25rem; font-size:13px; border-radius:8px;">Close</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+window.closeStudentDetailModal = function() {
+    const modal = document.getElementById('studentDetailModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// =========================================================================
+// 6. RATINGS & REVIEWS PAGE FUNCTIONS
+// =========================================================================
+
+let allInstructorReviews = [];
+
+async function loadInstructorReviewsPage() {
+    const container = document.getElementById('instructorReviewsContainer');
+    if (!container) return;
+
+    try {
+        const data = await window.api.getInstructorReviews();
+        if (!data) throw new Error("Could not load reviews");
+
+        document.getElementById('instReviewsAvgRating') && (document.getElementById('instReviewsAvgRating').textContent = (data.avg_rating || 5.0).toFixed(1));
+        document.getElementById('instReviewsTotalCount') && (document.getElementById('instReviewsTotalCount').textContent = data.total_reviews || 0);
+
+        // Rating breakdown
+        const breakdown = data.rating_breakdown || {5:0, 4:0, 3:0, 2:0, 1:0};
+        const total = data.total_reviews || 1;
+        for (let star = 5; star >= 1; star--) {
+            const count = breakdown[star] || 0;
+            const pct = Math.round((count / total) * 100);
+            const countEl = document.getElementById(`starCount${star}`);
+            const barEl = document.getElementById(`starBar${star}`);
+            countEl && (countEl.textContent = count);
+            barEl && (barEl.style.width = `${pct}%`);
+        }
+
+        allInstructorReviews = data.reviews || [];
+
+        populateReviewsCourseFilter(allInstructorReviews);
+
+        renderInstructorReviewsList(allInstructorReviews);
+
+        // Bind Filters
+        const searchInput = document.getElementById('reviewsSearchInput');
+        const courseFilter = document.getElementById('reviewsCourseFilterSelect');
+        const starFilter = document.getElementById('reviewsStarFilterSelect');
+
+        const applyFilters = () => {
+            const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            const courseVal = courseFilter ? courseFilter.value : 'all';
+            const starVal = starFilter ? starFilter.value : 'all';
+
+            const filtered = allInstructorReviews.filter(r => {
+                const matchesSearch = !query ||
+                    (r.student_name && r.student_name.toLowerCase().includes(query)) ||
+                    (r.course_title && r.course_title.toLowerCase().includes(query)) ||
+                    (r.comment && r.comment.toLowerCase().includes(query));
+
+                const matchesCourse = courseVal === 'all' || String(r.course_id) === courseVal;
+                const matchesStar = starVal === 'all' || String(r.rating) === starVal;
+
+                return matchesSearch && matchesCourse && matchesStar;
+            });
+
+            renderInstructorReviewsList(filtered);
+        };
+
+        searchInput && searchInput.addEventListener('input', applyFilters);
+        courseFilter && courseFilter.addEventListener('change', applyFilters);
+        starFilter && starFilter.addEventListener('change', applyFilters);
+
+    } catch (err) {
+        console.error("Error loading instructor reviews:", err);
+        container.innerHTML = `
+            <div style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                Unable to load reviews. Please try again.
+            </div>
+        `;
+    }
+}
+
+function populateReviewsCourseFilter(reviews) {
+    const courseFilter = document.getElementById('reviewsCourseFilterSelect');
+    if (!courseFilter) return;
+
+    const uniqueCourses = new Map();
+    reviews.forEach(r => {
+        if (r.course_id && r.course_title && !uniqueCourses.has(r.course_id)) {
+            uniqueCourses.set(r.course_id, r.course_title);
+        }
+    });
+
+    let optionsHtml = `<option value="all">All Courses</option>`;
+    uniqueCourses.forEach((title, id) => {
+        optionsHtml += `<option value="${id}">${escapeHtml(title)}</option>`;
+    });
+
+    courseFilter.innerHTML = optionsHtml;
+}
+
+function renderInstructorReviewsList(reviews) {
+    const container = document.getElementById('instructorReviewsContainer');
+    if (!container) return;
+
+    if (!reviews || reviews.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text); background:#FFFFFF; border:1px solid #E2E8F0; border-radius:16px;">
+                <div style="font-size:2.2rem; margin-bottom:0.5rem;">⭐</div>
+                <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No reviews yet.</div>
+                <div style="font-size:13.5px; color:#64748b;">Reviews submitted by students in your courses will appear here.</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = reviews.map(r => {
+        const initials = (r.student_name || 'Student').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+        const stars = '⭐'.repeat(r.rating || 5);
+
+        return `
+            <div class="dashboard-card" style="padding:1.5rem; margin-bottom:1rem; transition:transform 0.2s;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.75rem;">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <div style="width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;">
+                            ${initials}
+                        </div>
+                        <div>
+                            <strong style="font-size:15px; color:#0F172A; display:block;">${escapeHtml(r.student_name)}</strong>
+                            <span class="badge-category" style="font-size:11.5px; padding:2px 8px; border-radius:12px;"><i class="fa-solid fa-book-open mr-1"></i> ${escapeHtml(r.course_title)}</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:#F59E0B; font-size:15px; margin-bottom:2px;">${stars}</div>
+                        <span style="font-size:12px; color:#64748B;">${escapeHtml(r.created_at || 'Recent')}</span>
+                    </div>
+                </div>
+                <p style="margin:0; font-size:14px; color:#334155; line-height:1.6; background:#F8F7FF; padding:0.85rem 1.1rem; border-radius:10px; border:1px solid #EDE9FE;">
+                    "${escapeHtml(r.comment || 'Great curriculum!')}"
+                </p>
+            </div>
+        `;
+    }).join('');
+}
+
+// =========================================================================
+// 7. COURSE ANALYTICS PAGE FUNCTIONS
+// =========================================================================
+
+let allCourseAnalyticsData = null;
+
+async function loadInstructorAnalyticsPage() {
+    const tbody = document.getElementById('instructorAnalyticsTableBody');
+    if (!tbody) return;
+
+    try {
+        const data = await window.api.getInstructorAnalytics();
+        if (!data) throw new Error("Could not load course analytics");
+
+        allCourseAnalyticsData = data;
+
+        document.getElementById('instAnalyticsTotalCourses') && (document.getElementById('instAnalyticsTotalCourses').textContent = data.total_courses || 0);
+        document.getElementById('instAnalyticsTotalStudents') && (document.getElementById('instAnalyticsTotalStudents').textContent = data.total_students || 0);
+        document.getElementById('instAnalyticsCompletionRate') && (document.getElementById('instAnalyticsCompletionRate').textContent = `${data.completion_rate || 0}%`);
+        document.getElementById('instAnalyticsAvgRating') && (document.getElementById('instAnalyticsAvgRating').textContent = `⭐ ${(data.avg_rating || 5.0).toFixed(1)}`);
+
+        // Highlight Cards
+        const topEnrolled = data.top_enrolled_course;
+        const topRated = data.top_rated_course;
+        const topCompletion = data.top_completion_course;
+
+        document.getElementById('topEnrolledName') && (document.getElementById('topEnrolledName').textContent = topEnrolled ? topEnrolled.course_title : 'N/A');
+        document.getElementById('topEnrolledCount') && (document.getElementById('topEnrolledCount').textContent = topEnrolled ? `${topEnrolled.enrolled_students} Students` : '0 Students');
+
+        document.getElementById('topRatedName') && (document.getElementById('topRatedName').textContent = topRated ? topRated.course_title : 'N/A');
+        document.getElementById('topRatedScore') && (document.getElementById('topRatedScore').textContent = topRated ? `⭐ ${topRated.rating.toFixed(1)} (${topRated.review_count} reviews)` : '⭐ 5.0');
+
+        document.getElementById('topCompletionName') && (document.getElementById('topCompletionName').textContent = topCompletion ? topCompletion.course_title : 'N/A');
+        document.getElementById('topCompletionScore') && (document.getElementById('topCompletionScore').textContent = topCompletion ? `${topCompletion.completion_rate}% Completion` : '0% Completion');
+
+        renderInstructorAnalyticsTable(data.courses || []);
+
+        // Bind Search
+        const searchInput = document.getElementById('analyticsSearchInput');
+        searchInput && searchInput.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase().trim();
+            const filtered = (data.courses || []).filter(c => 
+                !query || (c.course_title && c.course_title.toLowerCase().includes(query)) || (c.category && c.category.toLowerCase().includes(query))
+            );
+            renderInstructorAnalyticsTable(filtered);
+        });
+
+    } catch (err) {
+        console.error("Error loading course analytics:", err);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                    Unable to load analytics data. Please try again.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function renderInstructorAnalyticsTable(courses) {
+    const tbody = document.getElementById('instructorAnalyticsTableBody');
+    if (!tbody) return;
+
+    if (!courses || courses.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                    <div style="font-size:2.2rem; margin-bottom:0.5rem;">📊</div>
+                    <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">Not enough analytics data yet.</div>
+                    <div style="font-size:13.5px; color:#64748b;">Analytics will populate as students enroll and progress through your courses.</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = courses.map((c, idx) => {
+        const isPublished = (c.status || '').toLowerCase() === 'published';
+
+        return `
+            <tr style="cursor:pointer;" onclick="openCourseAnalyticsModal(${idx})">
+                <td>
+                    <strong style="color:var(--dark-navy); font-size:14px; display:block;">${escapeHtml(c.course_title)}</strong>
+                </td>
+                <td><span class="badge-category">${escapeHtml(c.category || 'General')}</span></td>
+                <td>
+                    <span class="status-pill ${isPublished ? 'badge-status-published' : 'badge-status-draft'}">
+                        ${isPublished ? 'Published' : 'Draft'}
+                    </span>
+                </td>
+                <td><strong>${c.enrolled_students || 0}</strong></td>
+                <td><strong>${c.completed_students || 0}</strong></td>
+                <td>
+                    <span style="font-weight:700; color:#10B981;">${c.completion_rate || 0}%</span>
+                </td>
+                <td>
+                    <div style="min-width:110px;">
+                        <div style="font-size:12px; font-weight:700; color:#7C3AED; margin-bottom:3px;">${c.avg_progress || 0}%</div>
+                        <div style="height:5px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                            <div style="height:100%; width:${c.avg_progress || 0}%; background:linear-gradient(90deg, #7C3AED, #A855F7); border-radius:9999px;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="color:#F59E0B; font-weight:700;">⭐ ${(c.rating || 4.8).toFixed(1)}</span>
+                    <span style="font-size:11.5px; color:#64748B;">(${c.review_count || 0})</span>
+                </td>
+                <td style="text-align:right;">
+                    <button class="btn-outline" style="padding:0.35rem 0.65rem; font-size:11.5px; border-radius:6px;" onclick="event.stopPropagation(); openCourseAnalyticsModal(${idx});">
+                        <i class="fa-solid fa-chart-pie mr-1"></i> Insights
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.openCourseAnalyticsModal = function(idx) {
+    if (!allCourseAnalyticsData || !allCourseAnalyticsData.courses || !allCourseAnalyticsData.courses[idx]) return;
+    const c = allCourseAnalyticsData.courses[idx];
+
+    let modal = document.getElementById('courseAnalyticsModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'courseAnalyticsModal';
+        modal.className = 'modal-backdrop';
+        modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:1100; display:flex; align-items:center; justify-content:center; padding:1rem;';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:580px; padding:2rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); position:relative; animation:fadeIn 0.2s ease;">
+            <button onclick="closeCourseAnalyticsModal()" style="position:absolute; top:1.25rem; right:1.25rem; background:none; border:none; font-size:1.25rem; color:#64748B; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div style="margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #E2E8F0;">
+                <span class="badge-category" style="margin-bottom:0.5rem; display:inline-block;">${escapeHtml(c.category)}</span>
+                <h3 style="font-size:18px; color:#0F172A; margin:0;">${escapeHtml(c.course_title)}</h3>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.85rem; margin-bottom:1.5rem;">
+                <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem; text-align:center;">
+                    <span style="font-size:11.5px; color:#64748B; display:block;">Enrolled Students</span>
+                    <strong style="font-size:18px; color:#7C3AED; display:block; margin-top:2px;">${c.enrolled_students}</strong>
+                </div>
+                <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px; padding:0.85rem; text-align:center;">
+                    <span style="font-size:11.5px; color:#065F46; display:block;">Completions</span>
+                    <strong style="font-size:18px; color:#047857; display:block; margin-top:2px;">${c.completed_students}</strong>
+                </div>
+                <div style="background:#FEF3C7; border:1px solid #FDE68A; border-radius:10px; padding:0.85rem; text-align:center;">
+                    <span style="font-size:11.5px; color:#92400E; display:block;">Average Rating</span>
+                    <strong style="font-size:18px; color:#B45309; display:block; margin-top:2px;">⭐ ${c.rating.toFixed(1)}</strong>
+                </div>
+            </div>
+
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; font-size:13px; font-weight:700;">
+                    <span>Completion Rate</span>
+                    <span style="color:#10B981;">${c.completion_rate}%</span>
+                </div>
+                <div style="height:8px; background:#E2E8F0; border-radius:9999px; overflow:hidden; margin-bottom:1rem;">
+                    <div style="height:100%; width:${c.completion_rate}%; background:#10B981; border-radius:9999px;"></div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; font-size:13px; font-weight:700;">
+                    <span>Average Learner Progress</span>
+                    <span style="color:#7C3AED;">${c.avg_progress}%</span>
+                </div>
+                <div style="height:8px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                    <div style="height:100%; width:${c.avg_progress}%; background:linear-gradient(90deg, #7C3AED, #A855F7); border-radius:9999px;"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <a href="../student/course-details.html?id=${c.course_id}" target="_blank" class="btn-outline" style="padding:0.55rem 1rem; font-size:12.5px; border-radius:8px; text-decoration:none;"><i class="fa-solid fa-eye mr-1"></i> Public Page</a>
+                <button onclick="closeCourseAnalyticsModal()" class="btn-primary" style="padding:0.55rem 1.25rem; font-size:13px; border-radius:8px;">Close</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+};
+
+window.closeCourseAnalyticsModal = function() {
+    const modal = document.getElementById('courseAnalyticsModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.loadInstructorStudentsPage = loadInstructorStudentsPage;
+window.loadInstructorReviewsPage = loadInstructorReviewsPage;
+window.loadInstructorAnalyticsPage = loadInstructorAnalyticsPage;
+window.initInstructorApp = initInstructorApp;
+
+
+

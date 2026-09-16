@@ -1021,3 +1021,119 @@
     margin-bottom: 0.75rem;
 }
 
+/* ----------------------------------------------------
+   8. SMARTLEARN CHECKOUT & PAYMENT HISTORY STYLES
+   ---------------------------------------------------- */
+.checkout-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.checkout-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.checkout-card-header {
+    padding: 1rem 1.25rem;
+    background: #F8FAFC;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.payment-method-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.pay-method-pill {
+    background: #F8FAFC;
+    border: 2px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 0.85rem 0.75rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pay-method-pill i {
+    font-size: 20px;
+    color: #64748B;
+    margin-bottom: 0.35rem;
+    transition: color 0.2s ease;
+}
+
+.pay-method-pill .pay-method-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dark-navy);
+}
+
+.pay-method-pill .pay-method-sub {
+    font-size: 10.5px;
+    color: #94A3B8;
+}
+
+.pay-method-pill:hover {
+    border-color: #CBD5E1;
+    background: #F1F5F9;
+}
+
+.pay-method-pill.active {
+    background: #FAF5FF;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.15);
+}
+
+.pay-method-pill.active i {
+    color: var(--primary-purple);
+}
+
+.pay-method-pill.active .pay-method-name {
+    color: var(--primary-purple);
+}
+
+.btn-pay-now-action {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #5B3FE8, #8B4AD9);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(91, 63, 232, 0.3);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-pay-now-action:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4A2ECC, #7A39C8);
+    box-shadow: 0 6px 20px rgba(91, 63, 232, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-pay-now-action:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+@media (max-width: 860px) {
+    .checkout-grid-container {
+        grid-template-columns: 1fr;
+    }
+}
+

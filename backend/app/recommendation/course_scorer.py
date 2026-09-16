@@ -1,5 +1,5 @@
-"""Course catalog and scoring logic for SmartLearn recommendation engine."""
-from typing import List, Dict, Any, Optional
+"""Course catalog and dynamic personalization scoring logic for SmartLearn recommendation engine."""
+from typing import List, Dict, Any, Optional, Tuple, Set
 
 COURSE_CATALOG: List[Dict[str, Any]] = [
     {
@@ -174,136 +174,330 @@ COURSE_CATALOG: List[Dict[str, Any]] = [
     }
 ]
 
+CAREER_BENCHMARKS: Dict[str, List[str]] = {
+    "full stack web developer": ["html", "css", "javascript", "react", "node.js", "express", "sql", "mongodb", "rest apis", "git"],
+    "full stack developer": ["html", "css", "javascript", "react", "node.js", "express", "postgresql", "rest apis", "docker", "git"],
+    "frontend developer": ["html", "css", "javascript", "typescript", "react", "next.js", "tailwind css", "ui/ux", "state management", "git"],
+    "backend developer": ["python", "fastapi", "node.js", "postgresql", "docker", "rest apis", "redis", "sqlalchemy", "git"],
+    "data scientist": ["python", "pandas", "numpy", "sql", "machine learning", "scikit-learn", "data visualization", "deep learning", "statistics"],
+    "ai / machine learning engineer": ["python", "pytorch", "deep learning", "transformers", "nlp", "computer vision", "docker"],
+    "ai engineer": ["python", "pytorch", "deep learning", "transformers", "nlp", "computer vision", "docker"],
+    "cloud solutions architect": ["aws", "cloud computing", "docker", "kubernetes", "terraform", "ci/cd", "linux"],
+    "cloud engineer": ["aws", "cloud computing", "docker", "kubernetes", "terraform", "ci/cd", "linux"],
+    "devops engineer": ["linux", "docker", "kubernetes", "ci/cd", "terraform", "aws", "python", "git"],
+    "cyber security analyst": ["network security", "linux", "ethical hacking", "cryptography", "siem", "incident response", "threat detection", "python"],
+    "ui/ux designer": ["figma", "user research", "wireframing", "prototyping", "design systems", "usability testing", "ui design"],
+    "mobile developer": ["flutter", "dart", "firebase", "mobile app development", "state management", "rest apis"],
+    "data engineer": ["python", "sql", "apache spark", "airflow", "etl", "data pipelines", "postgresql", "aws"]
+}
+
+PROFICIENCY_LEVELS: Dict[str, int] = {
+    "beginner": 1,
+    "intermediate": 2,
+    "advanced": 3,
+    "expert": 4
+}
+
+COURSE_LEVELS: Dict[str, int] = {
+    "beginner": 1,
+    "intermediate": 2,
+    "advanced": 3
+}
+
 
 class CourseScorer:
-    """Calculates weighted recommendation scores and match explanations."""
+    """Calculates granular, profile-driven weighted recommendation scores and match explanations."""
 
-    @staticmethod
+    @classmethod
+    def get_goal_required_skills(cls, goal_name: str, goals_map: Optional[Dict[str, List[str]]] = None) -> List[str]:
+        if not goal_name:
+            return []
+        goal_clean = goal_name.strip().lower()
+        if goals_map:
+            for k, v in goals_map.items():
+                if k.lower() == goal_clean or goal_clean in k.lower() or k.lower() in goal_clean:
+                    return [s.strip().lower() for s in (v or [])]
+        for k, v in CAREER_BENCHMARKS.items():
+            if k == goal_clean or goal_clean in k or k in goal_clean:
+                return v
+        return []
+
+    @classmethod
     def score_course(
+        cls,
         course: Dict[str, Any],
-        career_goal: str,
-        secondary_goal: str,
-        student_skills: List[str],
-        student_interests: List[str],
-        assessment_results: List[Dict[str, Any]],
-        completed_course_titles: List[str]
+        career_goal: str = "",
+        secondary_goal: str = "",
+        student_skills: Optional[List[Any]] = None,
+        student_interests: Optional[List[Any]] = None,
+        student_education: Optional[List[Dict[str, Any]]] = None,
+        assessment_results: Optional[List[Dict[str, Any]]] = None,
+        completed_course_ids: Optional[List[int]] = None,
+        completed_course_titles: Optional[List[str]] = None,
+        enrolled_course_ids: Optional[List[int]] = None,
+        goals_map: Optional[Dict[str, List[str]]] = None
     ) -> Optional[Dict[str, Any]]:
-        
-        # Don't recommend already completed courses if specified
-        if course["title"] in completed_course_titles:
+        """
+        Calculates a personalized score (0-100) for a course against a student's profile.
+        Returns None if course is already completed.
+        """
+        course_id = course.get("id")
+        course_title = course.get("title", "")
+
+        # 1. Check Completed Courses -> Exclude or Score 0
+        if completed_course_ids and course_id in completed_course_ids:
+            return None
+        if completed_course_titles and any(t.lower() == course_title.lower() for t in completed_course_titles):
             return None
 
-        career_goal_clean = (career_goal or "").strip().lower()
-        secondary_goal_clean = (secondary_goal or "").strip().lower()
-        
-        def _extract_token(item: Any) -> str:
-            if isinstance(item, dict):
-                return str(item.get("skill") or item.get("name") or item.get("title") or "").strip().lower()
-            elif isinstance(item, str):
-                return item.strip().lower()
-            return ""
+        is_enrolled = bool(enrolled_course_ids and course_id in enrolled_course_ids)
 
-        # Normalize student skills and interests
-        norm_skills = [_extract_token(s) for s in (student_skills or []) if _extract_token(s)]
-        norm_interests = [_extract_token(i) for i in (student_interests or []) if _extract_token(i)]
-        
-        course_skills = [s.lower() for s in course.get("skills", [])]
-        course_roles = [r.lower() for r in course.get("target_roles", [])]
-        course_domains = [d.lower() for d in course.get("domains", [])]
-        course_cat = course.get("category", "").lower()
+        # Parse Student Skills and Levels
+        student_skill_map: Dict[str, int] = {}
+        student_skill_display: Dict[str, str] = {}
+        for s in (student_skills or []):
+            if isinstance(s, str) and s.strip():
+                clean_s = s.strip().lower()
+                student_skill_map[clean_s] = 2 # default Intermediate
+                student_skill_display[clean_s] = s.strip()
+            elif isinstance(s, dict):
+                name = (s.get("skill") or s.get("name") or "").strip()
+                lvl = str(s.get("level") or s.get("proficiency") or "Intermediate").strip().lower()
+                if name:
+                    clean_name = name.lower()
+                    student_skill_map[clean_name] = PROFICIENCY_LEVELS.get(lvl, 2)
+                    student_skill_display[clean_name] = name
+
+        # Parse Student Interests
+        norm_interests: List[str] = []
+        for i in (student_interests or []):
+            if isinstance(i, str) and i.strip():
+                norm_interests.append(i.strip().lower())
+            elif isinstance(i, dict):
+                name = (i.get("interest") or i.get("name") or "").strip()
+                if name:
+                    norm_interests.append(name.lower())
+
+        # Course Metadata
+        course_skills_raw = course.get("skills") or []
+        course_skills_lower = [s.strip().lower() for s in course_skills_raw if isinstance(s, str)]
+        course_roles_lower = [r.strip().lower() for r in (course.get("target_roles") or []) if isinstance(r, str)]
+        course_goals_lower = [g.strip().lower() for g in (course.get("career_goals") or []) if isinstance(g, str)]
+        course_domains_lower = [d.strip().lower() for d in (course.get("domains") or []) if isinstance(d, str)]
+        course_cat = str(course.get("category") or "").strip().lower()
+        course_subcat = str(course.get("subcategory") or "").strip().lower()
+        course_desc = str(course.get("description") or "").strip().lower()
+        course_level_str = str(course.get("level") or course.get("difficulty") or "Intermediate").strip().lower()
+        course_level_num = COURSE_LEVELS.get(course_level_str, 2)
 
         reasons: List[str] = []
-        
-        # 1. Career Goal Match (35% Max)
+        career_goal_clean = (career_goal or "").strip().lower()
+        secondary_goal_clean = (secondary_goal or "").strip().lower()
+
+        # =========================================================
+        # 1. CAREER GOAL MATCH (30% MAX)
+        # =========================================================
         career_score = 0.0
+        primary_match = False
+        secondary_match = False
+
         if career_goal_clean:
-            if any(career_goal_clean == r or career_goal_clean in r or r in career_goal_clean for r in course_roles):
-                career_score = 35.0
+            # Exact or strong role/goal match
+            if any(career_goal_clean in r or r in career_goal_clean for r in (course_roles_lower + course_goals_lower)):
+                career_score = 30.0
+                primary_match = True
                 reasons.append(f"Direct match for your career goal: {career_goal}")
-            elif any(career_goal_clean in d or d in career_goal_clean for d in course_domains):
-                career_score = 28.0
-                reasons.append(f"Aligns with your primary field of {course.get('category')}")
-            elif secondary_goal_clean and any(secondary_goal_clean in r or r in secondary_goal_clean for r in course_roles):
-                career_score = 22.0
-                reasons.append(f"Supports your secondary goal: {secondary_goal}")
+            elif career_goal_clean in course_cat or any(career_goal_clean in d for d in course_domains_lower):
+                career_score = 25.0
+                primary_match = True
+                reasons.append(f"Core curriculum in {course.get('category')}")
+            elif any(word in (course_cat + " " + " ".join(course_roles_lower)) for word in career_goal_clean.split() if len(word) > 3):
+                career_score = 20.0
+                reasons.append(f"Aligns with your focus in {career_goal}")
             else:
-                career_score = 8.0
-        else:
-            career_score = 15.0 # baseline if not set
+                career_score = 4.0
 
-        # 2. Skill Match & Gap Bridging (30% Max)
-        skill_score = 0.0
-        matching_skills = []
-        gap_skills = []
-        for cs in course.get("skills", []):
-            cs_clean = cs.lower()
-            if any(cs_clean == s or cs_clean in s or s in cs_clean for s in norm_skills):
-                matching_skills.append(cs)
+            # Check secondary goal
+            if secondary_goal_clean and not primary_match:
+                if any(secondary_goal_clean in r or r in secondary_goal_clean for r in (course_roles_lower + course_goals_lower)):
+                    career_score = max(career_score, 22.0)
+                    secondary_match = True
+                    reasons.append(f"Supports your secondary career goal: {secondary_goal}")
+                elif secondary_goal_clean in course_cat:
+                    career_score = max(career_score, 18.0)
+                    reasons.append(f"Expands into your secondary area: {secondary_goal}")
+        else:
+            career_score = 10.0 # baseline when no goal configured
+
+        # =========================================================
+        # 2. SKILL GAP MATCH (25% MAX)
+        # =========================================================
+        skill_gap_score = 0.0
+        required_goal_skills = cls.get_goal_required_skills(career_goal, goals_map)
+        missing_goal_skills: Set[str] = set()
+
+        for req in required_goal_skills:
+            # Check if student does NOT have this skill or has it only at Beginner level
+            matched_key = None
+            for s_key in student_skill_map.keys():
+                if req in s_key or s_key in req:
+                    matched_key = s_key
+                    break
+            if not matched_key or student_skill_map.get(matched_key, 0) <= 1:
+                missing_goal_skills.add(req)
+
+        # Check how many missing goal skills this course teaches
+        addressed_gap_skills: List[str] = []
+        for cs_raw, cs_lower in zip(course_skills_raw, course_skills_lower):
+            for mg in missing_goal_skills:
+                if mg in cs_lower or cs_lower in mg:
+                    if cs_raw not in addressed_gap_skills:
+                        addressed_gap_skills.append(cs_raw)
+
+        if missing_goal_skills and addressed_gap_skills:
+            # Award points per gap addressed
+            skill_gap_score = min(25.0, len(addressed_gap_skills) * 8.5)
+            gap_disp = ", ".join(addressed_gap_skills[:3])
+            reasons.append(f"Closes key skill gaps: {gap_disp}")
+        elif not career_goal_clean and course_skills_lower:
+            skill_gap_score = 10.0
+        elif not missing_goal_skills:
+            skill_gap_score = 15.0 # student has most core skills
+
+        # =========================================================
+        # 3. SKILL & PROFICIENCY FIT (20% MAX)
+        # =========================================================
+        skill_prof_score = 0.0
+        overlapping_student_skills: List[Tuple[str, str, int]] = []
+
+        for cs_raw, cs_lower in zip(course_skills_raw, course_skills_lower):
+            for s_key, s_lvl in student_skill_map.items():
+                if s_key in cs_lower or cs_lower in s_key:
+                    disp_name = student_skill_display.get(s_key, cs_raw)
+                    lvl_name = [k for k, v in PROFICIENCY_LEVELS.items() if v == s_lvl][0].title()
+                    overlapping_student_skills.append((disp_name, lvl_name, s_lvl))
+                    break
+
+        if student_skill_map:
+            if overlapping_student_skills:
+                # Evaluate proficiency synergy vs course difficulty
+                max_student_lvl = max(lvl for _, _, lvl in overlapping_student_skills)
+                top_skill_name = overlapping_student_skills[0][0]
+                top_skill_lvl_str = overlapping_student_skills[0][1]
+
+                # Case A: Advanced/Expert student + Beginner Course -> Low match (they already master it)
+                if max_student_lvl >= 3 and course_level_num == 1:
+                    skill_prof_score = 6.0
+                    # Do not over-recommend elementary courses to experts
+                # Case B: Intermediate/Advanced student + Intermediate/Advanced Course -> Strong synergy
+                elif max_student_lvl >= 2 and course_level_num >= 2:
+                    skill_prof_score = min(20.0, 12.0 + len(overlapping_student_skills) * 3.5)
+                    reasons.append(f"Builds on your {top_skill_lvl_str.lower()} {top_skill_name} skill")
+                # Case C: Beginner student + Beginner/Intermediate Course -> Great foundation
+                elif max_student_lvl == 1 and course_level_num <= 2:
+                    skill_prof_score = min(20.0, 14.0 + len(overlapping_student_skills) * 3.0)
+                    reasons.append(f"Solidifies your foundational {top_skill_name} skill")
+                else:
+                    skill_prof_score = min(20.0, 10.0 + len(overlapping_student_skills) * 3.0)
+                    reasons.append(f"Builds upon your existing skills: {top_skill_name}")
             else:
-                gap_skills.append(cs)
-
-        if norm_skills:
-            if matching_skills:
-                skill_score += min(18.0, len(matching_skills) * 6.0)
-                reasons.append(f"Builds upon your existing skills: {', '.join(matching_skills[:3])}")
-            if gap_skills and (career_score > 20.0):
-                skill_score += min(12.0, len(gap_skills) * 4.0)
-                reasons.append(f"Closes critical skill gaps: {', '.join(gap_skills[:2])}")
+                # No overlapping skills: if course is Beginner, good to start; if Advanced, maybe high barrier
+                skill_prof_score = 8.0 if course_level_num <= 2 else 4.0
         else:
-            skill_score = 15.0 # baseline
+            skill_prof_score = 10.0 # baseline
 
-        # 3. Interest Match (20% Max)
+        # =========================================================
+        # 4. INTEREST MATCH (15% MAX)
+        # =========================================================
         interest_score = 0.0
-        matched_interests = []
+        matched_interests: List[str] = []
+
         for intr in norm_interests:
-            if intr in course_cat or any(intr in d for d in course_domains) or any(intr in s for s in course_skills):
+            intr_words = [w for w in intr.split() if len(w) > 2]
+            if (intr in course_cat or 
+                intr in course_subcat or 
+                any(intr in d or d in intr for d in course_domains_lower) or 
+                any(intr in s or s in intr for s in course_skills_lower) or 
+                intr in course_desc or
+                any(w in course_cat or any(w in d for d in course_domains_lower) for w in intr_words)):
                 matched_interests.append(intr.title())
-        
+
         if matched_interests:
-            interest_score = min(20.0, 10.0 + len(matched_interests) * 5.0)
-            reasons.append(f"Matches your stated interest in {', '.join(matched_interests[:2])}")
+            interest_score = min(15.0, 8.0 + len(matched_interests) * 4.0)
+            reasons.append(f"Matches your interest in {', '.join(matched_interests[:2])}")
         elif norm_interests:
-            interest_score = 5.0
+            interest_score = 2.0
         else:
-            interest_score = 10.0
+            interest_score = 7.5
 
-        # 4. Assessment Performance Level Match (15% Max)
-        assessment_score = 10.0
-        relevant_assessment = None
-        for attempt in assessment_results:
-            cat = (attempt.get("category") or "").lower()
-            if cat in course_cat or any(cat in d for d in course_domains) or course_cat in cat:
-                relevant_assessment = attempt
-                break
+        # =========================================================
+        # 5. ASSESSMENT & DIFFICULTY FIT (5% MAX)
+        # =========================================================
+        assessment_score = 2.5
+        relevant_attempt = None
 
-        if relevant_assessment:
-            pct = relevant_assessment.get("percentage", 0)
-            course_level = course.get("level", "Intermediate").lower()
-            
-            if pct >= 75 and course_level in ["intermediate", "advanced"]:
-                assessment_score = 15.0
-                reasons.append(f"Tailored for your strong assessment score ({pct}%) in {relevant_assessment.get('category')}")
-            elif pct < 60 and course_level in ["beginner", "intermediate"]:
-                assessment_score = 14.0
-                reasons.append(f"Strengthens fundamentals following your assessment in {relevant_assessment.get('category')}")
+        if assessment_results:
+            for att in assessment_results:
+                att_cat = str(att.get("category") or "").strip().lower()
+                if att_cat and (att_cat in course_cat or any(att_cat in d for d in course_domains_lower) or att_cat in course_desc):
+                    relevant_attempt = att
+                    break
+
+        if relevant_attempt:
+            att_pct = float(relevant_attempt.get("percentage") or 0)
+            att_cat_name = relevant_attempt.get("category") or course.get("category")
+            if att_pct >= 75 and course_level_num >= 2:
+                assessment_score = 5.0
+                reasons.append(f"Tailored for your strong {att_pct:.0f}% assessment in {att_cat_name}")
+            elif att_pct < 60 and course_level_num == 1:
+                assessment_score = 5.0
+                reasons.append(f"Reinforces essentials based on your {att_cat_name} assessment")
             else:
-                assessment_score = 12.0
-                reasons.append(f"Validated by your recent {relevant_assessment.get('category')} assessment")
+                assessment_score = 3.5
+        else:
+            # Baseline difficulty fit
+            if student_skill_map:
+                avg_prof = sum(student_skill_map.values()) / len(student_skill_map)
+                if abs(avg_prof - course_level_num) <= 1.0:
+                    assessment_score = 4.0
+            else:
+                assessment_score = 3.0
 
-        # Compute total raw score (0 - 100)
-        total_score = career_score + skill_score + interest_score + assessment_score
-        
-        # Scale nicely into realistic percentage (between 68% and 98%)
-        match_percentage = int(min(98, max(68, round(total_score))))
-        
+        # =========================================================
+        # 6. EDUCATION & LEARNING HISTORY FIT (5% MAX)
+        # =========================================================
+        history_score = 2.5
+        if student_education:
+            for edu in student_education:
+                spec = str(edu.get("specialization") or "").lower()
+                if spec and (spec in course_desc or spec in course_cat):
+                    history_score = 5.0
+                    reasons.append(f"Complements your background in {edu.get('specialization')}")
+                    break
+
+        # Calculate Total Score
+        raw_total = career_score + skill_gap_score + skill_prof_score + interest_score + assessment_score + history_score
+
+        # Calculate match percentage (bounded between 52% and 99%)
+        match_percentage = int(min(99, max(52, round(raw_total))))
+
         # Fallback reason if none generated
         if not reasons:
-            reasons.append(f"Popular high-rated course in {course.get('category')}")
+            reasons.append(f"Highly-rated {course_level_str.title()} curriculum in {course.get('category')}")
 
         return {
             **course,
             "match_percentage": match_percentage,
             "match_reasons": reasons[:3],
-            "skills_matching": matching_skills,
-            "skills_gaps_addressed": gap_skills[:3]
+            "is_enrolled": is_enrolled,
+            "skills_matching": [s[0] for s in overlapping_student_skills],
+            "skills_gaps_addressed": addressed_gap_skills[:3],
+            "scores_breakdown": {
+                "career_score": round(career_score, 1),
+                "skill_gap_score": round(skill_gap_score, 1),
+                "skill_proficiency_score": round(skill_prof_score, 1),
+                "interest_score": round(interest_score, 1),
+                "assessment_score": round(assessment_score, 1),
+                "total_score": round(raw_total, 1)
+            }
         }

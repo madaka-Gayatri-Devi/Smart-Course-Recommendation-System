@@ -21,7 +21,6 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Sidebar -->
-        <!-- 🎓 STUDENT SIDEBAR -->
     <aside class="dashboard-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
@@ -46,6 +45,7 @@
             
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="payment-history.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Payment History</span></a>
             <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
@@ -97,20 +97,37 @@
         <div class="dashboard-content fade-in-up">
             
             <!-- Hero Banner -->
-            <div class="welcome-section" style="margin-bottom: 1.5rem;">
+            <div class="welcome-section" style="margin-bottom: 1.25rem;">
                 <h1>Intelligent Course Matches 🎯</h1>
-                <p>Dynamically ranked based on your target career goal, skill proficiency, and assessment benchmark scores.</p>
+                <p>Courses ranked dynamically for your profile using weighted career goals, skill gaps, proficiency, and learning history.</p>
             </div>
 
-            <!-- Filter Controls -->
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;" id="filterContainer">
-                <button class="filter-btn active" data-category="all">All Domains</button>
-                <button class="filter-btn" data-category="Web Development">Web Development</button>
-                <button class="filter-btn" data-category="Data Science & AI">Data Science & AI</button>
-                <button class="filter-btn" data-category="Cloud & DevOps">Cloud & DevOps</button>
-                <button class="filter-btn" data-category="Cyber Security">Cyber Security</button>
-                <button class="filter-btn" data-category="UI/UX Design">UI/UX Design</button>
-                <button class="filter-btn" data-category="Mobile Development">Mobile</button>
+            <!-- Profile Summary & Insights Banner -->
+            <div id="profileSummaryBanner" style="margin-bottom: 1.5rem;"></div>
+
+            <!-- Recommendation Track Selector & Category Filters -->
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                <!-- Track Mode -->
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="trackContainer">
+                    <button class="filter-btn active" data-track="all"><i class="fa-solid fa-star mr-1"></i> Top Matches</button>
+                    <button class="filter-btn" data-track="career"><i class="fa-solid fa-bullseye mr-1"></i> Career Goal</button>
+                    <button class="filter-btn" data-track="gap"><i class="fa-solid fa-bridge mr-1"></i> Skill Gap Bridge</button>
+                    <button class="filter-btn" data-track="interests"><i class="fa-solid fa-heart mr-1"></i> My Interests</button>
+                    <button class="filter-btn" data-track="next_level"><i class="fa-solid fa-chart-line-up mr-1"></i> Advanced Fit</button>
+                </div>
+
+                <!-- Domain Filter -->
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="filterContainer">
+                    <button class="filter-btn active" data-category="all">All Domains</button>
+                    <button class="filter-btn" data-category="Web Development">Web Development</button>
+                    <button class="filter-btn" data-category="Frontend Development">Frontend</button>
+                    <button class="filter-btn" data-category="Backend Development">Backend</button>
+                    <button class="filter-btn" data-category="Data Science & AI">Data Science & AI</button>
+                    <button class="filter-btn" data-category="Cloud & DevOps">Cloud & DevOps</button>
+                    <button class="filter-btn" data-category="Cyber Security">Cyber Security</button>
+                    <button class="filter-btn" data-category="UI/UX Design">UI/UX Design</button>
+                    <button class="filter-btn" data-category="Mobile Development">Mobile</button>
+                </div>
             </div>
 
             <!-- Recommendations Grid -->
@@ -125,7 +142,7 @@
     </main>
 
     <!-- Scripts -->
-    <script src="../js/api.js"></script>
-    <script src="../js/recommendations.js"></script>
+    <script src="../js/api.js?v=20260915_rec"></script>
+    <script src="../js/recommendations.js?v=20260915_rec"></script>
 </body>
 </html>

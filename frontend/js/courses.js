@@ -762,9 +762,15 @@ async function setupCourseDetailsPage(detailsContainer) {
                                     <i class="fa-solid fa-circle-check"></i> You are enrolled! (${course.progress_percentage || 0}% completed)
                                 </div>
                                 <a href="course-player.html?id=${course.id}&lesson=${course.last_lesson_id || ''}" class="btn-primary" style="text-align:center; text-decoration:none; padding:0.85rem; font-weight:700; font-size:15px; border-radius:10px;">Continue Learning →</a>
+                            ` : (isFreeCourse ? `
+                                <button onclick="enrollInCourse(${course.id}, true, 0)" class="btn-primary" style="padding:0.95rem; border:none; cursor:pointer; font-size:16px; font-weight:700; border-radius:10px;">
+                                    <i class="fa-solid fa-gift mr-1"></i> Enroll in Free Course →
+                                </button>
                             ` : `
-                                <button onclick="enrollInCourse(${course.id})" class="btn-primary" style="padding:0.95rem; border:none; cursor:pointer; font-size:16px; font-weight:700; border-radius:10px;">Enroll in Course →</button>
-                            `}
+                                <a href="checkout.html?course_id=${course.id}" class="btn-primary" style="text-align:center; text-decoration:none; padding:0.95rem; border:none; cursor:pointer; font-size:16px; font-weight:700; border-radius:10px; display:block;">
+                                    <i class="fa-solid fa-lock mr-1"></i> Enroll Now — ₹${Number(course.price).toLocaleString()} →
+                                </a>
+                            `)}
                             <button onclick="toggleCourseWishlist(${course.id}, this)" class="btn-outline" style="padding:0.75rem; border:1px solid #CBD5E1; cursor:pointer; border-radius:10px; font-weight:600;">
                                 <i class="fa-solid fa-heart mr-1" style="color:${course.is_wishlisted ? '#E83FA5' : 'inherit'};"></i> ${course.is_wishlisted ? 'Saved in Wishlist' : 'Add to Wishlist'}
                             </button>
@@ -972,13 +978,22 @@ function debounce(fn, delay) {
     };
 }
 
-async function enrollInCourse(courseId) {
+async function enrollInCourse(courseId, isFree = true, price = 0) {
+    if (!isFree && price > 0) {
+        window.location.href = `checkout.html?course_id=${courseId}`;
+        return;
+    }
+
     try {
-        await window.api.enrollCourse(courseId);
-        alert('🎉 Successfully enrolled! You can now track your learning journey in My Courses.');
+        const res = await window.api.enrollCourse(courseId);
+        alert(res?.message || '🎉 Successfully enrolled! You can now track your learning journey in My Courses.');
         window.location.reload();
     } catch (e) {
-        alert('Enrollment failed: ' + e.message);
+        if (e.message && e.message.includes('paid course')) {
+            window.location.href = `checkout.html?course_id=${courseId}`;
+        } else {
+            alert('Enrollment notice: ' + e.message);
+        }
     }
 }
 

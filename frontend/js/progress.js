@@ -128,7 +128,7 @@ function renderActiveCourseProgress(courses) {
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem;">
                     <span style="font-size:12px; color:var(--secondary-text);"><i class="fa-solid fa-clock"></i> ${c.duration || 'Self-paced'}</span>
-                    <a href="course-details.html?id=${c.course_id || c.id}" class="btn-primary-small" style="text-decoration:none; padding:0.35rem 0.8rem; font-size:12px;">${isCompleted ? 'Review Course' : 'Continue Learning →'}</a>
+                    <a href="course-player.html?id=${c.course_id || c.id}&lesson=${c.last_lesson_id || 1}" class="btn-primary-small" style="text-decoration:none; padding:0.35rem 0.8rem; font-size:12px;">${isCompleted ? 'Review Course ✓' : 'Continue Learning →'}</a>
                 </div>
             </div>
         `;

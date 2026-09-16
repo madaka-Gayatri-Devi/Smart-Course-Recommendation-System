@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ratings & Reviews - Instructor Studio | SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/admin.css?v=20260915_indigo_theme">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="reviews.html" class="nav-item active"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Ratings & Reviews</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <!-- Header Section -->
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Ratings & Student Feedback ⭐</h1>
+                    <p>Review student feedback, ratings breakdown, and testimonials across your published curriculums.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="courses.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600; background: #FFFFFF;"><i class="fa-solid fa-book-open mr-1"></i> My Courses</a>
+                    <a href="analytics.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-chart-line mr-1"></i> Course Analytics</a>
+                </div>
+            </div>
+
+            <!-- Summary & Breakdown Dual Grid -->
+            <div style="display: grid; grid-template-columns: 300px 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <!-- Average Rating Card -->
+                <div class="dashboard-card" style="padding: 1.75rem; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                    <span style="font-size: 13px; color: var(--secondary-text); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Overall Rating</span>
+                    <h2 style="font-size: 3rem; font-weight: 800; color: #1E293B; margin: 0.5rem 0 0.25rem;" id="instReviewsAvgRating">5.0</h2>
+                    <div style="color: #F59E0B; font-size: 1.25rem; margin-bottom: 0.5rem;">⭐⭐⭐⭐⭐</div>
+                    <span style="font-size: 13px; color: #64748B;">Based on <strong id="instReviewsTotalCount" style="color: #0F172A;">0</strong> student reviews</span>
+                </div>
+
+                <!-- Star Rating Distribution -->
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h4 style="font-size: 15px; color: #0F172A; margin: 0 0 1rem 0;">Rating Breakdown</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                        <!-- 5 Star -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 13px;">
+                            <span style="width: 50px; font-weight: 600; color: #475569;">5 Stars</span>
+                            <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div id="starBar5" style="height: 100%; width: 0%; background: #F59E0B; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="width: 30px; text-align: right; font-weight: 700; color: #1E293B;" id="starCount5">0</span>
+                        </div>
+                        <!-- 4 Star -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 13px;">
+                            <span style="width: 50px; font-weight: 600; color: #475569;">4 Stars</span>
+                            <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div id="starBar4" style="height: 100%; width: 0%; background: #F59E0B; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="width: 30px; text-align: right; font-weight: 700; color: #1E293B;" id="starCount4">0</span>
+                        </div>
+                        <!-- 3 Star -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 13px;">
+                            <span style="width: 50px; font-weight: 600; color: #475569;">3 Stars</span>
+                            <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div id="starBar3" style="height: 100%; width: 0%; background: #F59E0B; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="width: 30px; text-align: right; font-weight: 700; color: #1E293B;" id="starCount3">0</span>
+                        </div>
+                        <!-- 2 Star -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 13px;">
+                            <span style="width: 50px; font-weight: 600; color: #475569;">2 Stars</span>
+                            <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div id="starBar2" style="height: 100%; width: 0%; background: #F59E0B; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="width: 30px; text-align: right; font-weight: 700; color: #1E293B;" id="starCount2">0</span>
+                        </div>
+                        <!-- 1 Star -->
+                        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 13px;">
+                            <span style="width: 50px; font-weight: 600; color: #475569;">1 Star</span>
+                            <div style="flex: 1; height: 8px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div id="starBar1" style="height: 100%; width: 0%; background: #F59E0B; border-radius: 9999px; transition: width 0.3s ease;"></div>
+                            </div>
+                            <span style="width: 30px; text-align: right; font-weight: 700; color: #1E293B;" id="starCount1">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls: Search & Filters -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; flex: 1; max-width: 480px;">
+                    <div class="search-box" style="flex: 1; min-width: 220px;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="reviewsSearchInput" placeholder="Search by student name, course, or review content...">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <label for="reviewsCourseFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-filter mr-1"></i> Course:</label>
+                        <select id="reviewsCourseFilterSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="all">All Courses</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <label for="reviewsStarFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-star mr-1"></i> Rating:</label>
+                        <select id="reviewsStarFilterSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="all">All Ratings</option>
+                            <option value="5">5 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="2">2 Stars</option>
+                            <option value="1">1 Star</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews Feed Container -->
+            <div id="instructorReviewsContainer">
+                <div style="text-align: center; padding: 3rem 1rem; color: var(--secondary-text); background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0;">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading student reviews...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/instructor.js"></script>
+</body>
+</html>

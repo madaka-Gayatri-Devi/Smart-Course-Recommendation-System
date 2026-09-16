@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students & Enrollments - Instructor Studio | SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/admin.css?v=20260915_indigo_theme">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="students.html" class="nav-item active"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Students / Enrollments</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">IN</div>
+                    <span class="profile-name" id="topName">Instructor</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <!-- Header Section -->
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Learner Roster & Progress 👥</h1>
+                    <p>Track student enrollments, course progression, completion milestones, and recent activity across your authored courses.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="courses.html" class="btn-outline" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600; background: #FFFFFF;"><i class="fa-solid fa-book-open mr-1"></i> My Courses</a>
+                    <a href="course-editor.html" class="btn-primary" style="padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-plus mr-1"></i> Create Course</a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-user-graduate"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Enrolled Students</span>
+                        <h3 class="stat-value" id="instStatTotalStudents">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper blue" style="background:#EFF6FF; color:#2563EB;"><i class="fa-solid fa-person-running"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Active Learners</span>
+                        <h3 class="stat-value" id="instStatActiveLearners">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Course Completions</span>
+                        <h3 class="stat-value" id="instStatCompletedStudents">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper orange" style="background:#FFFBEB; color:#D97706;"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Average Progress</span>
+                        <h3 class="stat-value" id="instStatAvgProgress">0%</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls: Search & Filters -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; flex: 1; max-width: 480px;">
+                    <div class="search-box" style="flex: 1; min-width: 220px;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="studentsSearchInput" placeholder="Search student name, email, or course...">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <label for="courseFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-filter mr-1"></i> Course:</label>
+                        <select id="courseFilterSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="all">All Courses</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <label for="statusFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-sliders mr-1"></i> Status:</label>
+                        <select id="statusFilterSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="all">All Statuses</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="not_started">Not Started</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                        <label for="studentsSortSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sort:</label>
+                        <select id="studentsSortSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                            <option value="newest">Newest Enrollment</option>
+                            <option value="oldest">Oldest Enrollment</option>
+                            <option value="progress_high">Highest Progress</option>
+                            <option value="progress_low">Lowest Progress</option>
+                            <option value="name_asc">Student Name (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="dashboard-card" style="padding: 1.5rem;">
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Student Details</th>
+                                <th>Enrolled Course</th>
+                                <th>Enrollment Date</th>
+                                <th>Curriculum Progress</th>
+                                <th>Status</th>
+                                <th>Last Activity</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instructorStudentsTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: var(--secondary-text);">
+                                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading student enrollments...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/instructor.js"></script>
+</body>
+</html>

@@ -46,6 +46,7 @@
             
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+            <a href="payment-history.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Payment History</span></a>
             <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
@@ -337,7 +338,7 @@
     </main>
 
     <!-- Scripts -->
-    <script src="../js/api.js?v=4"></script>
+    <script src="../js/api.js?v=20260915_profile_fix"></script>
     <script>
     document.addEventListener('DOMContentLoaded', async () => {
         // Auth check & load data
@@ -836,10 +837,11 @@
                     const languages = Array.from(document.querySelectorAll('#editLangPool .lang-chip.selected')).map(c => c.textContent.trim());
 
                     const payload = {
-                        phone: editPhone?.value || '',
+                        full_name: editFullName?.value?.trim() || '',
+                        phone: editPhone?.value?.trim() || '',
                         dob: editDob?.value || '',
                         gender: editGender?.value || '',
-                        city: editCity?.value || '',
+                        city: editCity?.value?.trim() || '',
                         career_goal: editPrimaryCareerVal?.value || '',
                         secondary_career_goal: editSecondaryCareerVal?.value || '',
                         skills: Array.from(skillsMap.values()),
@@ -853,11 +855,20 @@
                     const res = await window.api.saveProfile(payload);
                     showAlert('Profile updated successfully! All information saved.');
                     
-                    // Update side summary
-                    if (sidePhone && payload.phone) sidePhone.textContent = payload.phone;
-                    if (sideCity && payload.city) sideCity.textContent = payload.city;
-                    if (sideCareer && payload.career_goal) sideCareer.textContent = 'Goal: ' + payload.career_goal;
-                    if (sideCompletionPct && res.completion_percentage) {
+                    // Update side summary and topbar
+                    if (payload.full_name) {
+                        if (sideFullName) sideFullName.textContent = payload.full_name;
+                        if (topName) topName.textContent = payload.full_name;
+                        const names = payload.full_name.split(' ');
+                        let initials = names[0]?.charAt(0) || 'S';
+                        if (names.length > 1) initials += names[1].charAt(0);
+                        if (topAvatar && !topAvatar.querySelector('img')) topAvatar.textContent = initials.toUpperCase();
+                        if (avatarInitials) avatarInitials.textContent = initials.toUpperCase();
+                    }
+                    if (sidePhone) sidePhone.textContent = payload.phone || 'Not provided';
+                    if (sideCity) sideCity.textContent = payload.city || 'Not set';
+                    if (sideCareer) sideCareer.textContent = payload.career_goal ? ('Goal: ' + payload.career_goal) : 'Target Goal: Not set';
+                    if (sideCompletionPct && res.completion_percentage !== undefined) {
                         sideCompletionPct.textContent = res.completion_percentage + '%';
                         if (sideCompletionBar) sideCompletionBar.style.width = res.completion_percentage + '%';
                     }

@@ -1,8 +1,14 @@
 let API_URL = 'http://127.0.0.1:8080';
 if (typeof window !== 'undefined' && window.location) {
     const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-        API_URL = `${window.location.protocol}//${host}:8080`;
+    const proto = window.location.protocol;
+    const httpProto = (proto && (proto === 'http:' || proto === 'https:')) ? proto : 'http:';
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
+        API_URL = `${httpProto}//127.0.0.1:8080`;
+    } else if (host && host !== '') {
+        API_URL = `${httpProto}//${host}:8080`;
+    } else {
+        API_URL = 'http://127.0.0.1:8080';
     }
 }
 
@@ -133,6 +139,10 @@ const api = {
         return res.json();
     },
 
+    async saveProfile(profileData) {
+        return this.updateProfile(profileData);
+    },
+
     async updateProfile(profileData) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -149,7 +159,17 @@ const api = {
             const msg = await parseErrorResponse(res, 'Failed to update profile');
             throw new Error(msg);
         }
-        return res.json();
+        const data = await res.json();
+        
+        // If full_name was updated, update cached user object in localStorage
+        if (profileData && profileData.full_name) {
+            const currentUser = this.getCurrentUser();
+            if (currentUser) {
+                currentUser.full_name = profileData.full_name;
+                localStorage.setItem('smartlearn_user', JSON.stringify(currentUser));
+            }
+        }
+        return data;
     },
 
     async uploadAvatar(file) {
@@ -849,6 +869,82 @@ const api = {
         return res.json();
     },
 
+    async getInstructorStudents(courseId = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        let queryParams = `token=${encodeURIComponent(token)}`;
+        if (courseId && courseId !== 'all') {
+            queryParams += `&course_id=${encodeURIComponent(courseId)}`;
+        }
+
+        let res = await safeFetch(`${API_URL}/api/instructor/students?${queryParams}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/instructor/students?${queryParams}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructor students');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getInstructorReviews() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        let res = await safeFetch(`${API_URL}/api/instructor/reviews?token=${encodeURIComponent(token)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/instructor/reviews?token=${encodeURIComponent(token)}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructor reviews');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getInstructorAnalytics() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        let res = await safeFetch(`${API_URL}/api/instructor/analytics?token=${encodeURIComponent(token)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/instructor/analytics?token=${encodeURIComponent(token)}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructor course analytics');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+
+
     async getAdminDashboardSummary() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -893,15 +989,23 @@ const api = {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const url = new URL(`${API_URL}/admin/users`);
-        url.searchParams.append('token', token);
+        const queryParams = new URLSearchParams();
+        queryParams.append('token', token);
         Object.keys(params).forEach(k => {
-            if (params[k]) url.searchParams.append(k, params[k]);
+            const v = params[k];
+            if (v !== undefined && v !== null && v !== '' && v !== 'all') {
+                queryParams.append(k, v);
+            }
         });
 
-        const res = await safeFetch(url.toString(), {
+        let res = await safeFetch(`${API_URL}/admin/users?${queryParams.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/api/admin/users?${queryParams.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
         if (!res.ok) {
             const msg = await parseErrorResponse(res, 'Failed to fetch users');
             throw new Error(msg);
@@ -913,7 +1017,7 @@ const api = {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const res = await safeFetch(`${API_URL}/admin/users/${userId}/status?token=${encodeURIComponent(token)}`, {
+        let res = await safeFetch(`${API_URL}/admin/users/${userId}/status?token=${encodeURIComponent(token)}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -922,7 +1026,112 @@ const api = {
             body: JSON.stringify({ is_active: isActive ? 1 : 0 })
         });
         if (!res.ok) {
+            res = await safeFetch(`${API_URL}/api/admin/users/${userId}/status?token=${encodeURIComponent(token)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ is_active: isActive ? 1 : 0 })
+            });
+        }
+        if (!res.ok) {
             const msg = await parseErrorResponse(res, 'Failed to update user status');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminStudents(params = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('token', token);
+        Object.keys(params).forEach(k => {
+            const v = params[k];
+            if (v !== undefined && v !== null && v !== '' && v !== 'all') {
+                if (k === 'course_id') {
+                    if (!isNaN(parseInt(v, 10)) && parseInt(v, 10) > 0) {
+                        queryParams.append(k, parseInt(v, 10));
+                    }
+                } else {
+                    queryParams.append(k, v);
+                }
+            }
+        });
+
+        let res = await safeFetch(`${API_URL}/admin/students?${queryParams.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/api/admin/students?${queryParams.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch student roster');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminStudentDetail(studentId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        let res = await safeFetch(`${API_URL}/admin/students/${studentId}?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/api/admin/students/${studentId}?token=${encodeURIComponent(token)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch student details');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminInstructors(params = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('token', token);
+        Object.keys(params).forEach(k => {
+            const v = params[k];
+            if (v !== undefined && v !== null && v !== '' && v !== 'all') {
+                queryParams.append(k, v);
+            }
+        });
+
+        let res = await safeFetch(`${API_URL}/admin/instructors?${queryParams.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/api/admin/instructors?${queryParams.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructors directory');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminInstructorDetail(instructorId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/instructors/${instructorId}?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructor details');
             throw new Error(msg);
         }
         return res.json();
@@ -964,6 +1173,221 @@ const api = {
         });
         if (!res.ok) {
             const msg = await parseErrorResponse(res, 'Failed to fetch reports');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    // --- PAYMENT & RAZORPAY API ---
+
+    async getPaymentConfig() {
+        const res = await safeFetch(`${API_URL}/payments/config`);
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch payment configuration');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async createPaymentOrder(courseId, paymentMethod = 'Card') {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/payments/create-order?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                course_id: Number(courseId),
+                payment_method: paymentMethod
+            })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create payment order');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async verifyPayment(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/payments/verify?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Payment verification failed');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async recordPaymentFailed(payload) {
+        const token = this.getToken();
+        if (!token) return;
+
+        try {
+            await safeFetch(`${API_URL}/payments/failed?token=${encodeURIComponent(token)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (_) {}
+    },
+
+    async recordPaymentCancel(payload) {
+        const token = this.getToken();
+        if (!token) return;
+
+        try {
+            await safeFetch(`${API_URL}/payments/cancel?token=${encodeURIComponent(token)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (_) {}
+    },
+
+    async getMyPaymentHistory() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/payments/my-history?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch payment history');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getPaymentDetails(paymentId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/payments/${paymentId}/details?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch payment details');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminPayments() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/payments?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch platform payments');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getInstructorPayments() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/instructor/payments?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch course payments');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    // --- NOTIFICATIONS API ---
+
+    async getNotifications(limit = 20) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/notifications?limit=${limit}&token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch notifications');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getUnreadNotificationCount() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/notifications/unread-count?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch unread notification count');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async markNotificationAsRead(notificationId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/notifications/${notificationId}/read?token=${encodeURIComponent(token)}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to mark notification as read');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async markAllNotificationsAsRead() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/notifications/read-all?token=${encodeURIComponent(token)}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to mark all notifications as read');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteNotification(notificationId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/notifications/${notificationId}?token=${encodeURIComponent(token)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete notification');
             throw new Error(msg);
         }
         return res.json();

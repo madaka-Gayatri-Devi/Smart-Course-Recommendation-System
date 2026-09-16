@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management Directory - Admin Portal | SmartLearn</title>
+    <title>Instructor Directory & Performance - Admin Portal | SmartLearn</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,9 +31,9 @@
         <nav class="sidebar-nav">
             <div class="nav-label">ADMINISTRATION</div>
             <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
-            <a href="users.html" class="nav-item active"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
             <a href="students.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Students</span></a>
-            <a href="instructors.html" class="nav-item"><i class="fa-solid fa-chalkboard-user"></i> <span class="nav-text">Instructors</span></a>
+            <a href="instructors.html" class="nav-item active"><i class="fa-solid fa-chalkboard-user"></i> <span class="nav-text">Instructors</span></a>
             <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
             <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
             <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
@@ -65,7 +65,7 @@
         <header class="dashboard-topbar">
             <div class="topbar-left">
                 <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-                <h2 class="page-title">User Management</h2>
+                <h2 class="page-title">Instructor Management</h2>
             </div>
             
             <div class="topbar-right">
@@ -78,28 +78,56 @@
 
         <div class="dashboard-content fade-in-up">
             <div class="welcome-section" style="margin-bottom: 2rem;">
-                <h1>Registered Platform Users 👥</h1>
-                <p>Filter accounts by role or status, search directory records, and moderate user access privileges.</p>
+                <h1>Faculty & Instructors 👨‍🏫</h1>
+                <p>Monitor instructor profiles, authored courses, enrollment distribution, ratings, and student reviews.</p>
             </div>
 
-            <!-- Controls -->
+            <!-- Stats Grid -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper purple"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Instructors</span>
+                        <h3 class="stat-value" id="adminInstTotalCount">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper blue" style="background:#EFF6FF; color:#2563EB;"><i class="fa-solid fa-book-open"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Authored Courses</span>
+                        <h3 class="stat-value" id="adminInstCoursesCount">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper green"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Enrolled Learners</span>
+                        <h3 class="stat-value" id="adminInstStudentsCount">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper orange" style="background:#FFFBEB; color:#D97706;"><i class="fa-solid fa-star"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Avg Faculty Rating</span>
+                        <h3 class="stat-value" id="adminInstAvgRating">⭐ 5.0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search & Filters -->
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-                <div class="search-box" style="flex: 1; min-width: 240px; max-width: 380px;">
+                <div class="search-box" style="flex: 1; min-width: 240px; max-width: 420px;">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="userSearchInput" placeholder="Search by name or email...">
+                    <input type="text" id="adminInstructorsSearchInput" placeholder="Search instructor name or email...">
                 </div>
 
                 <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                    <div class="filter-group" id="adminRoleFilterButtons" style="display: flex; gap: 0.35rem; background: #FFFFFF; padding: 3px; border-radius: 8px; border: 1px solid #E2E8F0;">
-                        <button class="filter-btn active" data-role="all" style="padding: 0.4rem 0.75rem; font-size: 12.5px; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: #7C3AED; color: #FFFFFF;">All Roles</button>
-                        <button class="filter-btn" data-role="Student" style="padding: 0.4rem 0.75rem; font-size: 12.5px; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748B;">Students</button>
-                        <button class="filter-btn" data-role="Instructor" style="padding: 0.4rem 0.75rem; font-size: 12.5px; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748B;">Instructors</button>
-                        <button class="filter-btn" data-role="Admin" style="padding: 0.4rem 0.75rem; font-size: 12.5px; border-radius: 6px; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #64748B;">Admins</button>
-                    </div>
-
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <label for="adminUserStatusFilter" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-sliders mr-1"></i> Status:</label>
-                        <select id="adminUserStatusFilter" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                        <label for="adminInstructorStatusFilter" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-sliders mr-1"></i> Status:</label>
+                        <select id="adminInstructorStatusFilter" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
                             <option value="all">All Statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -107,35 +135,37 @@
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
-                        <label for="adminUserSortSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sort:</label>
-                        <select id="adminUserSortSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
+                        <label for="adminInstructorSortSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text); white-space: nowrap;"><i class="fa-solid fa-arrow-down-short-wide mr-1"></i> Sort:</label>
+                        <select id="adminInstructorSortSelect" style="padding: 0.5rem 0.85rem; border-radius: 8px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 13px; font-weight: 500; color: #1E293B; cursor: pointer; outline: none;">
                             <option value="newest">Newest Registered</option>
                             <option value="oldest">Oldest Registered</option>
                             <option value="name_asc">Name (A-Z)</option>
+                            <option value="students_high">Most Students</option>
+                            <option value="rating_high">Highest Rated</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Users Table -->
+            <!-- Instructors Table -->
             <div class="dashboard-card" style="padding: 1.5rem;">
                 <div style="overflow-x: auto;">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>User ID</th>
-                                <th>Full Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Registration Date</th>
-                                <th style="text-align: right;">Actions</th>
+                                <th>Instructor Details</th>
+                                <th>Authored Courses</th>
+                                <th>Enrolled Students</th>
+                                <th>Avg Rating & Reviews</th>
+                                <th>Joined Date</th>
+                                <th>Account Status</th>
+                                <th style="text-align: right;">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="adminUsersTableBody">
+                        <tbody id="adminInstructorsTableBody">
                             <tr>
                                 <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: var(--secondary-text);">
-                                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading users...
+                                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color: #5B3FE8; font-size: 1.25rem;"></i> Loading instructors...
                                 </td>
                             </tr>
                         </tbody>

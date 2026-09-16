@@ -1,29 +1,68 @@
 /**
- * Admin Dashboard & Governance JavaScript
+ * Admin Dashboard & LMS Governance JavaScript
  * 100% Dynamic data flow connected to live backend APIs.
- * Renders EXACTLY and ONLY the 13 Admin Dashboard sections.
+ * Comprehensive Platform Administration: Users, Students, Instructors, Course Catalog,
+ * Categories, Skills, Career Goals, Assessments, Enrollments, Reports, & Analytics.
  */
 
-document.addEventListener('DOMContentLoaded', async () => {
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+async function initAdminApp() {
     const user = window.guardPage('ADMIN');
     if (!user) return;
 
     setupAdminHeader(user);
 
-    // 1. Dashboard View
+    const tasks = [];
+
+    // 1. Admin Dashboard View (dashboard.html)
     if (document.getElementById('kpiTotalUsers') || document.getElementById('adminRecentUsersBody')) {
-        await loadAdminDashboardData();
+        tasks.push(loadAdminDashboardData().catch(e => console.error("Error in loadAdminDashboardData:", e)));
     }
 
-    // 2. Courses Table View (courses.html)
+    // 2. Full User Management Directory (users.html)
+    if (document.getElementById('adminUsersTableBody')) {
+        tasks.push(setupAdminUsersPage().catch(e => console.error("Error in setupAdminUsersPage:", e)));
+    }
+
+    // 3. Dedicated Student Management (students.html)
+    if (document.getElementById('adminStudentsTableBody')) {
+        tasks.push(setupAdminStudentsPage().catch(e => console.error("Error in setupAdminStudentsPage:", e)));
+    }
+
+    // 4. Dedicated Instructor Management (instructors.html)
+    if (document.getElementById('adminInstructorsTableBody')) {
+        tasks.push(setupAdminInstructorsPage().catch(e => console.error("Error in setupAdminInstructorsPage:", e)));
+    }
+
+    // 5. Course Catalog Management (courses.html)
     if (document.getElementById('adminCoursesTableBody')) {
-        await setupAdminCoursesPage();
+        tasks.push(setupAdminCoursesPage().catch(e => console.error("Error in setupAdminCoursesPage:", e)));
     }
 
-    // 3. Course Editor View (course-editor.html)
+    // 6. Course Studio / Editor View (course-editor.html)
     if (document.getElementById('adminCourseForm')) {
-        await setupAdminCourseEditor(user);
+        tasks.push(setupAdminCourseEditor(user).catch(e => console.error("Error in setupAdminCourseEditor:", e)));
     }
+
+    await Promise.allSettled(tasks);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminApp);
+} else {
+    initAdminApp();
+}
+window.addEventListener('load', () => {
+    initAdminApp();
 });
 
 function setupAdminHeader(user) {
@@ -36,6 +75,10 @@ function setupAdminHeader(user) {
     document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
     document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
 }
+
+// =========================================================================
+// 1. DASHBOARD OVERVIEW & PLATFORM HEALTH
+// =========================================================================
 
 async function loadAdminDashboardData() {
     try {
@@ -73,7 +116,6 @@ async function loadAdminDashboardData() {
     }
 }
 
-// 1. System Overview KPIs
 function renderSystemOverviewKPIs(stats) {
     const totalStudents = stats.total_students || 0;
     const totalInstructors = stats.total_instructors || 0;
@@ -86,7 +128,6 @@ function renderSystemOverviewKPIs(stats) {
     document.getElementById('kpiTotalEnrollments') && (document.getElementById('kpiTotalEnrollments').textContent = stats.total_enrollments || 0);
 }
 
-// 2. User Management Table
 function renderUserManagementTable(users) {
     const tbody = document.getElementById('adminRecentUsersBody');
     if (!tbody) return;
@@ -128,7 +169,6 @@ function renderUserManagementTable(users) {
     }).join('');
 }
 
-// 3. Course Catalog Management
 function renderCatalogModerationTable(courses, stats) {
     const tbody = document.getElementById('adminCoursesBody');
     const breakdown = document.getElementById('kpiCourseBreakdown');
@@ -171,7 +211,6 @@ function renderCatalogModerationTable(courses, stats) {
     }).join('');
 }
 
-// 4. Course Categories
 function renderCategoryDistribution(categories) {
     const container = document.getElementById('adminCategoryDistribution');
     if (!container) return;
@@ -200,13 +239,11 @@ function renderCategoryDistribution(categories) {
     }).join('');
 }
 
-// 5 & 6. Skills & Career Goals
 function renderSkillsAndCareers(stats) {
     document.getElementById('kpiTotalSkills') && (document.getElementById('kpiTotalSkills').textContent = stats.total_skills || 0);
     document.getElementById('kpiTotalCareers') && (document.getElementById('kpiTotalCareers').textContent = stats.total_career_goals || 0);
 }
 
-// 7 & 8. Assessments & System-wide Enrollments
 function renderAssessmentsAndEnrollments(stats) {
     document.getElementById('kpiTotalAssessments') && (document.getElementById('kpiTotalAssessments').textContent = stats.total_assessments || 0);
 
@@ -227,12 +264,10 @@ function renderAssessmentsAndEnrollments(stats) {
     }
 }
 
-// 9. Platform Statistics
 function renderPlatformStatistics(stats) {
     document.getElementById('kpiCompletionRate') && (document.getElementById('kpiCompletionRate').textContent = `${stats.completion_rate || 0}%`);
 }
 
-// 11. Popular Courses
 function renderPopularCourses(popular) {
     const container = document.getElementById('adminPopularCourses');
     if (!container) return;
@@ -253,10 +288,768 @@ function renderPopularCourses(popular) {
     `).join('');
 }
 
-// Global module state for admin course editor
+// =========================================================================
+// 2. USER MANAGEMENT DIRECTORY (users.html)
+// =========================================================================
+
+let allAdminUsersList = [];
+
+async function setupAdminUsersPage() {
+    const tbody = document.getElementById('adminUsersTableBody');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('userSearchInput');
+    const roleButtonsContainer = document.getElementById('adminRoleFilterButtons');
+    const statusFilter = document.getElementById('adminUserStatusFilter');
+    const sortSelect = document.getElementById('adminUserSortSelect');
+
+    let selectedRole = 'all';
+
+    const fetchAndRenderUsers = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading user records...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const query = searchInput ? searchInput.value.trim() : '';
+            const statusVal = statusFilter ? statusFilter.value : 'all';
+            const sortVal = sortSelect ? sortSelect.value : 'newest';
+
+            const params = {};
+            if (query) params.search = query;
+            if (selectedRole && selectedRole !== 'all') params.role = selectedRole;
+            if (statusVal && statusVal !== 'all') params.status = statusVal;
+
+            const rawUsers = await window.api.getAdminUsers(params);
+            const usersList = Array.isArray(rawUsers) ? rawUsers : (rawUsers && Array.isArray(rawUsers.items) ? rawUsers.items : (rawUsers && Array.isArray(rawUsers.data) ? rawUsers.data : []));
+            allAdminUsersList = usersList || [];
+
+            if (sortVal === 'newest') {
+                allAdminUsersList.sort((a, b) => (b.id || 0) - (a.id || 0));
+            } else if (sortVal === 'oldest') {
+                allAdminUsersList.sort((a, b) => (a.id || 0) - (b.id || 0));
+            } else if (sortVal === 'name_asc') {
+                allAdminUsersList.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
+            }
+
+            renderUsersDirectoryTable(allAdminUsersList);
+        } catch (err) {
+            console.error("Error loading admin users:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load users</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check your connection and login status.')}</div>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    function renderUsersDirectoryTable(users) {
+        if (!tbody) return;
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                        <div style="font-size:2.2rem; margin-bottom:0.5rem;">👤</div>
+                        <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No user accounts found</div>
+                        <div style="font-size:13.5px; color:#64748b;">Try adjusting your role or search filters.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => {
+            const roleUpper = (u.role || 'STUDENT').toUpperCase();
+            const roleBadgeClass = roleUpper === 'ADMIN' ? 'badge-admin' : (roleUpper === 'INSTRUCTOR' ? 'badge-instructor' : 'badge-student');
+            const isActive = u.is_active !== 0;
+
+            const initials = (u.full_name || u.name || 'User').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+
+            return `
+                <tr>
+                    <td><strong style="color:#475569; font-size:13px;">#${u.id}</strong></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <strong style="color:var(--dark-navy); font-size:14px; display:block;">${escapeHtml(u.full_name || u.name)}</strong>
+                                ${u.career_goal ? `<span style="font-size:11.5px; color:#64748b;">${escapeHtml(u.career_goal)}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td><span style="font-size:13px; color:#334155;">${escapeHtml(u.email)}</span></td>
+                    <td><span class="badge-role ${roleBadgeClass}">${escapeHtml(u.role)}</span></td>
+                    <td>
+                        <span class="status-indicator ${isActive ? 'status-active' : 'status-inactive'}">
+                            ${isActive ? 'Active' : 'Disabled'}
+                        </span>
+                    </td>
+                    <td><span style="font-size:12.5px; color:#64748B;">${escapeHtml(u.created_at || 'Recent')}</span></td>
+                    <td style="text-align:right;">
+                        ${u.is_primary_admin ? 
+                            `<span style="font-size:12px; color:#64748b; font-weight:600;">Primary System Admin</span>` : 
+                            `<button class="btn btn-xs ${isActive ? 'btn-outline-danger' : 'btn-outline-success'}" 
+                                     style="padding:0.35rem 0.75rem; font-size:12px; border-radius:6px;"
+                                     onclick="handleToggleUserStatus(${u.id}, ${isActive})">
+                                ${isActive ? '<i class="fa-solid fa-user-slash mr-1"></i> Deactivate' : '<i class="fa-solid fa-user-check mr-1"></i> Activate'}
+                             </button>`
+                        }
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    if (roleButtonsContainer) {
+        roleButtonsContainer.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                roleButtonsContainer.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'transparent';
+                    b.style.color = '#64748B';
+                });
+                btn.classList.add('active');
+                btn.style.background = '#7C3AED';
+                btn.style.color = '#FFFFFF';
+                selectedRole = btn.dataset.role || 'all';
+                fetchAndRenderUsers();
+            });
+        });
+    }
+
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(fetchAndRenderUsers, 300);
+        });
+    }
+
+    statusFilter && statusFilter.addEventListener('change', fetchAndRenderUsers);
+    sortSelect && sortSelect.addEventListener('change', fetchAndRenderUsers);
+
+    await fetchAndRenderUsers();
+}
+
+window.handleToggleUserStatus = async function(userId, currentIsActive) {
+    const action = currentIsActive ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} user #${userId}?`)) return;
+
+    try {
+        await window.api.updateAdminUserStatus(userId, !currentIsActive);
+        alert(`User successfully ${action}d.`);
+        location.reload();
+    } catch (err) {
+        alert(err.message || `Failed to ${action} user.`);
+    }
+};
+
+// =========================================================================
+// 3. DEDICATED STUDENT MANAGEMENT (students.html)
+// =========================================================================
+
+let allAdminStudentsData = [];
+
+async function setupAdminStudentsPage() {
+    const tbody = document.getElementById('adminStudentsTableBody');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('adminStudentsSearchInput');
+    const courseFilter = document.getElementById('adminStudentCourseFilter');
+    const statusFilter = document.getElementById('adminStudentStatusFilter');
+    const sortSelect = document.getElementById('adminStudentSortSelect');
+
+    // Non-blocking course dropdown population
+    if (courseFilter) {
+        window.api.getAdminCourses().then(catalog => {
+            let optionsHtml = `<option value="all">All Courses</option>`;
+            if (Array.isArray(catalog)) {
+                catalog.forEach(c => {
+                    optionsHtml += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
+                });
+            }
+            courseFilter.innerHTML = optionsHtml;
+        }).catch(e => console.warn("Could not load courses for student filter:", e));
+    }
+
+    const fetchAndRenderStudents = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading student roster...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const query = searchInput ? searchInput.value.trim() : '';
+            const courseVal = courseFilter ? courseFilter.value : 'all';
+            const statusVal = statusFilter ? statusFilter.value : 'all';
+            const sortVal = sortSelect ? sortSelect.value : 'newest';
+
+            const params = {};
+            if (query) params.search = query;
+            if (courseVal && courseVal !== 'all') params.course_id = courseVal;
+            if (statusVal && statusVal !== 'all') params.status = statusVal;
+
+            const res = await window.api.getAdminStudents(params);
+            
+            document.getElementById('adminStudentTotalCount') && (document.getElementById('adminStudentTotalCount').textContent = res.total_students || 0);
+            document.getElementById('adminStudentActiveCount') && (document.getElementById('adminStudentActiveCount').textContent = res.active_students || 0);
+            document.getElementById('adminStudentCompletedCount') && (document.getElementById('adminStudentCompletedCount').textContent = res.completed_students || 0);
+            document.getElementById('adminStudentAvgProgress') && (document.getElementById('adminStudentAvgProgress').textContent = `${res.avg_progress || 0}%`);
+
+            allAdminStudentsData = res.students || [];
+
+            if (sortVal === 'newest') {
+                allAdminStudentsData.sort((a, b) => (b.student_id || 0) - (a.student_id || 0));
+            } else if (sortVal === 'oldest') {
+                allAdminStudentsData.sort((a, b) => (a.student_id || 0) - (b.student_id || 0));
+            } else if (sortVal === 'name_asc') {
+                allAdminStudentsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            } else if (sortVal === 'progress_high') {
+                allAdminStudentsData.sort((a, b) => (b.overall_progress || 0) - (a.overall_progress || 0));
+            }
+
+            renderAdminStudentsTable(allAdminStudentsData);
+        } catch (err) {
+            console.error("Error loading admin students:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load student roster</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check your connection and login status.')}</div>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    function renderAdminStudentsTable(students) {
+        if (!tbody) return;
+
+        if (!students || students.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                        <div style="font-size:2.2rem; margin-bottom:0.5rem;">🎓</div>
+                        <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No students registered yet.</div>
+                        <div style="font-size:13.5px; color:#64748b;">Student accounts and course progress will appear here.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = students.map((s, idx) => {
+            const initials = (s.name || 'Student').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+            const isCompleted = s.completed_courses_count > 0;
+            const pct = s.overall_progress || 0;
+
+            const courseNames = (s.enrollments || []).map(e => e.course_title).join(', ');
+
+            return `
+                <tr style="cursor:pointer;" onclick="openAdminStudentDetailModal(${s.student_id})">
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <strong style="color:var(--dark-navy); font-size:14px; display:block;">${escapeHtml(s.name)}</strong>
+                                <span style="font-size:12px; color:#64748b;">${escapeHtml(s.email)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge-category" style="font-size:11.5px; padding:3px 10px; border-radius:12px;"><i class="fa-solid fa-bullseye mr-1"></i> ${escapeHtml(s.career_goal)}</span>
+                    </td>
+                    <td>
+                        <strong style="font-size:13px; color:#1E293B;">${s.enrolled_courses_count || 0} Courses</strong>
+                        <div style="font-size:11.5px; color:#64748b; max-width:220px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(courseNames || 'No enrollments')}</div>
+                    </td>
+                    <td>
+                        <div style="min-width:130px;">
+                            <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:4px;">
+                                <span style="color:#64748B;">Avg Progress</span>
+                                <span style="color:#7C3AED;">${pct}%</span>
+                            </div>
+                            <div style="height:6px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                                <div style="height:100%; width:${pct}%; background:${isCompleted ? '#10B981' : 'linear-gradient(90deg, #7C3AED, #A855F7)'}; border-radius:9999px;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span style="font-size:12.5px; color:#475569;">${escapeHtml(s.created_at || 'Recent')}</span></td>
+                    <td>
+                        <span class="status-indicator ${s.is_active ? 'status-active' : 'status-inactive'}">
+                            ${s.status}
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <button class="btn-outline" style="padding:0.35rem 0.65rem; font-size:11.5px; border-radius:6px;" onclick="event.stopPropagation(); openAdminStudentDetailModal(${s.student_id});">
+                            <i class="fa-solid fa-id-card mr-1"></i> View Profile
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(fetchAndRenderStudents, 300);
+        });
+    }
+
+    courseFilter && courseFilter.addEventListener('change', fetchAndRenderStudents);
+    statusFilter && statusFilter.addEventListener('change', fetchAndRenderStudents);
+    sortSelect && sortSelect.addEventListener('change', fetchAndRenderStudents);
+
+    await fetchAndRenderStudents();
+}
+
+window.openAdminStudentDetailModal = async function(studentId) {
+    try {
+        const s = await window.api.getAdminStudentDetail(studentId);
+        if (!s) return;
+
+        let modal = document.getElementById('adminStudentDetailModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'adminStudentDetailModal';
+            modal.className = 'modal-backdrop';
+            modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:1100; display:flex; align-items:center; justify-content:center; padding:1.5rem;';
+            document.body.appendChild(modal);
+        }
+
+        const initials = (s.name || 'Student').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+
+        const skillsHtml = (s.skills || []).map(sk => `
+            <span style="background:#F3E8FF; color:#6B21A8; font-weight:600; font-size:12px; padding:4px 10px; border-radius:12px; border:1px solid #D8B4FE;">
+                ${escapeHtml(sk.name || sk)} • ${escapeHtml(sk.proficiency || 'Intermediate')}
+            </span>
+        `).join('');
+
+        const interestsHtml = (s.interests || []).map(i => `
+            <span style="background:#EFF6FF; color:#1E40AF; font-size:11.5px; padding:3px 9px; border-radius:12px;">
+                #${escapeHtml(i)}
+            </span>
+        `).join('');
+
+        const enrollmentsHtml = (s.enrollments || []).length > 0 ? (s.enrollments.map(e => `
+            <tr>
+                <td><strong style="font-size:13px; color:#0F172A;">${escapeHtml(e.course_title)}</strong></td>
+                <td><span style="font-size:12px; color:#475569;">${escapeHtml(e.instructor_name)}</span></td>
+                <td><span style="font-size:12px; color:#64748B;">${escapeHtml(e.enrolled_at)}</span></td>
+                <td>
+                    <div style="min-width:110px;">
+                        <div style="font-size:11px; font-weight:600; color:#7C3AED;">${e.completed_lessons}/${e.total_lessons} lessons (${e.progress_percentage}%)</div>
+                        <div style="height:5px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                            <div style="height:100%; width:${e.progress_percentage}%; background:${e.progress_percentage === 100 ? '#10B981' : '#7C3AED'};"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:10px; background:${e.status === 'completed' ? '#ECFDF5' : '#EFF6FF'}; color:${e.status === 'completed' ? '#047857' : '#1D4ED8'};">
+                        ${e.status === 'completed' ? 'Completed' : 'In Progress'}
+                    </span>
+                </td>
+            </tr>
+        `).join('')) : `<tr><td colspan="5" style="text-align:center; padding:1rem; color:#64748b;">No active course enrollments yet.</td></tr>`;
+
+        modal.innerHTML = `
+            <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:750px; max-height:90vh; overflow-y:auto; padding:2rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); position:relative;">
+                <button onclick="closeAdminStudentDetailModal()" style="position:absolute; top:1.25rem; right:1.25rem; background:none; border:none; font-size:1.25rem; color:#64748B; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+
+                <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid #E2E8F0;">
+                    <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; flex-shrink:0;">
+                        ${initials}
+                    </div>
+                    <div>
+                        <h2 style="font-size:20px; color:#0F172A; margin:0 0 2px; font-weight:800;">${escapeHtml(s.name)}</h2>
+                        <div style="font-size:13.5px; color:#64748B;">${escapeHtml(s.email)} • Joined ${escapeHtml(s.created_at)}</div>
+                    </div>
+                </div>
+
+                <!-- Personal Info & Career Goals -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:1rem;">
+                        <h4 style="font-size:13px; text-transform:uppercase; color:#64748B; margin:0 0 0.5rem;"><i class="fa-solid fa-user mr-1"></i> Personal Information</h4>
+                        <div style="font-size:12.5px; color:#334155; line-height:1.6;">
+                            <div>Phone: <strong>${escapeHtml(s.profile.phone)}</strong></div>
+                            <div>Location: <strong>${escapeHtml(s.profile.city)}</strong></div>
+                            <div>Education: <strong>${escapeHtml(Array.isArray(s.profile.education) ? s.profile.education.join(', ') : s.profile.education)}</strong></div>
+                        </div>
+                    </div>
+
+                    <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:1rem;">
+                        <h4 style="font-size:13px; text-transform:uppercase; color:#64748B; margin:0 0 0.5rem;"><i class="fa-solid fa-bullseye mr-1"></i> Career Goals</h4>
+                        <div style="font-size:12.5px; color:#334155; line-height:1.6;">
+                            <div>Primary Goal: <strong style="color:#7C3AED;">${escapeHtml(s.career_goals.primary)}</strong></div>
+                            ${s.career_goals.secondary ? `<div>Secondary: <strong>${escapeHtml(s.career_goals.secondary)}</strong></div>` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interests & Skills -->
+                <div style="margin-bottom:1.5rem;">
+                    <h4 style="font-size:13px; text-transform:uppercase; color:#64748B; margin:0 0 0.5rem;"><i class="fa-solid fa-bolt mr-1"></i> Skills & Proficiencies</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                        ${skillsHtml}
+                    </div>
+
+                    <h4 style="font-size:13px; text-transform:uppercase; color:#64748B; margin:0 0 0.5rem;"><i class="fa-solid fa-heart mr-1"></i> Learning Interests</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                        ${interestsHtml}
+                    </div>
+                </div>
+
+                <!-- Course History -->
+                <div>
+                    <h4 style="font-size:14px; color:#0F172A; margin:0 0 0.75rem; font-weight:700;"><i class="fa-solid fa-book-open mr-1"></i> Course History & Progression</h4>
+                    <div style="overflow-x:auto;">
+                        <table class="admin-table" style="font-size:12.5px;">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Instructor</th>
+                                    <th>Enrolled</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${enrollmentsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="text-align:right; margin-top:1.5rem;">
+                    <button onclick="closeAdminStudentDetailModal()" class="btn-primary" style="padding:0.55rem 1.25rem; font-size:13px; border-radius:8px;">Close</button>
+                </div>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+    } catch (err) {
+        alert("Could not load student profile: " + err.message);
+    }
+};
+
+window.closeAdminStudentDetailModal = function() {
+    const modal = document.getElementById('adminStudentDetailModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// =========================================================================
+// 4. DEDICATED INSTRUCTOR MANAGEMENT (instructors.html)
+// =========================================================================
+
+let allAdminInstructorsData = [];
+
+async function setupAdminInstructorsPage() {
+    const tbody = document.getElementById('adminInstructorsTableBody');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('adminInstructorsSearchInput');
+    const statusFilter = document.getElementById('adminInstructorStatusFilter');
+    const sortSelect = document.getElementById('adminInstructorSortSelect');
+
+    const fetchAndRenderInstructors = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading instructor directory...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const query = searchInput ? searchInput.value.trim() : '';
+            const statusVal = statusFilter ? statusFilter.value : 'all';
+            const sortVal = sortSelect ? sortSelect.value : 'newest';
+
+            const params = {};
+            if (query) params.search = query;
+            if (statusVal && statusVal !== 'all') params.status = statusVal;
+
+            const res = await window.api.getAdminInstructors(params);
+            allAdminInstructorsData = res.instructors || [];
+
+            let totalCoursesCount = 0;
+            let totalStudentsCount = 0;
+            let sumRatings = 0;
+
+            allAdminInstructorsData.forEach(i => {
+                totalCoursesCount += (i.total_courses || 0);
+                totalStudentsCount += (i.total_students || 0);
+                sumRatings += (i.avg_rating || 5.0);
+            });
+
+            const avgPlatformRating = allAdminInstructorsData.length > 0 ? (sumRatings / allAdminInstructorsData.length).toFixed(1) : '5.0';
+
+            document.getElementById('adminInstTotalCount') && (document.getElementById('adminInstTotalCount').textContent = res.total_instructors || allAdminInstructorsData.length);
+            document.getElementById('adminInstCoursesCount') && (document.getElementById('adminInstCoursesCount').textContent = totalCoursesCount);
+            document.getElementById('adminInstStudentsCount') && (document.getElementById('adminInstStudentsCount').textContent = totalStudentsCount);
+            document.getElementById('adminInstAvgRating') && (document.getElementById('adminInstAvgRating').textContent = `⭐ ${avgPlatformRating}`);
+
+            if (sortVal === 'newest') {
+                allAdminInstructorsData.sort((a, b) => (b.instructor_id || 0) - (a.instructor_id || 0));
+            } else if (sortVal === 'oldest') {
+                allAdminInstructorsData.sort((a, b) => (a.instructor_id || 0) - (b.instructor_id || 0));
+            } else if (sortVal === 'name_asc') {
+                allAdminInstructorsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            } else if (sortVal === 'students_high') {
+                allAdminInstructorsData.sort((a, b) => (b.total_students || 0) - (a.total_students || 0));
+            } else if (sortVal === 'rating_high') {
+                allAdminInstructorsData.sort((a, b) => (b.avg_rating || 0) - (a.avg_rating || 0));
+            }
+
+            renderAdminInstructorsTable(allAdminInstructorsData);
+        } catch (err) {
+            console.error("Error loading admin instructors:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load instructor directory</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check your connection and login status.')}</div>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    function renderAdminInstructorsTable(instructors) {
+        if (!tbody) return;
+
+        if (!instructors || instructors.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                        <div style="font-size:2.2rem; margin-bottom:0.5rem;">👨‍🏫</div>
+                        <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No instructor accounts found.</div>
+                        <div style="font-size:13.5px; color:#64748b;">Faculty members will appear here as they register and author courses.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = instructors.map(inst => {
+            const initials = (inst.name || 'Instructor').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+
+            return `
+                <tr style="cursor:pointer;" onclick="openAdminInstructorDetailModal(${inst.instructor_id})">
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #2563EB, #3B82F6); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <strong style="color:var(--dark-navy); font-size:14px; display:block;">${escapeHtml(inst.name)}</strong>
+                                <span style="font-size:12px; color:#64748b;">${escapeHtml(inst.email)}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <strong style="font-size:13.5px; color:#1E293B;">${inst.total_courses || 0} Courses</strong>
+                        <div style="font-size:11.5px; color:#059669;">${inst.published_courses || 0} Published • ${inst.draft_courses || 0} Draft</div>
+                    </td>
+                    <td><strong style="font-size:13px; color:#3730A3;">${inst.total_students || 0} Learners</strong></td>
+                    <td>
+                        <div style="color:#D97706; font-size:13px; font-weight:700;">⭐ ${(inst.avg_rating || 5.0).toFixed(1)}</div>
+                        <div style="font-size:11.5px; color:#64748b;">${inst.total_reviews || 0} reviews</div>
+                    </td>
+                    <td><span style="font-size:12.5px; color:#475569;">${escapeHtml(inst.created_at || 'Recent')}</span></td>
+                    <td>
+                        <span class="status-indicator ${inst.is_active ? 'status-active' : 'status-inactive'}">
+                            ${inst.status}
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <button class="btn-outline" style="padding:0.35rem 0.65rem; font-size:11.5px; border-radius:6px;" onclick="event.stopPropagation(); openAdminInstructorDetailModal(${inst.instructor_id});">
+                            <i class="fa-solid fa-chart-pie mr-1"></i> View Performance
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(fetchAndRenderInstructors, 300);
+        });
+    }
+
+    statusFilter && statusFilter.addEventListener('change', fetchAndRenderInstructors);
+    sortSelect && sortSelect.addEventListener('change', fetchAndRenderInstructors);
+
+    await fetchAndRenderInstructors();
+}
+
+window.openAdminInstructorDetailModal = async function(instructorId) {
+    try {
+        const inst = await window.api.getAdminInstructorDetail(instructorId);
+        if (!inst) return;
+
+        let modal = document.getElementById('adminInstructorDetailModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'adminInstructorDetailModal';
+            modal.className = 'modal-backdrop';
+            modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:1100; display:flex; align-items:center; justify-content:center; padding:1.5rem;';
+            document.body.appendChild(modal);
+        }
+
+        const initials = (inst.name || 'Instructor').split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+        const sum = inst.summary || {};
+
+        const skillsHtml = (inst.skills || []).map(sk => `
+            <span style="background:#EFF6FF; color:#1D4ED8; font-weight:600; font-size:12px; padding:4px 10px; border-radius:12px; border:1px solid #BFDBFE;">
+                ${escapeHtml(sk.name || sk)} • ${escapeHtml(sk.proficiency || 'Expert')}
+            </span>
+        `).join('');
+
+        const coursesHtml = (inst.authored_courses || []).length > 0 ? (inst.authored_courses.map(c => `
+            <tr>
+                <td>
+                    <strong style="font-size:13px; color:#0F172A;">${escapeHtml(c.title)}</strong>
+                    <div style="font-size:11px; color:#64748B;">${escapeHtml(c.category)} • ${escapeHtml(c.level)}</div>
+                </td>
+                <td><strong style="color:#2563EB;">${c.enrolled_students_count || 0}</strong></td>
+                <td><span style="color:#7C3AED; font-weight:600;">${c.avg_progress}%</span></td>
+                <td><span style="color:#059669; font-weight:600;">${c.completion_rate}%</span></td>
+                <td><span style="color:#D97706; font-weight:700;">⭐ ${(c.rating || 5.0).toFixed(1)} (${c.review_count})</span></td>
+                <td>
+                    <span style="font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:10px; background:${c.status === 'published' ? '#ECFDF5' : '#F1F5F9'}; color:${c.status === 'published' ? '#047857' : '#64748B'};">
+                        ${c.status === 'published' ? 'Published' : 'Draft'}
+                    </span>
+                </td>
+            </tr>
+        `).join('')) : `<tr><td colspan="6" style="text-align:center; padding:1rem; color:#64748b;">No authored courses yet.</td></tr>`;
+
+        const reviewsHtml = (inst.reviews || []).length > 0 ? (inst.reviews.map(r => `
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:0.85rem; margin-bottom:0.65rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:12.5px;">
+                    <strong style="color:#0F172A;">${escapeHtml(r.student_name)} (${escapeHtml(r.course_title)})</strong>
+                    <span style="color:#D97706;">⭐ ${r.rating}</span>
+                </div>
+                <p style="margin:0; font-size:12px; color:#475569;">"${escapeHtml(r.comment)}"</p>
+            </div>
+        `).join('')) : `<div style="font-size:12.5px; color:#64748B;">No student reviews submitted yet.</div>`;
+
+        modal.innerHTML = `
+            <div style="background:#FFFFFF; border-radius:16px; width:100%; max-width:800px; max-height:90vh; overflow-y:auto; padding:2rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); position:relative;">
+                <button onclick="closeAdminInstructorDetailModal()" style="position:absolute; top:1.25rem; right:1.25rem; background:none; border:none; font-size:1.25rem; color:#64748B; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+
+                <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid #E2E8F0;">
+                    <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg, #2563EB, #3B82F6); color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; flex-shrink:0;">
+                        ${initials}
+                    </div>
+                    <div>
+                        <h2 style="font-size:20px; color:#0F172A; margin:0 0 2px; font-weight:800;">${escapeHtml(inst.name)}</h2>
+                        <div style="font-size:13.5px; color:#64748B;">${escapeHtml(inst.email)} • Instructor since ${escapeHtml(inst.created_at)}</div>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:0.85rem; margin-bottom:1.5rem;">
+                    <div style="background:#F8F7FF; border:1px solid #EDE9FE; border-radius:10px; padding:0.85rem; text-align:center;">
+                        <span style="font-size:11.5px; color:#64748B; display:block;">Authored Courses</span>
+                        <strong style="font-size:18px; color:#7C3AED;">${sum.total_courses || 0}</strong>
+                    </div>
+                    <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:0.85rem; text-align:center;">
+                        <span style="font-size:11.5px; color:#64748B; display:block;">Enrolled Students</span>
+                        <strong style="font-size:18px; color:#2563EB;">${sum.total_students || 0}</strong>
+                    </div>
+                    <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px; padding:0.85rem; text-align:center;">
+                        <span style="font-size:11.5px; color:#64748B; display:block;">Avg Rating</span>
+                        <strong style="font-size:18px; color:#059669;">⭐ ${(sum.avg_rating || 5.0).toFixed(1)}</strong>
+                    </div>
+                    <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; padding:0.85rem; text-align:center;">
+                        <span style="font-size:11.5px; color:#64748B; display:block;">Total Reviews</span>
+                        <strong style="font-size:18px; color:#D97706;">${sum.total_reviews || 0}</strong>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div style="margin-bottom:1.5rem;">
+                    <h4 style="font-size:13px; text-transform:uppercase; color:#64748B; margin:0 0 0.5rem;"><i class="fa-solid fa-bolt mr-1"></i> Instructor Expertise</h4>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        ${skillsHtml}
+                    </div>
+                </div>
+
+                <!-- Authored Courses Table -->
+                <div style="margin-bottom:1.5rem;">
+                    <h4 style="font-size:14px; color:#0F172A; margin:0 0 0.75rem; font-weight:700;"><i class="fa-solid fa-book-open mr-1"></i> Authored Curriculum & Course-wise Analytics</h4>
+                    <div style="overflow-x:auto;">
+                        <table class="admin-table" style="font-size:12.5px;">
+                            <thead>
+                                <tr>
+                                    <th>Course Title</th>
+                                    <th>Students</th>
+                                    <th>Avg Progress</th>
+                                    <th>Completion Rate</th>
+                                    <th>Rating</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${coursesHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reviews Feed -->
+                <div>
+                    <h4 style="font-size:14px; color:#0F172A; margin:0 0 0.75rem; font-weight:700;"><i class="fa-solid fa-star mr-1" style="color:#D97706;"></i> Student Reviews & Feedback</h4>
+                    ${reviewsHtml}
+                </div>
+
+                <div style="text-align:right; margin-top:1.5rem;">
+                    <button onclick="closeAdminInstructorDetailModal()" class="btn-primary" style="padding:0.55rem 1.25rem; font-size:13px; border-radius:8px;">Close</button>
+                </div>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+    } catch (err) {
+        alert("Could not load instructor profile: " + err.message);
+    }
+};
+
+window.closeAdminInstructorDetailModal = function() {
+    const modal = document.getElementById('adminInstructorDetailModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// =========================================================================
+// 5. COURSE CATALOG & MODERATION (courses.html)
+// =========================================================================
+
 let adminCurrentModules = [];
 
-// Sub-page: Admin Courses Page (courses.html)
 async function setupAdminCoursesPage() {
     const tbody = document.getElementById('adminCoursesTableBody');
     const searchInput = document.getElementById('adminCourseSearchInput');
@@ -267,7 +1060,6 @@ async function setupAdminCoursesPage() {
 
     let currentStatus = 'all';
 
-    // Populate categories dropdown
     if (categoryFilter) {
         try {
             const cats = await window.api.getCategories();
@@ -394,264 +1186,21 @@ async function setupAdminCoursesPage() {
         });
     }
 
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', fetchAndRenderCourses);
-    }
-
-    if (difficultyFilter) {
-        difficultyFilter.addEventListener('change', fetchAndRenderCourses);
-    }
-
-    if (sortSelect) {
-        sortSelect.addEventListener('change', fetchAndRenderCourses);
-    }
+    if (categoryFilter) categoryFilter.addEventListener('change', fetchAndRenderCourses);
+    if (difficultyFilter) difficultyFilter.addEventListener('change', fetchAndRenderCourses);
+    if (sortSelect) sortSelect.addEventListener('change', fetchAndRenderCourses);
 
     await fetchAndRenderCourses();
 }
 
-// Sub-page: Admin Course Editor (course-editor.html)
-async function setupAdminCourseEditor(user) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const courseId = urlParams.get('id');
-    const headerTitle = document.getElementById('adminEditorHeaderTitle');
-    const form = document.getElementById('adminCourseForm');
-    const alertBox = document.getElementById('adminEditorAlert');
-    const idInput = document.getElementById('adminEditingCourseId');
-    const addModBtn = document.getElementById('adminAddModuleBtn');
-
-    addModBtn?.addEventListener('click', () => {
-        adminCurrentModules.push({
-            module_id: adminCurrentModules.length + 1,
-            title: `Module ${adminCurrentModules.length + 1}: Core Principles & Practice`,
-            duration: "8 hours",
-            lessons: [
-                { lesson_id: 1, title: "Module Overview & Setup", duration: "45 mins", type: "video" }
-            ],
-            materials: "Source Code & Lab Exercises"
-        });
-        renderAdminModulesBuilder();
-    });
-
-    if (courseId) {
-        if (headerTitle) headerTitle.textContent = 'Edit Platform Course';
-        if (idInput) idInput.value = courseId;
-
-        try {
-            const course = await window.api.getCourseDetails(courseId);
-            if (course) {
-                document.getElementById('adminCourseTitle').value = course.title || '';
-                document.getElementById('adminCourseInstructor').value = course.instructor || course.instructor_name || '';
-                document.getElementById('adminCourseCategory').value = course.category || 'Web Development';
-                document.getElementById('adminCourseLevel').value = course.level || course.difficulty || 'Intermediate';
-                document.getElementById('adminCourseDuration').value = course.duration || '35 hours';
-                document.getElementById('adminCourseLanguage').value = course.language || 'English';
-                document.getElementById('adminCourseStatus').value = (course.status || 'published').toLowerCase();
-                document.getElementById('adminCourseShortDesc').value = course.short_description || '';
-                document.getElementById('adminCourseDescription').value = course.description || '';
-                document.getElementById('adminCourseSkills').value = (course.skills || []).join(', ');
-                document.getElementById('adminCoursePrereqs').value = (course.prerequisites || []).join('\n');
-                document.getElementById('adminCourseTechReqs').value = (course.technical_requirements || []).join('\n');
-                document.getElementById('adminCourseRecKnowledge').value = (course.recommended_knowledge || []).join('\n');
-                document.getElementById('adminCourseRoles').value = (course.target_roles || course.career_goals || []).join(', ');
-                document.getElementById('adminCourseOutcomes').value = (course.learning_outcomes || []).join('\n');
-
-                if (course.modules && Array.isArray(course.modules) && course.modules.length > 0) {
-                    adminCurrentModules = course.modules;
-                }
-            }
-        } catch (err) {
-            console.error("Admin load course error:", err);
-            if (alertBox) {
-                alertBox.style.display = 'block';
-                alertBox.style.background = '#FEF2F2';
-                alertBox.style.color = '#991B1B';
-                alertBox.style.border = '1px solid #FECACA';
-                alertBox.textContent = `Error: ${err.message}`;
-            }
-        }
-    }
-
-    renderAdminModulesBuilder();
-
-    form?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById('adminSaveCourseBtn');
-
-        const title = document.getElementById('adminCourseTitle').value.trim();
-        const instructor = document.getElementById('adminCourseInstructor').value.trim();
-        const category = document.getElementById('adminCourseCategory').value;
-        const description = document.getElementById('adminCourseDescription').value.trim();
-        const short_description = document.getElementById('adminCourseShortDesc').value.trim();
-        const skillsRaw = document.getElementById('adminCourseSkills').value.trim();
-
-        if (!title) {
-            alert('Please provide a Course Title.');
-            return;
-        }
-        if (!category) {
-            alert('Please select a Category.');
-            return;
-        }
-        if (!description) {
-            alert('Please enter a Detailed Description.');
-            return;
-        }
-
-        const parseList = (val) => {
-            if (!val) return [];
-            return val.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-        };
-
-        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving System Course...'; }
-
-        try {
-            const payload = {
-                title: title,
-                instructor_name: instructor || 'SmartLearn Faculty',
-                category: category,
-                level: document.getElementById('adminCourseLevel').value,
-                duration: document.getElementById('adminCourseDuration').value.trim() || '35 hours',
-                language: document.getElementById('adminCourseLanguage').value.trim() || 'English',
-                status: document.getElementById('adminCourseStatus').value,
-                short_description: short_description || (description.slice(0, 120) + '...'),
-                description: description,
-                skills: parseList(skillsRaw),
-                prerequisites: parseList(document.getElementById('adminCoursePrereqs').value),
-                technical_requirements: parseList(document.getElementById('adminCourseTechReqs').value),
-                recommended_knowledge: parseList(document.getElementById('adminCourseRecKnowledge').value),
-                target_roles: parseList(document.getElementById('adminCourseRoles').value),
-                career_goals: parseList(document.getElementById('adminCourseRoles').value),
-                learning_outcomes: parseList(document.getElementById('adminCourseOutcomes').value),
-                modules: adminCurrentModules
-            };
-
-            if (courseId) {
-                await window.api.updateCourse(courseId, payload);
-            } else {
-                await window.api.createCourse(payload);
-            }
-
-            if (alertBox) {
-                alertBox.style.display = 'block';
-                alertBox.style.background = '#ECFDF5';
-                alertBox.style.color = '#065F46';
-                alertBox.style.border = '1px solid #A7F3D0';
-                alertBox.textContent = 'Platform course successfully saved to database! Redirecting to Catalog...';
-            }
-
-            setTimeout(() => {
-                window.location.href = 'courses.html';
-            }, 1000);
-
-        } catch (err) {
-            if (alertBox) {
-                alertBox.style.display = 'block';
-                alertBox.style.background = '#FEF2F2';
-                alertBox.style.color = '#991B1B';
-                alertBox.style.border = '1px solid #FECACA';
-                alertBox.textContent = err.message || 'Failed to save course.';
-            }
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save System Course'; }
-        }
-    });
-}
-
-function renderAdminModulesBuilder() {
-    const container = document.getElementById('adminModulesContainer');
-    if (!container) return;
-
-    if (adminCurrentModules.length === 0) {
-        adminCurrentModules = [
-            {
-                module_id: 1,
-                title: "Module 1: Foundations & Architecture",
-                duration: "6 hours",
-                lessons: [
-                    { lesson_id: 1, title: "Course Introduction & Setup", duration: "45 mins", type: "video" },
-                    { lesson_id: 2, title: "Core Architecture Deep Dive", duration: "60 mins", type: "hands-on" }
-                ],
-                materials: "Downloadable Starter Repository & PDF Handout"
-            }
-        ];
-    }
-
-    container.innerHTML = adminCurrentModules.map((m, mIdx) => `
-        <div class="module-card" style="border:1px solid #DDD6FE; background:#FBFBFE; border-radius:8px; padding:1rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                <input type="text" value="${escapeHtml(m.title)}" onchange="updateAdminModuleTitle(${mIdx}, this.value)" placeholder="Module Title" class="form-input" style="font-weight:700; flex:1; margin-right:0.75rem; padding:0.4rem 0.6rem; border:1px solid #CBD5E1; border-radius:6px; font-size:13px;">
-                <input type="text" value="${escapeHtml(m.duration || '6 hours')}" onchange="updateAdminModuleDuration(${mIdx}, this.value)" placeholder="Duration (e.g. 6 hours)" class="form-input" style="width:140px; margin-right:0.75rem; padding:0.4rem 0.6rem; border:1px solid #CBD5E1; border-radius:6px; font-size:13px;">
-                <button type="button" onclick="removeAdminModule(${mIdx})" class="btn-outline" style="color:#EF4444; border-color:#FCA5A5; padding:0.35rem 0.6rem; font-size:12px; border-radius:6px;" title="Delete Module"><i class="fa-solid fa-trash"></i></button>
-            </div>
-
-            <div style="margin-left:0.5rem; margin-bottom:0.75rem;">
-                <div style="font-size:12px; font-weight:600; color:#475569; margin-bottom:0.4rem;">Lessons:</div>
-                <div id="adminLessonsContainer_${mIdx}" style="display:flex; flex-direction:column; gap:0.4rem;">
-                    ${(m.lessons || []).map((l, lIdx) => `
-                        <div style="display:flex; gap:0.5rem; align-items:center;">
-                            <span style="font-size:11.5px; color:#94A3B8;">${lIdx + 1}.</span>
-                            <input type="text" value="${escapeHtml(l.title)}" onchange="updateAdminLessonTitle(${mIdx}, ${lIdx}, this.value)" placeholder="Lesson Title" class="form-input" style="flex:1; padding:0.35rem 0.5rem; font-size:12.5px; border:1px solid #E2E8F0; border-radius:6px;">
-                            <input type="text" value="${escapeHtml(l.duration || '45 mins')}" onchange="updateAdminLessonDuration(${mIdx}, ${lIdx}, this.value)" placeholder="Duration" class="form-input" style="width:100px; padding:0.35rem 0.5rem; font-size:12.5px; border:1px solid #E2E8F0; border-radius:6px;">
-                            <select onchange="updateAdminLessonType(${mIdx}, ${lIdx}, this.value)" class="form-input" style="width:110px; padding:0.35rem 0.5rem; font-size:12px; border:1px solid #E2E8F0; border-radius:6px;">
-                                <option value="video" ${l.type === 'video' ? 'selected' : ''}>Video</option>
-                                <option value="hands-on" ${l.type === 'hands-on' ? 'selected' : ''}>Hands-on Lab</option>
-                                <option value="project" ${l.type === 'project' ? 'selected' : ''}>Project</option>
-                                <option value="capstone" ${l.type === 'capstone' ? 'selected' : ''}>Capstone</option>
-                            </select>
-                            <button type="button" onclick="removeAdminLesson(${mIdx}, ${lIdx})" style="border:none; background:none; color:#94A3B8; cursor:pointer; font-size:13px;" title="Delete Lesson"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    `).join('')}
-                </div>
-                <button type="button" onclick="addAdminLesson(${mIdx})" style="background:none; border:none; color:var(--primary-purple); font-size:12px; font-weight:600; cursor:pointer; margin-top:0.4rem;"><i class="fa-solid fa-plus mr-1"></i> Add Lesson</button>
-            </div>
-
-            <div style="margin-left:0.5rem;">
-                <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:0.25rem;">Course Materials / Resources:</label>
-                <input type="text" value="${escapeHtml(m.materials || '')}" onchange="updateAdminModuleMaterials(${mIdx}, this.value)" placeholder="e.g. GitHub Repository, Lecture Slides PDF, Sandbox starter files" class="form-input" style="width:100%; padding:0.35rem 0.5rem; font-size:12.5px; border:1px solid #E2E8F0; border-radius:6px;">
-            </div>
-        </div>
-    `).join('');
-}
-
-window.addAdminLesson = function(mIdx) {
-    if (!adminCurrentModules[mIdx].lessons) adminCurrentModules[mIdx].lessons = [];
-    adminCurrentModules[mIdx].lessons.push({
-        lesson_id: adminCurrentModules[mIdx].lessons.length + 1,
-        title: `Lesson ${adminCurrentModules[mIdx].lessons.length + 1}: Practical Application`,
-        duration: "45 mins",
-        type: "video"
-    });
-    renderAdminModulesBuilder();
-};
-
-window.removeAdminLesson = function(mIdx, lIdx) {
-    adminCurrentModules[mIdx].lessons.splice(lIdx, 1);
-    renderAdminModulesBuilder();
-};
-
-window.updateAdminModuleTitle = function(mIdx, val) { adminCurrentModules[mIdx].title = val; };
-window.updateAdminModuleDuration = function(mIdx, val) { adminCurrentModules[mIdx].duration = val; };
-window.updateAdminModuleMaterials = function(mIdx, val) { adminCurrentModules[mIdx].materials = val; };
-window.updateAdminLessonTitle = function(mIdx, lIdx, val) { adminCurrentModules[mIdx].lessons[lIdx].title = val; };
-window.updateAdminLessonDuration = function(mIdx, lIdx, val) { adminCurrentModules[mIdx].lessons[lIdx].duration = val; };
-window.updateAdminLessonType = function(mIdx, lIdx, val) { adminCurrentModules[mIdx].lessons[lIdx].type = val; };
-window.removeAdminModule = function(mIdx) {
-    adminCurrentModules.splice(mIdx, 1);
-    renderAdminModulesBuilder();
-};
-
-// Global Admin Action Handlers
 window.handleAdminTogglePublish = async function(courseId, isPublished) {
     const action = isPublished ? 'unpublish' : 'publish';
-    if (!confirm(`Are you sure you want to ${action} this course?`)) return;
+    if (!confirm(`Are you sure you want to ${action} course #${courseId}?`)) return;
 
     try {
-        const newStatus = isPublished ? 'draft' : 'published';
-        await window.api.updateCourseStatus(courseId, newStatus);
-        if (document.getElementById('adminCoursesTableBody')) {
-            await setupAdminCoursesPage();
-        } else {
-            window.location.reload();
-        }
+        await window.api.updateAdminCourseStatus(courseId, isPublished ? 'draft' : 'published');
+        alert(`Course successfully ${action}ed.`);
+        location.reload();
     } catch (err) {
         alert(err.message || `Failed to ${action} course.`);
     }
@@ -659,57 +1208,20 @@ window.handleAdminTogglePublish = async function(courseId, isPublished) {
 
 window.handleAdminToggleDeactivate = async function(courseId, isDeactivated) {
     const action = isDeactivated ? 'activate' : 'deactivate';
-    if (!confirm(`Are you sure you want to ${action} this course?`)) return;
+    if (!confirm(`Are you sure you want to ${action} course #${courseId}?`)) return;
 
     try {
-        if (isDeactivated) {
-            await window.api.updateCourseStatus(courseId, 'published');
-        } else {
-            await window.api.deleteCourse(courseId); // Deactivates course
-        }
-        if (document.getElementById('adminCoursesTableBody')) {
-            await setupAdminCoursesPage();
-        } else {
-            window.location.reload();
-        }
+        await window.api.updateAdminCourseStatus(courseId, isDeactivated ? 'published' : 'deactivated');
+        alert(`Course successfully ${action}d.`);
+        location.reload();
     } catch (err) {
         alert(err.message || `Failed to ${action} course.`);
     }
 };
 
-// Global actions
-window.handleToggleUserStatus = async function(userId, currentActive) {
-    try {
-        const actionName = currentActive ? "deactivate" : "activate";
-        if (!confirm(`Are you sure you want to ${actionName} this user?`)) return;
-
-        await window.api.updateAdminUserStatus(userId, !currentActive);
-        if (document.getElementById('adminRecentUsersBody')) await loadAdminDashboardData();
-        else window.location.reload();
-    } catch (err) {
-        alert(err.message || "Failed to update user status.");
-    }
-};
-
-window.handleToggleCoursePublish = async function(courseId, currentPublished) {
-    try {
-        const actionName = currentPublished ? "unpublish" : "publish";
-        if (!confirm(`Are you sure you want to ${actionName} this course?`)) return;
-
-        const newStatus = currentPublished ? 'draft' : 'published';
-        await window.api.updateCourseStatus(courseId, newStatus);
-        
-        if (document.getElementById('adminCoursesBody')) {
-            await loadAdminDashboardData();
-        } else {
-            window.location.reload();
-        }
-    } catch (err) {
-        alert(err.message || "Failed to update course status.");
-    }
-};
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
+// Global exports
+window.initAdminApp = initAdminApp;
+window.setupAdminUsersPage = setupAdminUsersPage;
+window.setupAdminStudentsPage = setupAdminStudentsPage;
+window.setupAdminInstructorsPage = setupAdminInstructorsPage;
+window.setupAdminCoursesPage = setupAdminCoursesPage;
