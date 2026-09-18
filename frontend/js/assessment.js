@@ -1,6 +1,87 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ----------------------------------------------------
+    // CUSTOM UI ALERT & CONFIRM MODALS (No native alert/confirm)
+    // ----------------------------------------------------
+    function showCustomAlert(title, message, iconType = 'info') {
+        return new Promise((resolve) => {
+            let existingModal = document.getElementById('customAlertModal');
+            if (existingModal) existingModal.remove();
+
+            const iconClass = iconType === 'error' ? 'fa-circle-exclamation' : (iconType === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info');
+            const iconColor = iconType === 'error' ? '#ef4444' : (iconType === 'warning' ? '#f59e0b' : '#8b5cf6');
+
+            const modalHtml = `
+                <div class="modal-overlay active" id="customAlertModal" style="z-index: 9999;">
+                    <div class="modal-container" style="max-width: 440px; text-align: center; padding: 2rem 1.5rem;">
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: ${iconColor}15; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                            <i class="fa-solid ${iconClass}" style="font-size: 26px; color: ${iconColor};"></i>
+                        </div>
+                        <h3 style="font-size: 18px; font-weight: 800; color: var(--dark-navy); margin-bottom: 0.5rem;">${title}</h3>
+                        <p style="font-size: 14px; color: var(--secondary-text); margin-bottom: 1.5rem; line-height: 1.5;">${message}</p>
+                        <button type="button" id="btnCustomAlertOk" class="btn-primary-small" style="width: 100%; padding: 0.75rem; justify-content: center; font-size: 14px;">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = document.getElementById('customAlertModal');
+            const btnOk = document.getElementById('btnCustomAlertOk');
+
+            btnOk.addEventListener('click', () => {
+                modal.remove();
+                resolve(true);
+            });
+        });
+    }
+
+    function showCustomConfirm(title, message, confirmBtnText = 'Confirm', confirmStyle = 'primary') {
+        return new Promise((resolve) => {
+            let existingModal = document.getElementById('customConfirmModal');
+            if (existingModal) existingModal.remove();
+
+            const btnBg = confirmStyle === 'danger' ? '#ef4444' : 'var(--primary-purple)';
+
+            const modalHtml = `
+                <div class="modal-overlay active" id="customConfirmModal" style="z-index: 9999;">
+                    <div class="modal-container" style="max-width: 450px; padding: 2rem 1.5rem; text-align: center;">
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: #fef3c7; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 26px; color: #d97706;"></i>
+                        </div>
+                        <h3 style="font-size: 18px; font-weight: 800; color: var(--dark-navy); margin-bottom: 0.5rem;">${title}</h3>
+                        <p style="font-size: 14px; color: var(--secondary-text); margin-bottom: 1.75rem; line-height: 1.5;">${message}</p>
+                        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                            <button type="button" id="btnCustomConfirmCancel" class="btn-profile btn-back" style="flex: 1; padding: 0.7rem; justify-content: center;">
+                                Cancel
+                            </button>
+                            <button type="button" id="btnCustomConfirmOk" class="btn-primary-small" style="flex: 1; padding: 0.7rem; justify-content: center; background: ${btnBg}; border: none; color: white;">
+                                ${confirmBtnText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = document.getElementById('customConfirmModal');
+            const btnCancel = document.getElementById('btnCustomConfirmCancel');
+            const btnOk = document.getElementById('btnCustomConfirmOk');
+
+            btnCancel.addEventListener('click', () => {
+                modal.remove();
+                resolve(false);
+            });
+
+            btnOk.addEventListener('click', () => {
+                modal.remove();
+                resolve(true);
+            });
+        });
+    }
+
+    // ----------------------------------------------------
     // AUTHENTICATION & USER INITIALIZATION
     // ----------------------------------------------------
     let currentUser = null;
@@ -66,12 +147,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         remainingSeconds = (durationMinutes || 15) * 60;
         updateTimerDisplay();
 
-        timerInterval = setInterval(() => {
+        timerInterval = setInterval(async () => {
             remainingSeconds--;
             updateTimerDisplay();
             if (remainingSeconds <= 0) {
                 stopTimer();
-                alert('Time is up! Submitting your assessment now...');
+                await showCustomAlert('Time Is Up!', 'Your assessment time has expired. Submitting your answers now.', 'warning');
                 triggerAssessmentSubmission();
             }
         }, 1000);
@@ -113,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ----------------------------------------------------
-    // LOAD ASSESSMENTS & HISTORY
+    // LOAD ASSESSMENTS & HISTORY (Personalized Sorting)
     // ----------------------------------------------------
     async function loadCatalog() {
         try {
@@ -134,6 +215,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function isRecommendedForGoal(assessmentCategory, assessmentTitle) {
+        const careerGoal = (profileData.career_goal || '').toLowerCase();
+        const category = (assessmentCategory || '').toLowerCase();
+        const title = (assessmentTitle || '').toLowerCase();
+
+        if (careerGoal.includes('web') || careerGoal.includes('full stack') || careerGoal.includes('developer')) {
+            if (category.includes('web') || title.includes('full stack') || title.includes('web')) return true;
+        }
+        if (careerGoal.includes('data') || careerGoal.includes('ai') || careerGoal.includes('machine learning')) {
+            if (category.includes('data') || title.includes('data') || title.includes('machine learning')) return true;
+        }
+        if (careerGoal.includes('cloud') || careerGoal.includes('devops')) {
+            if (category.includes('cloud') || title.includes('cloud') || title.includes('devops')) return true;
+        }
+        return false;
+    }
+
     function renderAssessments(list) {
         if (!assessmentsListContainer) return;
         if (!list || list.length === 0) {
@@ -141,19 +239,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Sort so recommended tests for user career goal appear first
+        const sortedList = [...list].sort((a, b) => {
+            const aRec = isRecommendedForGoal(a.category, a.title);
+            const bRec = isRecommendedForGoal(b.category, b.title);
+            if (aRec && !bRec) return -1;
+            if (!aRec && bRec) return 1;
+            return a.id - b.id;
+        });
+
         assessmentsListContainer.innerHTML = '';
-        list.forEach(item => {
+        sortedList.forEach(item => {
+            const isRec = isRecommendedForGoal(item.category, item.title);
             const card = document.createElement('div');
             card.className = 'assessment-card';
+            if (isRec) {
+                card.style.border = '2px solid rgba(139, 92, 246, 0.35)';
+                card.style.background = 'linear-gradient(180deg, #FAF8FF 0%, #FFFFFF 100%)';
+            }
+
             card.innerHTML = `
-                <div class="assessment-header">
-                    <span class="assessment-category">${item.category || 'Skill Test'}</span>
+                <div class="assessment-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                        <span class="assessment-category">${item.category || 'Skill Test'}</span>
+                        ${isRec ? `<span style="background: linear-gradient(135deg, var(--primary-purple), var(--magenta-pink)); color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;"><i class="fa-solid fa-star mr-1"></i> Recommended for ${profileData.career_goal || 'Goal'}</span>` : ''}
+                    </div>
                     <span style="font-size: 12.5px; font-weight: 700; color: #10b981;"><i class="fa-solid fa-circle-check mr-1"></i> Passing Score: ${item.passing_score || 60}%</span>
                 </div>
                 <h4 style="font-size: 18px; font-weight: 800; color: var(--dark-navy); margin-bottom: 0.4rem; letter-spacing:-0.2px;">${item.title}</h4>
                 <p style="font-size: 13.5px; color: var(--secondary-text); margin-bottom: 1rem; line-height: 1.55;">${item.description}</p>
                 
-                <div class="assessment-meta">
+                <div class="assessment-meta" style="margin-bottom: 1.25rem;">
                     <span><i class="fa-regular fa-circle-question" style="color:var(--primary-purple);"></i> ${item.total_questions} Questions</span>
                     <span><i class="fa-regular fa-clock" style="color:var(--primary-purple);"></i> ~${item.duration_minutes || 15} mins</span>
                     <span><i class="fa-solid fa-trophy" style="color:var(--magenta-pink);"></i> Multiple Choice</span>
@@ -213,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             studentAnswers = {};
 
             if (currentQuestions.length === 0) {
-                alert('This assessment has no questions configured yet.');
+                await showCustomAlert('Assessment Empty', 'This assessment has no questions configured yet.', 'warning');
                 return;
             }
 
@@ -228,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             switchView('test');
         } catch (err) {
             console.error(err);
-            alert('Failed to load assessment: ' + err.message);
+            await showCustomAlert('Error Loading Assessment', err.message || 'Failed to load assessment data.', 'error');
         }
     }
 
@@ -257,7 +373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             testProgressFill.style.width = pct + '%';
         }
 
-        // Render Options (Inspired by Reference 5)
+        // Render MCQ Options
         if (optionsContainer) {
             optionsContainer.innerHTML = '';
             const selectedOpt = studentAnswers[q.id];
@@ -302,8 +418,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.getElementById('btnExitAssessment')?.addEventListener('click', () => {
-        if (confirm('Are you sure you want to exit? Your progress will not be saved.')) {
+    document.getElementById('btnExitAssessment')?.addEventListener('click', async () => {
+        const confirmed = await showCustomConfirm(
+            'Exit Assessment?',
+            'Are you sure you want to exit? Your current test progress will not be saved.',
+            'Exit Test',
+            'danger'
+        );
+        if (confirmed) {
             stopTimer();
             switchView('catalog');
             loadCatalog();
@@ -327,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             switchView('result');
         } catch (err) {
             console.error(err);
-            alert('Failed to submit assessment: ' + err.message);
+            await showCustomAlert('Submission Failed', err.message || 'Failed to submit assessment.', 'error');
         } finally {
             if (btnSubmit) {
                 btnSubmit.disabled = false;
@@ -341,7 +463,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalCount = currentQuestions.length;
 
         if (answeredCount < totalCount) {
-            const proceed = confirm(`You have answered ${answeredCount} of ${totalCount} questions. Submit anyway?`);
+            const proceed = await showCustomConfirm(
+                'Incomplete Assessment',
+                `You have answered ${answeredCount} of ${totalCount} questions. Are you sure you want to submit now?`,
+                'Submit Anyway',
+                'primary'
+            );
             if (!proceed) return;
         }
 
@@ -395,7 +522,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p style="font-size:15px; font-weight:600; color:var(--dark-navy); margin-bottom:0.75rem;">${item.question_text}</p>
                     <div style="font-size:13.5px; margin-bottom:0.4rem;"><strong>Your Answer:</strong> <span style="color:${isCorrect ? '#10b981' : '#ef4444'};">${selectedText}</span></div>
                     ${!isCorrect ? `<div style="font-size:13.5px; color:#10b981; margin-bottom:0.4rem;"><strong>Correct Answer:</strong> ${correctText}</div>` : ''}
-                    ${item.explanation ? `<div class="feedback-explanation"><strong>Explanation:</strong> ${item.explanation}</div>` : ''}
+                    ${item.explanation ? `<div class="feedback-explanation" style="margin-top:0.5rem; padding:0.75rem; background:var(--very-light-lavender); border-radius:8px; font-size:13px; color:var(--dark-navy);"><strong>Explanation:</strong> ${item.explanation}</div>` : ''}
                 `;
                 resFeedbackList.appendChild(card);
             });

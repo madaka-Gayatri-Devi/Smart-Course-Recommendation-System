@@ -913,12 +913,12 @@ async function setupMyCoursesPage(myCoursesGrid) {
 
                 const thumbStyle = c.thumbnail_url 
                     ? `background-image: url('${escapeHtml(c.thumbnail_url)}'); background-size: cover; background-position: center;`
-                    : '';
+                    : `background: ${c.color_theme || 'linear-gradient(135deg, #24104F 0%, #3B176F 50%, #5B21B6 100%)'};`;
 
                 return `
                     <div class="my-course-card">
                         <div class="my-course-thumb" style="${thumbStyle}">
-                            ${!c.thumbnail_url ? `<i class="fa-solid fa-graduation-cap"></i>` : ''}
+                            ${!c.thumbnail_url ? `<i class="${c.icon || 'fa-solid fa-graduation-cap'}"></i>` : ''}
                             <span class="card-difficulty-badge" style="left:10px; top:10px; background: rgba(15, 23, 42, 0.75); color: #fff; backdrop-filter: blur(4px);">${escapeHtml(c.category || 'Course')}</span>
                             <span class="my-course-badge-status ${statusClass}">${statusLabel}</span>
                         </div>
@@ -951,11 +951,11 @@ async function setupMyCoursesPage(myCoursesGrid) {
                                     ${completedLessons} of ${totalLessons} lessons completed
                                 </div>
 
-                                <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
-                                    <a href="course-player.html?id=${c.course_id}&lesson=${nextLessonId}" class="btn-primary" style="padding:0.5rem 1rem; border-radius:8px; font-size:12.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem;">
-                                        <i class="fa-solid fa-play" style="font-size:11px;"></i> ${isCompleted ? 'Review Course' : 'Continue Learning'}
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                                    <a href="course-player.html?id=${c.course_id}&lesson=${isCompleted ? 1 : nextLessonId}" class="btn-primary" style="padding:0.5rem 0.9rem; border-radius:8px; font-size:12px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:0.35rem; ${isCompleted ? 'background:#10B981; border:none; box-shadow:0 3px 10px rgba(16,185,129,0.3);' : ''}">
+                                        <i class="fa-solid ${isCompleted ? 'fa-rotate-right' : 'fa-play'}" style="font-size:11px;"></i> ${isCompleted ? 'Review Course ✓' : 'Continue Learning →'}
                                     </a>
-                                    <a href="course-details.html?id=${c.course_id}" style="color:var(--primary-purple); font-size:12.5px; font-weight:700; text-decoration:none;">View Syllabus</a>
+                                    <a href="course-details.html?id=${c.course_id}" style="color:var(--primary-purple); font-size:12px; font-weight:700; text-decoration:none;">View Syllabus</a>
                                 </div>
                             </div>
                         </div>

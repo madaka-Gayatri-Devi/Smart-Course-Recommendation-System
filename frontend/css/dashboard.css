@@ -1529,3 +1529,9 @@ aside.app-sidebar .nav-item.active i,
     color: #FFFFFF !important;
 }
 
+@media (max-width: 992px) {
+    .responsive-split {
+        grid-template-columns: 1fr !important;
+    }
+}
+

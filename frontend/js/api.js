@@ -105,6 +105,32 @@ const api = {
         return res.json();
     },
 
+    async googleLogin(idToken, role = 'Student') {
+        const res = await safeFetch(`${API_URL}/auth/google-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_token: idToken, role: role })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Google authentication failed');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async resetPassword(data) {
+        const res = await safeFetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Password reset failed');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
     async getMe() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -791,6 +817,10 @@ const api = {
             throw new Error(msg);
         }
         return res.json();
+    },
+
+    async getAssessment(assessmentId) {
+        return this.getAssessmentDetails(assessmentId);
     },
 
     async submitAssessment(assessmentId, answers) {

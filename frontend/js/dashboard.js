@@ -136,7 +136,7 @@ function renderTopSummaryCards(data) {
 
     const enrolled = stats.enrolled_count || 0;
     const completed = stats.completed_count || 0;
-    const avgProg = enrolled > 0 ? Math.round((completed / enrolled) * 100) : 0;
+    const avgProg = stats.overall_progress !== undefined ? stats.overall_progress : (enrolled > 0 ? Math.round((completed / enrolled) * 100) : 0);
     const streak = stats.streak_days || 0;
     const readiness = goalInfo.readiness_percentage || 0;
 
@@ -200,7 +200,7 @@ function renderContinueLearning(courses) {
         return `
             <div class="my-course-card" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(91, 63, 232, 0.04); transition: transform 0.2s ease, box-shadow 0.2s ease;">
                 <div class="my-course-thumb" style="${thumbStyle} height: 135px; position: relative; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 32px; border-top-left-radius: 15px; border-top-right-radius: 15px;">
-                    ${!c.thumbnail_url ? `<i class="fa-solid fa-graduation-cap"></i>` : ''}
+                    ${!c.thumbnail_url ? `<i class="${c.icon || 'fa-solid fa-graduation-cap'}"></i>` : ''}
                     <span style="position: absolute; top: 12px; left: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #FFFFFF; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); padding: 3px 9px; border-radius: 6px; letter-spacing: 0.5px;">${escapeHtml(c.category || 'Course')}</span>
                     <span style="position: absolute; top: 12px; right: 12px; font-size: 11.5px; font-weight: 600; color: #FFFFFF; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); padding: 3px 8px; border-radius: 6px;"><i class="fa-solid fa-clock"></i> ${escapeHtml(c.duration || '30 hours')}</span>
                 </div>

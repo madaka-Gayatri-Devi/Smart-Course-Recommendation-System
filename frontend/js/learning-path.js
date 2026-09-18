@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 let actionBtnHtml = '';
                 if (isCompleted) {
                     actionBtnHtml = `
-                        <a href="course-player.html?id=${m.course_id}" class="btn-primary-small" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; text-decoration:none; padding:0.45rem 1.1rem; border-radius:6px; font-weight:700; font-size:12.5px; display:inline-flex; align-items:center; gap:0.4rem;">
+                        <a href="course-player.html?id=${m.course_id}&lesson=1" class="btn-primary-small" style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; text-decoration:none; padding:0.45rem 1.1rem; border-radius:6px; font-weight:700; font-size:12.5px; display:inline-flex; align-items:center; gap:0.4rem;">
                             <i class="fa-solid fa-circle-check"></i> Review Course ✓
                         </a>
                     `;

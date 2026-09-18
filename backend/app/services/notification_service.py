@@ -44,6 +44,20 @@ def _get_rec_engine():
     return RecommendationEngine
 
 
+def _get_email_service():
+    try:
+        from app.services.email_service import EmailService
+        import app.services.email_templates as email_templates
+    except ImportError:
+        try:
+            from services.email_service import EmailService
+            import services.email_templates as email_templates
+        except ImportError:
+            from backend.app.services.email_service import EmailService
+            import backend.app.services.email_templates as email_templates
+    return EmailService, email_templates
+
+
 class ConnectionManager:
     """In-memory WebSocket manager tracking active user websocket connections."""
 
@@ -163,10 +177,11 @@ class NotificationService:
     def generate_personalized_recommendation_notifications(db: Session, user_id: int, db_courses: List[Dict[str, Any]], db_goals: Dict[str, List[str]]):
         """
         Generate non-duplicate personalized course recommendation notifications for a specific student.
-        Uses RecommendationEngine to identify top matches based on student's profile.
+        Uses RecommendationEngine to identify top matches based on student's profile and sends an email.
         """
         UserDB, ProfileDB, _, EnrollmentDB, AssessmentAttemptDB, AssessmentDB, _, NotificationDB = _get_models()
         RecommendationEngine = _get_rec_engine()
+        EmailService, email_templates = _get_email_service()
 
         user = db.query(UserDB).filter(UserDB.id == user_id).first()
         if not user or user.role.lower() != "student":
@@ -213,6 +228,7 @@ class NotificationService:
 
         top_recs = recs_result.get("recommendations", [])
         career_goal = profile.career_goal if profile and profile.career_goal else "Full Stack Developer"
+        new_recs = []
 
         for rec in top_recs[:3]:
             course_id = rec.get("id")
@@ -238,12 +254,18 @@ class NotificationService:
 
             if c_score >= 20:
                 msg = f"'{course_title}' is recommended based on your skills and '{career_goal}' career goal ({match_pct}% match)."
+                reason = f"Matches '{career_goal}' career goal"
             elif sg_score >= 15:
                 msg = f"'{course_title}' addresses key skill gaps in your profile ({match_pct}% match)."
+                reason = "Addresses identified skill gaps"
             elif i_score >= 8:
                 msg = f"'{course_title}' matches your expressed learning interests ({match_pct}% match)."
+                reason = "Matches your learning interests"
             else:
                 msg = f"'{course_title}' is recommended for your learning goals ({match_pct}% match)."
+                reason = "Aligns with your learning path"
+
+            new_recs.append({"title": course_title, "match_percentage": match_pct, "reason": reason, "id": course_id})
 
             NotificationService.create_notification(
                 db=db,
@@ -252,6 +274,24 @@ class NotificationService:
                 message=msg,
                 notification_type="COURSE_RECOMMENDATION",
                 related_course_id=course_id
+            )
+
+        if new_recs:
+            email_data = email_templates.generate_recommendation_update_email(
+                student_name=user.full_name,
+                career_goal=career_goal,
+                recommended_courses=new_recs
+            )
+            EmailService.send_personalized_email(
+                db=db,
+                user_id=user_id,
+                notification_type="COURSE_RECOMMENDATION",
+                subject=email_data["subject"],
+                html_content=email_data["html"],
+                text_content=email_data["text"],
+                course_id=new_recs[0]["id"] if new_recs else None,
+                event_milestone=f"recs_{len(new_recs)}",
+                preference_key="course_recommendation"
             )
 
     @staticmethod
@@ -352,8 +392,82 @@ class NotificationService:
         )
 
     @staticmethod
+    def notify_course_progress_milestone(db: Session, user_id: int, course_id: int, progress_pct: int, completed_lessons: int, total_lessons: int):
+        UserDB, _, CourseDB, _, _, _, _, NotificationDB = _get_models()
+        EmailService, email_templates = _get_email_service()
+
+        user = db.query(UserDB).filter(UserDB.id == user_id).first()
+        course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
+        if not user or not course:
+            return
+
+        milestones = [25, 50, 75, 100]
+        hit_milestone = None
+        for m in sorted(milestones, reverse=True):
+            if progress_pct >= m:
+                hit_milestone = m
+                break
+
+        if not hit_milestone:
+            return
+
+        milestone_str = f"{hit_milestone}%"
+
+        if hit_milestone == 100:
+            NotificationService.notify_course_completion(db, user_id, course_id, course.title)
+            return
+
+        # Check if email milestone already sent
+        if EmailService.is_duplicate_email(db, user_id, "COURSE_PROGRESS", course_id, milestone_str):
+            return
+
+        email_data = email_templates.generate_progress_milestone_email(
+            student_name=user.full_name,
+            course_name=course.title,
+            progress_percentage=hit_milestone,
+            completed_lessons=completed_lessons,
+            total_lessons=total_lessons
+        )
+
+        EmailService.send_personalized_email(
+            db=db,
+            user_id=user_id,
+            notification_type="COURSE_PROGRESS",
+            subject=email_data["subject"],
+            html_content=email_data["html"],
+            text_content=email_data["text"],
+            course_id=course_id,
+            event_milestone=milestone_str,
+            preference_key="course_progress"
+        )
+
+        existing_in_app = db.query(NotificationDB).filter(
+            NotificationDB.user_id == user_id,
+            NotificationDB.type == "COURSE_PROGRESS",
+            NotificationDB.related_course_id == course_id,
+            NotificationDB.reference_id == milestone_str
+        ).first()
+
+        if not existing_in_app:
+            NotificationService.create_notification(
+                db=db,
+                user_id=user_id,
+                title=f"{hit_milestone}% Course Progress Milestone 📈",
+                message=f"You're {hit_milestone}% through '{course.title}'! Keep going to complete your remaining lessons.",
+                notification_type="COURSE_PROGRESS",
+                related_course_id=course_id,
+                reference_id=milestone_str
+            )
+
+    @staticmethod
     def notify_course_completion(db: Session, user_id: int, course_id: int, course_title: str):
-        _, _, _, _, _, _, _, NotificationDB = _get_models()
+        UserDB, _, _, _, _, _, _, NotificationDB = _get_models()
+        EmailService, email_templates = _get_email_service()
+
+        user = db.query(UserDB).filter(UserDB.id == user_id).first()
+        if not user:
+            return
+
         existing = db.query(NotificationDB).filter(
             NotificationDB.user_id == user_id,
             NotificationDB.type == "COURSE_COMPLETION",
@@ -369,6 +483,74 @@ class NotificationService:
                 notification_type="COURSE_COMPLETION",
                 related_course_id=course_id
             )
+
+        now_date_str = datetime.utcnow().strftime("%B %d, %Y")
+        email_data = email_templates.generate_course_completion_email(
+            student_name=user.full_name,
+            course_name=course_title,
+            completion_date=now_date_str
+        )
+
+        EmailService.send_personalized_email(
+            db=db,
+            user_id=user_id,
+            notification_type="COURSE_COMPLETION",
+            subject=email_data["subject"],
+            html_content=email_data["html"],
+            text_content=email_data["text"],
+            course_id=course_id,
+            event_milestone="100%",
+            preference_key="course_completion"
+        )
+
+    @staticmethod
+    def notify_assessment_improvement(
+        db: Session,
+        user_id: int,
+        assessment_title: str,
+        score_percentage: int,
+        strong_skills: List[str],
+        weak_skills: List[str],
+        recommended_courses: List[Dict[str, Any]],
+        assessment_id: Optional[int] = None
+    ):
+        UserDB, _, _, _, _, _, _, NotificationDB = _get_models()
+        EmailService, email_templates = _get_email_service()
+
+        user = db.query(UserDB).filter(UserDB.id == user_id).first()
+        if not user:
+            return
+
+        milestone_key = f"attempt_{assessment_id}_{score_percentage}" if assessment_id else f"score_{score_percentage}"
+
+        email_data = email_templates.generate_assessment_improvement_email(
+            student_name=user.full_name,
+            assessment_name=assessment_title,
+            score_percentage=score_percentage,
+            strong_skills=strong_skills,
+            weak_skills=weak_skills,
+            recommended_courses=recommended_courses
+        )
+
+        EmailService.send_personalized_email(
+            db=db,
+            user_id=user_id,
+            notification_type="ASSESSMENT_UPDATE",
+            subject=email_data["subject"],
+            html_content=email_data["html"],
+            text_content=email_data["text"],
+            course_id=None,
+            event_milestone=milestone_key,
+            preference_key="assessment_update"
+        )
+
+        NotificationService.create_notification(
+            db=db,
+            user_id=user_id,
+            title="Assessment Skill Improvement Update 📊",
+            message=f"Your '{assessment_title}' score is {score_percentage}%. We identified {len(weak_skills)} area(s) for improvement and updated your course recommendations.",
+            notification_type="ASSESSMENT_UPDATE"
+        )
 
     @staticmethod
     def notify_system_welcome(db: Session, user_id: int, full_name: str, role: str = "Student"):

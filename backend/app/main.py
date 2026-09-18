@@ -50,7 +50,7 @@ except ImportError:
         from backend.app.services.notification_service import NotificationService, ws_manager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text
+from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text, func
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
 import bcrypt
@@ -77,8 +77,21 @@ try:
 except Exception as _rzp_err:
     razorpay_client = None
 
-DB_PATH = BASE_DIR / "smartlearn.db"
-DATABASE_URL = f"sqlite:///{DB_PATH.as_posix()}"
+ROOT_DB_PATH = BASE_DIR.parent / "smartlearn.db"
+BACKEND_DB_PATH = BASE_DIR / "smartlearn.db"
+
+# Sync databases if one is larger/has full data
+if BACKEND_DB_PATH.exists() and ROOT_DB_PATH.exists():
+    try:
+        if BACKEND_DB_PATH.stat().st_size > ROOT_DB_PATH.stat().st_size:
+            shutil.copyfile(BACKEND_DB_PATH, ROOT_DB_PATH)
+        elif ROOT_DB_PATH.stat().st_size > BACKEND_DB_PATH.stat().st_size:
+            shutil.copyfile(ROOT_DB_PATH, BACKEND_DB_PATH)
+    except Exception as _sync_err:
+        print(f"[DB Sync Warning] {_sync_err}")
+
+DB_PATH = BACKEND_DB_PATH if BACKEND_DB_PATH.exists() else ROOT_DB_PATH
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH.as_posix()}")
 
 UPLOAD_DIR = BASE_DIR / "uploads"
 AVATAR_DIR = UPLOAD_DIR / "avatars"
@@ -105,6 +118,7 @@ class UserDB(Base):
     hashed_password = Column(String)
     role = Column(String, default="Student")  # Student, Instructor, Admin
     is_active = Column(Integer, default=1)
+    firebase_uid = Column(String, nullable=True, index=True)
     created_at = Column(String, nullable=True)
 
 class ProfileDB(Base):
@@ -128,6 +142,7 @@ class ProfileDB(Base):
     learning_style = Column(String, nullable=True)
     completion_percentage = Column(Integer, default=0)
     wishlist = Column(JSON, nullable=True)
+    email_preferences = Column(JSON, nullable=True)
 
 class CourseDB(Base):
     __tablename__ = "courses"
@@ -287,6 +302,18 @@ class NotificationDB(Base):
     created_at = Column(String)
     read_at = Column(String, nullable=True)
 
+class EmailLogDB(Base):
+    __tablename__ = "email_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    email_address = Column(String, index=True)
+    notification_type = Column(String, index=True)  # COURSE_PROGRESS, COURSE_COMPLETION, LEARNING_REMINDER, ASSESSMENT_UPDATE, COURSE_RECOMMENDATION
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=True, index=True)
+    event_milestone = Column(String, nullable=True)  # e.g. "25%", "50%", "75%", "100%", assessment_id, rec_hash
+    status = Column(String, default="sent")  # "sent", "failed"
+    sent_at = Column(String)
+    failure_reason = Column(String, nullable=True)
+
 Base.metadata.create_all(bind=engine)
 
 # --- MIGRATIONS ---
@@ -295,6 +322,9 @@ def run_migrations():
     
     if "notifications" not in inspector.get_table_names():
         NotificationDB.__table__.create(bind=engine)
+
+    if "email_logs" not in inspector.get_table_names():
+        EmailLogDB.__table__.create(bind=engine)
     
     # Profile table migrations
     if "profiles" in inspector.get_table_names():
@@ -312,6 +342,9 @@ def run_migrations():
             if "wishlist" not in profile_cols:
                 conn.execute(text("ALTER TABLE profiles ADD COLUMN wishlist JSON;"))
                 conn.commit()
+            if "email_preferences" not in profile_cols:
+                conn.execute(text("ALTER TABLE profiles ADD COLUMN email_preferences JSON;"))
+                conn.commit()
 
     # Users table migrations
     if "users" in inspector.get_table_names():
@@ -322,6 +355,9 @@ def run_migrations():
                 conn.commit()
             if "created_at" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN created_at VARCHAR;"))
+                conn.commit()
+            if "firebase_uid" not in user_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN firebase_uid VARCHAR;"))
                 conn.commit()
 
     # Courses table migrations
@@ -922,6 +958,22 @@ seed_assessments()
 # --- FASTAPI APP ---
 app = FastAPI(title="SmartLearn Role-Based API")
 
+@app.on_event("startup")
+async def on_startup():
+    run_migrations()
+    try:
+        try:
+            from app.services.scheduler_service import start_inactivity_scheduler
+        except ImportError:
+            try:
+                from services.scheduler_service import start_inactivity_scheduler
+            except ImportError:
+                from backend.app.services.scheduler_service import start_inactivity_scheduler
+        asyncio.create_task(start_inactivity_scheduler())
+        print("[SmartLearn] Inactivity scheduler task started.")
+    except Exception as _sch_err:
+        print(f"[SmartLearn Scheduler Startup Warning] {_sch_err}")
+
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 origins = [
@@ -1028,6 +1080,24 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class GoogleLoginPayload(BaseModel):
+    id_token: str
+    role: Optional[str] = None
+
+class NotificationPreferencesPayload(BaseModel):
+    course_progress: Optional[bool] = True
+    learning_reminder: Optional[bool] = True
+    assessment_update: Optional[bool] = True
+    course_recommendation: Optional[bool] = True
+    course_completion: Optional[bool] = True
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    new_password: str
+
+class TestEmailPayload(BaseModel):
+    to_email: EmailStr
 
 class UserResponse(BaseModel):
     id: int
@@ -1203,6 +1273,7 @@ async def websocket_notifications_endpoint(websocket: WebSocket, token: Optional
 @app.post("/auth/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     role_clean = user.role.strip().capitalize()
+    clean_email = user.email.strip().lower()
     
     # Requirement: Public registration strictly forbids Admin creation
     if role_clean.upper() == "ADMIN" or role_clean not in ["Student", "Instructor"]:
@@ -1214,15 +1285,15 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     if len(user.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
 
-    db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
+    db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_pwd = get_password_hash(user.password)
     now_str = datetime.utcnow().strftime("%Y-%m-%d")
     new_user = UserDB(
-        full_name=user.full_name,
-        email=user.email,
+        full_name=user.full_name.strip(),
+        email=clean_email,
         hashed_password=hashed_pwd,
         role=role_clean,
         is_active=1,
@@ -1260,8 +1331,11 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
 @app.post("/auth/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+    clean_email = user.email.strip().lower()
+    clean_pass = user.password.strip()
+    
+    db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
+    if not db_user or (not verify_password(user.password, db_user.hashed_password) and not verify_password(clean_pass, db_user.hashed_password)):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     
     if getattr(db_user, "is_active", 1) == 0:
@@ -1282,6 +1356,208 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             "role": db_user.role
         }
     }
+
+@app.get("/auth/firebase-config")
+@app.get("/config/firebase")
+def get_firebase_config():
+    return {
+        "apiKey": os.getenv("FIREBASE_API_KEY", ""),
+        "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "smartlearn-auth.firebaseapp.com"),
+        "projectId": os.getenv("FIREBASE_PROJECT_ID", "smartlearn-auth"),
+        "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET", "smartlearn-auth.appspot.com"),
+        "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "102938475610"),
+        "appId": os.getenv("FIREBASE_APP_ID", "1:102938475610:web:abc123def456789")
+    }
+
+@app.post("/auth/google-login")
+def google_login(payload: GoogleLoginPayload, db: Session = Depends(get_db)):
+    try:
+        from app.services.firebase_service import FirebaseService
+    except ImportError:
+        try:
+            from services.firebase_service import FirebaseService
+        except ImportError:
+            from backend.app.services.firebase_service import FirebaseService
+
+    try:
+        fb_user = FirebaseService.verify_id_token(payload.id_token)
+    except Exception as err:
+        raise HTTPException(status_code=401, detail=str(err))
+
+    clean_email = (fb_user.get("email") or "").strip().lower()
+    fb_uid = fb_user.get("uid")
+    full_name = fb_user.get("name") or clean_email.split("@")[0]
+    picture = fb_user.get("picture")
+
+    if not clean_email:
+        raise HTTPException(status_code=400, detail="Google authentication failed. No verified email address returned.")
+
+    # 1. Existing User Linking by Email
+    db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+    if db_user:
+        # Existing user found -> Link Firebase UID without creating duplicate!
+        if not getattr(db_user, "firebase_uid", None) and fb_uid:
+            db_user.firebase_uid = fb_uid
+            db.commit()
+    else:
+        # New Google user -> Create account with controlled role (strictly forbid Admin!)
+        requested_role = (payload.role or "Student").strip().capitalize()
+        if requested_role.upper() == "ADMIN" or requested_role not in ["Student", "Instructor"]:
+            requested_role = "Student"
+
+        random_password = f"GoogleAuth_{uuid.uuid4().hex[:12]}!"
+        hashed_pwd = get_password_hash(random_password)
+
+        db_user = UserDB(
+            full_name=full_name,
+            email=clean_email,
+            hashed_password=hashed_pwd,
+            role=requested_role,
+            is_active=1,
+            firebase_uid=fb_uid,
+            created_at=now_str
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
+        # Create ProfileDB for new Google user
+        profile = ProfileDB(
+            user_id=db_user.id,
+            profile_image=picture,
+            completion_percentage=20
+        )
+        db.add(profile)
+        db.commit()
+
+        try:
+            NotificationService.notify_system_welcome(db, db_user.id, db_user.full_name, db_user.role)
+        except Exception:
+            pass
+
+    if getattr(db_user, "is_active", 1) == 0:
+        raise HTTPException(status_code=403, detail="Account is deactivated. Please contact support.")
+
+    access_token = create_access_token(data={"sub": db_user.email})
+
+    return {
+        "id": db_user.id,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": db_user.role,
+        "full_name": db_user.full_name,
+        "email": db_user.email,
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "full_name": db_user.full_name,
+            "role": db_user.role
+        }
+    }
+
+@app.get("/users/me/notification-preferences")
+def get_notification_preferences(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    defaults = {
+        "course_progress": True,
+        "learning_reminder": True,
+        "assessment_update": True,
+        "course_recommendation": True,
+        "course_completion": True
+    }
+    if profile and profile.email_preferences and isinstance(profile.email_preferences, dict):
+        defaults.update(profile.email_preferences)
+    return defaults
+
+@app.put("/users/me/notification-preferences")
+def update_notification_preferences(
+    payload: NotificationPreferencesPayload,
+    user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    if not profile:
+        profile = ProfileDB(user_id=user.id)
+        db.add(profile)
+    
+    current_prefs = profile.email_preferences or {}
+    if not isinstance(current_prefs, dict):
+        current_prefs = {}
+        
+    current_prefs.update({
+        "course_progress": payload.course_progress if payload.course_progress is not None else current_prefs.get("course_progress", True),
+        "learning_reminder": payload.learning_reminder if payload.learning_reminder is not None else current_prefs.get("learning_reminder", True),
+        "assessment_update": payload.assessment_update if payload.assessment_update is not None else current_prefs.get("assessment_update", True),
+        "course_recommendation": payload.course_recommendation if payload.course_recommendation is not None else current_prefs.get("course_recommendation", True),
+        "course_completion": payload.course_completion if payload.course_completion is not None else current_prefs.get("course_completion", True)
+    })
+    
+    profile.email_preferences = current_prefs
+    db.commit()
+    return {"message": "Notification preferences updated successfully", "preferences": current_prefs}
+
+@app.post("/auth/reset-password")
+def reset_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
+    clean_email = req.email.strip().lower()
+    if len(req.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+    db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="No account found with this email address.")
+    
+    db_user.hashed_password = get_password_hash(req.new_password)
+    db.commit()
+    return {"message": "Password updated successfully. You can now log in."}
+
+@app.post("/auth/send-test-email")
+@app.post("/admin/test-email")
+def send_test_email(payload: TestEmailPayload):
+    try:
+        from app.services.email_service import EmailService
+        from app.services.email_templates import EmailTemplates
+    except ImportError:
+        try:
+            from services.email_service import EmailService
+            from services.email_templates import EmailTemplates
+        except ImportError:
+            from backend.app.services.email_service import EmailService
+            from backend.app.services.email_templates import EmailTemplates
+
+    if not EmailService.is_email_configured():
+        raise HTTPException(
+            status_code=400,
+            detail="SMTP credentials (SMTP_USERNAME / SMTP_PASSWORD) are missing in backend/.env. Real email cannot be sent until SMTP credentials are configured."
+        )
+
+    html_content, text_content = EmailTemplates.get_course_progress_template(
+        student_name="SmartLearn User",
+        course_title="SmartLearn Test Delivery",
+        progress_pct=100,
+        completed_lessons=12,
+        total_lessons=12,
+        next_action_url="http://127.0.0.1:8080/dashboard.html"
+    )
+
+    try:
+        EmailService.send_raw_email(
+            to_email=payload.to_email,
+            subject="[SmartLearn] Test Email Delivery Verification",
+            html_content=html_content,
+            text_content=text_content
+        )
+        return {
+            "status": "success",
+            "message": f"Real test email sent successfully to {payload.to_email}",
+            "delivered_to": payload.to_email
+        }
+    except Exception as err:
+        raise HTTPException(
+            status_code=500,
+            detail=f"SMTP delivery failed: {str(err)}"
+        )
 
 @app.get("/users/me", response_model=UserResponse)
 def get_me(user: UserDB = Depends(get_current_user)):
@@ -3299,22 +3575,36 @@ def get_learning_path(user: UserDB = Depends(get_current_user), db: Session = De
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     career_goal = profile.career_goal if profile and profile.career_goal else "Full Stack Web Developer"
     secondary_career_goal = profile.secondary_career_goal if profile and profile.secondary_career_goal else None
-    student_skills = profile.skills if profile and profile.skills else []
     
+    raw_skills = (profile.skills or []) if profile else []
+    student_skills = []
+    for s in raw_skills:
+        if isinstance(s, str) and s.strip():
+            student_skills.append(s.strip())
+        elif isinstance(s, dict):
+            s_name = (s.get("skill") or s.get("name") or "").strip()
+            if s_name:
+                student_skills.append(s_name)
+
     # Retrieve real enrollments from database
     enrollments = db.query(EnrollmentDB).filter(EnrollmentDB.user_id == user.id).all()
     enrolled_courses = []
     for enr in enrollments:
         c = db.query(CourseDB).filter(CourseDB.id == enr.course_id).first()
-        enrolled_courses.append({
-            "id": enr.course_id,
-            "course_id": enr.course_id,
-            "title": c.title if c else f"Course {enr.course_id}",
-            "progress": enr.progress_percentage,
-            "progress_percentage": enr.progress_percentage,
-            "status": enr.status,
-            "completed_lessons": enr.completed_lessons
-        })
+        if c:
+            enrolled_courses.append({
+                "id": enr.course_id,
+                "course_id": enr.course_id,
+                "title": c.title,
+                "progress": enr.progress_percentage,
+                "progress_percentage": enr.progress_percentage,
+                "status": enr.status,
+                "completed_lessons": enr.completed_lessons
+            })
+            if (enr.status == "completed" or (enr.progress_percentage or 0) >= 100) and c.skills:
+                for sk in c.skills:
+                    if sk and sk not in student_skills:
+                        student_skills.append(sk)
     
     # Merge with profile.courses if any
     if profile and profile.courses:
@@ -3396,7 +3686,7 @@ def submit_assessment(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return AssessmentService.submit(
+    res = AssessmentService.submit(
         db=db,
         AssessmentModel=AssessmentDB,
         QuestionModel=AssessmentQuestionDB,
@@ -3405,6 +3695,41 @@ def submit_assessment(
         assessment_id=assessment_id,
         answers=payload.answers
     )
+
+    try:
+        profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+        category = res.get("category", "General")
+        score_pct = res.get("percentage", 0)
+
+        strong = []
+        weak = []
+        if score_pct >= 70:
+            strong.append(category)
+        else:
+            weak.append(category)
+
+        db_courses = get_db_course_dicts(db)
+        recs = RecommendationEngine.get_recommendations(
+            profile_data={"career_goal": profile.career_goal if profile else None, "skills": profile.skills if profile else []},
+            assessment_attempts=[{"category": category, "percentage": score_pct, "score": res.get("score")}],
+            limit=3,
+            courses_catalog=db_courses
+        ).get("recommendations", [])
+
+        NotificationService.notify_assessment_improvement(
+            db=db,
+            user_id=user.id,
+            assessment_title=res.get("assessment_title", "Skill Assessment"),
+            score_percentage=score_pct,
+            strong_skills=strong,
+            weak_skills=weak,
+            recommended_courses=recs,
+            assessment_id=assessment_id
+        )
+    except Exception as _a_err:
+        print(f"[Assessment Notification Error] {_a_err}")
+
+    return res
 
 @app.get("/assessments/{assessment_id}/result")
 def get_latest_assessment_result(assessment_id: int, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -4122,15 +4447,27 @@ def get_student_dashboard_summary(
     completed_count = sum(1 for e in enrollments if e.status == "completed" or e.progress_percentage >= 100)
     in_progress_count = enrolled_count - completed_count
     
-    # Skills from profile
+    # Skills from profile + completed courses
     raw_skills = (profile.skills or []) if profile else []
     skills_list = []
     for s in raw_skills:
-        if isinstance(s, str):
+        if isinstance(s, str) and s.strip():
             skills_list.append(s.strip())
         elif isinstance(s, dict):
-            skills_list.append((s.get("skill") or s.get("name") or "").strip())
+            s_name = (s.get("skill") or s.get("name") or "").strip()
+            if s_name:
+                skills_list.append(s_name)
     skills_list = [s for s in skills_list if s]
+
+    all_student_skills = list(skills_list)
+    for e in enrollments:
+        if e.status == "completed" or (e.progress_percentage or 0) >= 100:
+            c = db.query(CourseDB).filter(CourseDB.id == e.course_id).first()
+            if c and c.skills:
+                for sk in c.skills:
+                    if sk and sk not in all_student_skills:
+                        all_student_skills.append(sk)
+
     skills_count = len(skills_list)
     
     # Real learning hours calculation (strictly from actual course progress & assessment tests)
@@ -4153,9 +4490,12 @@ def get_student_dashboard_summary(
     career_goal = (profile.career_goal or "").strip() if profile else ""
     secondary_career_goal = (profile.secondary_career_goal or "").strip() if profile else ""
     
-    # In-progress courses list
+    # In-progress courses list (filtered to courses currently in progress < 100%)
     in_progress_courses = []
-    for e in enrollments:
+    active_enrollments = [e for e in enrollments if e.status != "completed" and (e.progress_percentage or 0) < 100]
+    active_enrollments.sort(key=lambda x: ((x.progress_percentage or 0) > 0, str(x.last_accessed or x.enrolled_at or "")), reverse=True)
+
+    for e in active_enrollments:
         c = db.query(CourseDB).filter(CourseDB.id == e.course_id).first()
         if c:
             total_lessons = sum(len(m.get("lessons", [])) for m in (c.modules or [])) or 24
@@ -4194,7 +4534,7 @@ def get_student_dashboard_summary(
     profile_dict = {
         "career_goal": career_goal,
         "secondary_career_goal": secondary_career_goal,
-        "skills": profile.skills or [] if profile else [],
+        "skills": all_student_skills,
         "interests": profile.interests or [] if profile else [],
         "education": profile.education or [] if profile else [],
         "courses": profile.courses or [] if profile else [],
@@ -4214,7 +4554,7 @@ def get_student_dashboard_summary(
     db_goals = [{"title": g.title, "required_skills": g.required_skills} for g in db.query(CareerGoalDB).all()]
     gap_result = SkillGapAnalyzer.analyze(
         career_goal=career_goal or "Full Stack Web Developer",
-        student_skills=profile.skills or [] if profile else [],
+        student_skills=all_student_skills,
         courses_catalog=db_courses,
         db_career_goals=db_goals
     )
@@ -4223,9 +4563,9 @@ def get_student_dashboard_summary(
     path_result = LearningPathGenerator.generate_path(
         career_goal=career_goal or "Full Stack Web Developer",
         secondary_career_goal=secondary_career_goal or None,
-        student_skills=profile.skills or [] if profile else [],
+        student_skills=all_student_skills,
         assessment_results=[{"category": a.performance_level, "score": a.score} for a in attempts],
-        enrolled_courses=in_progress_courses,
+        enrolled_courses=[{"id": e.course_id, "progress": e.progress_percentage, "status": e.status} for e in enrollments],
         courses_catalog=db_courses,
         db_career_goals=db_goals
     )
@@ -4471,6 +4811,7 @@ def get_student_dashboard_summary(
             "enrolled_count": enrolled_count,
             "completed_count": completed_count,
             "in_progress_count": in_progress_count,
+            "overall_progress": round(sum((e.progress_percentage or 0) for e in enrollments) / len(enrollments)) if enrollments else 0,
             "skills_count": skills_count,
             "learning_hours": learning_hours,
             "latest_assessment_score": latest_assessment_score,

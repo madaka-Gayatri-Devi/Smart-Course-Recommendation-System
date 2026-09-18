@@ -120,10 +120,80 @@ window.addEventListener('pageshow', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     setupLoginForm();
     setupRegisterForm();
+    setupGoogleLogin();
     setupPasswordToggles();
+    setupForgotPassword();
     setupUniversalLogout();
     setupMobileSidebarToggle();
 });
+
+// --- GOOGLE LOGIN HANDLER ---
+function setupGoogleLogin() {
+    const googleBtns = document.querySelectorAll('.google-btn, #googleLoginBtn');
+    googleBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Connecting to Google...</span>`;
+
+            try {
+                if (typeof window.signInWithGooglePopup !== 'function') {
+                    throw new Error("Google authentication service is initializing. Please try again.");
+                }
+
+                const fbAuthResult = await window.signInWithGooglePopup();
+                if (!fbAuthResult || !fbAuthResult.idToken) {
+                    throw new Error("No authorization token received from Google.");
+                }
+
+                const roleSelect = document.getElementById('regRole');
+                const selectedRole = roleSelect ? roleSelect.value.trim() : 'Student';
+
+                if (!window.api || !window.api.googleLogin) {
+                    throw new Error("API service is initializing. Please try again.");
+                }
+
+                const res = await window.api.googleLogin(fbAuthResult.idToken, selectedRole);
+
+                if (!res || !res.access_token) {
+                    throw new Error("Invalid backend authentication response.");
+                }
+
+                const userObj = {
+                    id: res.id,
+                    full_name: res.full_name || fbAuthResult.displayName || 'User',
+                    name: res.full_name || fbAuthResult.displayName || 'User',
+                    email: res.email || fbAuthResult.email,
+                    role: res.role || 'Student'
+                };
+
+                localStorage.setItem('smartlearn_token', res.access_token);
+                localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
+                localStorage.setItem('smartlearn_role', res.role || 'Student');
+
+                showAuthAlert("Google authentication successful! Redirecting...", "success");
+
+                const roleUpper = (res.role || 'STUDENT').toUpperCase();
+                setTimeout(() => {
+                    if (roleUpper === 'ADMIN') {
+                        window.location.replace('admin/dashboard.html');
+                    } else if (roleUpper === 'INSTRUCTOR') {
+                        window.location.replace('instructor/dashboard.html');
+                    } else {
+                        window.location.replace('student/dashboard.html');
+                    }
+                }, 800);
+            } catch (err) {
+                console.error("Google authentication error:", err);
+                showAuthAlert(err.message || "Google Login failed. Please try again.", "error");
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    });
+}
 
 // --- PASSWORD VISIBILITY TOGGLE ---
 function setupPasswordToggles() {
@@ -140,6 +210,35 @@ function setupPasswordToggles() {
                     icon.classList.remove('fa-eye-slash');
                     icon.classList.add('fa-eye');
                 }
+            }
+        });
+    });
+}
+
+// --- FORGOT PASSWORD HANDLER ---
+function setupForgotPassword() {
+    const forgotLinks = document.querySelectorAll('.forgot-link, #forgotPasswordLink');
+    forgotLinks.forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('loginEmail');
+            const defaultEmail = emailInput ? emailInput.value.trim() : '';
+            const email = prompt("Enter your registered email address:", defaultEmail);
+            if (!email || !email.trim()) return;
+            const newPassword = prompt("Enter your new password (minimum 8 characters):");
+            if (!newPassword || !newPassword.trim()) return;
+            if (newPassword.trim().length < 8) {
+                alert("Password must be at least 8 characters long.");
+                return;
+            }
+            try {
+                if (!window.api || !window.api.resetPassword) {
+                    throw new Error("Authentication service is initializing. Please try again.");
+                }
+                const res = await window.api.resetPassword({ email: email.trim(), new_password: newPassword.trim() });
+                showAuthAlert(res.message || "Password updated successfully. You can now log in.", "success");
+            } catch (err) {
+                showAuthAlert(err.message || "Failed to reset password.", "error");
             }
         });
     });
@@ -359,11 +458,14 @@ function showError(elementId, message) {
 }
 
 function showAuthAlert(message, type = 'error') {
-    const alertBox = document.getElementById('authAlert');
+    const alertBox = document.getElementById('authAlertBanner') || document.getElementById('authAlert');
     if (alertBox) {
         alertBox.textContent = message;
         alertBox.className = `auth-alert ${type}`;
         alertBox.style.display = 'block';
+        alertBox.style.backgroundColor = type === 'error' ? '#fee2e2' : '#dcfce7';
+        alertBox.style.color = type === 'error' ? '#991b1b' : '#166534';
+        alertBox.style.border = type === 'error' ? '1px solid #fca5a5' : '1px solid #86efac';
     } else {
         alert(message);
     }
@@ -373,6 +475,11 @@ function setupUniversalLogout() {
     document.querySelectorAll('.logout-btn, #logoutBtn, [data-action="logout"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                try {
+                    firebase.auth().signOut();
+                } catch (_) {}
+            }
             if (window.api && window.api.logout) {
                 window.api.logout();
             } else {
