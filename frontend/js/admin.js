@@ -15,8 +15,30 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function getAdminUser() {
+    if (typeof window.guardPage === 'function') {
+        return window.guardPage('ADMIN');
+    }
+    const token = localStorage.getItem('smartlearn_token');
+    const userStr = localStorage.getItem('smartlearn_user');
+    if (!token || !userStr) {
+        if (typeof window !== 'undefined' && window.location && window.location.pathname.toLowerCase().includes('/admin/')) {
+            window.location.replace('../login.html');
+        }
+        return null;
+    }
+    try {
+        const u = JSON.parse(userStr);
+        if (u && (u.role || '').toUpperCase() === 'ADMIN') return u;
+    } catch (_) {}
+    return null;
+}
+
 async function initAdminApp() {
-    const user = window.guardPage('ADMIN');
+    if (window.__adminInitDone) return;
+    window.__adminInitDone = true;
+
+    const user = getAdminUser();
     if (!user) return;
 
     setupAdminHeader(user);
@@ -53,6 +75,21 @@ async function initAdminApp() {
         tasks.push(setupAdminCourseEditor(user).catch(e => console.error("Error in setupAdminCourseEditor:", e)));
     }
 
+    // 7. Dedicated Recommendations Management (recommendations.html)
+    if (document.getElementById('recTableBody') || document.getElementById('kpiTotalRecRecords')) {
+        tasks.push(setupAdminRecommendationsPage().catch(e => console.error("Error in setupAdminRecommendationsPage:", e)));
+    }
+
+    // 8. Dedicated Reports View (reports.html)
+    if (document.getElementById('popularCoursesTableBody') || document.getElementById('repTotalUsers')) {
+        tasks.push(setupAdminReportsPage().catch(e => console.error("Error in setupAdminReportsPage:", e)));
+    }
+
+    // 9. Dedicated Analytics View (analytics.html)
+    if (document.getElementById('anActiveStudents') || document.getElementById('chartEnrollmentGrowth')) {
+        tasks.push(setupAdminAnalyticsPage().catch(e => console.error("Error in setupAdminAnalyticsPage:", e)));
+    }
+
     await Promise.allSettled(tasks);
 }
 
@@ -61,9 +98,6 @@ if (document.readyState === 'loading') {
 } else {
     initAdminApp();
 }
-window.addEventListener('load', () => {
-    initAdminApp();
-});
 
 function setupAdminHeader(user) {
     const name = user.full_name || user.name || 'Administrator';
@@ -1225,3 +1259,1456 @@ window.setupAdminUsersPage = setupAdminUsersPage;
 window.setupAdminStudentsPage = setupAdminStudentsPage;
 window.setupAdminInstructorsPage = setupAdminInstructorsPage;
 window.setupAdminCoursesPage = setupAdminCoursesPage;
+window.setupAdminRecommendationsPage = setupAdminRecommendationsPage;
+
+// =========================================================================
+// RECOMMENDATION MANAGEMENT & GOVERNANCE MODULE
+// =========================================================================
+
+let currentRecPage = 1;
+let currentRecLimit = 10;
+let currentRecFilters = {
+    search: '',
+    category: 'all',
+    career_goal: 'all',
+    status: 'all',
+    min_score: 0
+};
+
+async function setupAdminRecommendationsPage() {
+    await loadRecFilterOptions();
+    await loadRecStats();
+    await loadRecRecordsTable();
+    await loadRecAnalytics();
+    await loadCourseRelevanceMonitoring();
+
+    setupRecEventListeners();
+}
+
+async function loadRecFilterOptions() {
+    try {
+        const categories = await (window.api.getCategories ? window.api.getCategories() : []);
+        const catSelect = document.getElementById('recCategoryFilter');
+        if (catSelect && categories && Array.isArray(categories)) {
+            catSelect.innerHTML = `<option value="all">All Categories</option>` +
+                categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+        }
+    } catch (_) {}
+
+    try {
+        const goals = await (window.api.getCareerGoals ? window.api.getCareerGoals() : []);
+        const goalSelect = document.getElementById('recCareerGoalFilter');
+        if (goalSelect && goals && Array.isArray(goals)) {
+            goalSelect.innerHTML = `<option value="all">All Career Goals</option>` +
+                goals.map(g => `<option value="${escapeHtml(g.title)}">${escapeHtml(g.title)}</option>`).join('');
+        }
+    } catch (_) {}
+}
+
+async function loadRecStats() {
+    try {
+        const stats = await window.api.getAdminRecommendationStats();
+        if (!stats) return;
+
+        document.getElementById('kpiTotalRecRecords') && (document.getElementById('kpiTotalRecRecords').textContent = stats.total_recommendation_records ?? 0);
+        document.getElementById('kpiTotalRecRecordsFunnel') && (document.getElementById('kpiTotalRecRecordsFunnel').textContent = stats.total_recommendation_records ?? 0);
+        document.getElementById('kpiStudentsWithRecs') && (document.getElementById('kpiStudentsWithRecs').textContent = stats.students_with_recommendations ?? 0);
+        document.getElementById('kpiRecommendedCourses') && (document.getElementById('kpiRecommendedCourses').textContent = stats.recommended_courses_count ?? 0);
+        document.getElementById('kpiGeneratedToday') && (document.getElementById('kpiGeneratedToday').textContent = stats.recommendations_generated_today ?? 0);
+        document.getElementById('kpiAcceptedEnrolled') && (document.getElementById('kpiAcceptedEnrolled').textContent = stats.accepted_enrolled_count ?? 0);
+        document.getElementById('kpiConversionRate') && (document.getElementById('kpiConversionRate').textContent = `${stats.enrollment_conversion_rate ?? 0}% conversion rate`);
+    } catch (err) {
+        console.error("Error loading recommendation stats:", err);
+        const totalEl = document.getElementById('kpiTotalRecRecords');
+        if (totalEl) totalEl.innerHTML = `<span style="font-size:0.9rem; color:#ef4444;" title="${escapeHtml(err.message)}">Unable to load</span>`;
+    }
+}
+
+async function loadRecRecordsTable() {
+    const tbody = document.getElementById('recTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--admin-text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading recommendation records from database...</td></tr>`;
+
+    try {
+        const res = await window.api.getAdminRecommendations({
+            page: currentRecPage,
+            limit: currentRecLimit,
+            ...currentRecFilters
+        });
+
+        if (!res || !res.records) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--admin-danger);"><i class="fa-solid fa-triangle-exclamation"></i> Unable to load recommendation data. <button class="btn btn-xs btn-outline-primary" style="margin-left:0.5rem;" onclick="loadRecRecordsTable()"><i class="fa-solid fa-arrows-rotate"></i> Retry</button></td></tr>`;
+            return;
+        }
+
+        const records = res.records || [];
+        const total = res.total || 0;
+        const totalPages = res.total_pages || 1;
+
+        if (records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2.5rem; color:var(--admin-text-muted);"><i class="fa-solid fa-inbox" style="font-size:1.5rem; display:block; margin-bottom:0.5rem;"></i> No recommendation records available.</td></tr>`;
+            updateRecPagination(0, 0, 0, 1);
+            return;
+        }
+
+        tbody.innerHTML = records.map(r => {
+            const score = r.recommendation_score || 0;
+            const scoreClass = score >= 75 ? 'score-high' : (score >= 55 ? 'score-med' : 'score-low');
+            
+            const st = (r.status || 'Recommended').toLowerCase();
+            let statusBadgeClass = 'status-badge-recommended';
+            if (st === 'viewed') statusBadgeClass = 'status-badge-viewed';
+            else if (st === 'wishlisted') statusBadgeClass = 'status-badge-wishlisted';
+            else if (st === 'enrolled') statusBadgeClass = 'status-badge-enrolled';
+            else if (st === 'completed') statusBadgeClass = 'status-badge-completed';
+            else if (st === 'dismissed') statusBadgeClass = 'status-badge-dismissed';
+
+            const reasonTruncated = (r.recommendation_reason || 'Profile match').length > 45 ? 
+                (r.recommendation_reason.substring(0, 45) + '...') : r.recommendation_reason;
+
+            return `
+                <tr>
+                    <td><strong>#${r.id}</strong></td>
+                    <td>
+                        <strong>${escapeHtml(r.student_name)}</strong>
+                        <div style="font-size:11px; color:#64748b;">${escapeHtml(r.student_email)}</div>
+                    </td>
+                    <td>
+                        <strong style="color:var(--admin-text);">${escapeHtml(r.course_title)}</strong>
+                    </td>
+                    <td><span class="badge-category">${escapeHtml(r.category)}</span></td>
+                    <td><span class="badge-role badge-student">${escapeHtml(r.difficulty_level || 'Intermediate')}</span></td>
+                    <td>
+                        <span class="score-pill ${scoreClass}">
+                            <i class="fa-solid fa-bolt"></i> ${score}%
+                        </span>
+                    </td>
+                    <td><span style="font-size:12px; color:#475569;" title="${escapeHtml(r.recommendation_reason)}">${escapeHtml(reasonTruncated)}</span></td>
+                    <td><span style="font-size:12px; color:#64748b;">${escapeHtml(r.generated_at ? r.generated_at.substring(0, 10) : 'Recent')}</span></td>
+                    <td>
+                        <span class="badge-role ${statusBadgeClass}" style="text-transform:capitalize;">
+                            ${escapeHtml(r.status || 'Recommended')}
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <button class="btn btn-xs btn-outline-primary" onclick="handleViewRecDetails(${r.id})">
+                            <i class="fa-solid fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        const startItem = (currentRecPage - 1) * currentRecLimit + 1;
+        const endItem = Math.min(currentRecPage * currentRecLimit, total);
+        updateRecPagination(startItem, endItem, total, totalPages);
+
+    } catch (err) {
+        console.error("Error loading recommendation records:", err);
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--admin-danger);"><i class="fa-solid fa-triangle-exclamation"></i> Unable to load recommendation data. <button class="btn btn-xs btn-outline-primary" style="margin-left:0.5rem;" onclick="loadRecRecordsTable()"><i class="fa-solid fa-arrows-rotate"></i> Retry</button></td></tr>`;
+    }
+}
+
+function updateRecPagination(start, end, total, totalPages) {
+    const info = document.getElementById('paginationInfo');
+    const pageNum = document.getElementById('currentPageNum');
+    const btnPrev = document.getElementById('btnPrevPage');
+    const btnNext = document.getElementById('btnNextPage');
+
+    if (info) info.textContent = `Showing ${start}–${end} of ${total} records`;
+    if (pageNum) pageNum.textContent = `Page ${currentRecPage} of ${totalPages || 1}`;
+
+    if (btnPrev) btnPrev.disabled = (currentRecPage <= 1);
+    if (btnNext) btnNext.disabled = (currentRecPage >= totalPages);
+}
+
+async function loadRecAnalytics() {
+    try {
+        const analytics = await window.api.getAdminRecommendationAnalytics();
+        if (!analytics) throw new Error("No analytics response");
+
+        // 1. Top Recommended Courses
+        const topCoursesContainer = document.getElementById('analyticsTopCourses');
+        if (topCoursesContainer) {
+            const courses = analytics.most_recommended_courses || [];
+            if (courses.length === 0) {
+                topCoursesContainer.innerHTML = `<p style="font-size:0.85rem; color:#64748b;">No analytics data available yet.</p>`;
+            } else {
+                topCoursesContainer.innerHTML = courses.map(c => `
+                    <div style="margin-bottom: 0.65rem;">
+                        <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; margin-bottom:0.2rem;">
+                            <span style="color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${escapeHtml(c.title)}</span>
+                            <span style="color:var(--primary-purple);">${c.recommendation_count} recs (${c.avg_score}% avg)</span>
+                        </div>
+                        <div class="progress-bar-bg" style="height:6px;">
+                            <div class="progress-bar-fill" style="width:${Math.min(100, c.avg_score)}%; background: linear-gradient(90deg, #6366f1, #a855f7);"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 2. Categories breakdown
+        const catContainer = document.getElementById('analyticsCategories');
+        if (catContainer) {
+            const categories = analytics.most_recommended_categories || [];
+            if (categories.length === 0) {
+                catContainer.innerHTML = `<p style="font-size:0.85rem; color:#64748b;">No category analytics available.</p>`;
+            } else {
+                catContainer.innerHTML = `<div style="display:flex; flex-wrap:wrap; gap:0.5rem;">` +
+                    categories.map(cat => `
+                        <span class="badge-category" style="padding:0.35rem 0.65rem; font-size:12px;">
+                            ${escapeHtml(cat.category)}: <strong>${cat.count}</strong>
+                        </span>
+                    `).join('') + `</div>`;
+            }
+        }
+
+        // 3. Conversions
+        const enrollPct = analytics.enrollment_conversion ? analytics.enrollment_conversion.percentage : 0;
+        const completePct = analytics.completion_conversion ? analytics.completion_conversion.percentage : 0;
+
+        document.getElementById('analyticsEnrollConversion') && (document.getElementById('analyticsEnrollConversion').textContent = `${enrollPct}%`);
+        document.getElementById('analyticsCompleteConversion') && (document.getElementById('analyticsCompleteConversion').textContent = `${completePct}%`);
+
+    } catch (err) {
+        console.error("Error loading recommendation analytics:", err);
+        const topCoursesContainer = document.getElementById('analyticsTopCourses');
+        if (topCoursesContainer) {
+            topCoursesContainer.innerHTML = `<div style="color:#ef4444; font-size:0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Unable to load analytics. <button class="btn btn-xs btn-outline-secondary ms-1" onclick="loadRecAnalytics()">Retry</button></div>`;
+        }
+    }
+}
+
+async function loadCourseRelevanceMonitoring() {
+    const container = document.getElementById('monitoringContainer');
+    if (!container) return;
+
+    try {
+        const res = await window.api.getAdminRecommendations({ limit: 4 });
+        const records = res ? (res.records || []) : [];
+
+        if (records.length === 0) {
+            container.innerHTML = `<p style="font-size:0.85rem; color:#64748b;">No active recommendation relevance pairs to monitor.</p>`;
+            return;
+        }
+
+        container.innerHTML = records.map(r => {
+            const matchingSkills = r.matching_skills || [];
+            const missingSkills = r.missing_skills || [];
+            const score = r.recommendation_score || 0;
+
+            return `
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                        <div>
+                            <strong style="font-size:0.9rem; color:#0f172a;">${escapeHtml(r.student_name)}</strong>
+                            <div style="font-size:0.8rem; color:#4f46e5; font-weight:600;"><i class="fa-solid fa-arrow-right"></i> ${escapeHtml(r.course_title)}</div>
+                        </div>
+                        <span class="score-pill score-high" style="font-size:0.75rem;">${score}% Match</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.75rem; margin-top:0.5rem;">
+                        <div>
+                            <span style="color:#64748b; font-weight:600; display:block;">MATCHING SKILLS:</span>
+                            ${matchingSkills.length > 0 ? 
+                                matchingSkills.map(s => `<span class="tag-pill tag-pill-match">${escapeHtml(typeof s === 'string' ? s : s.name)}</span>`).join('') :
+                                '<span style="color:#94a3b8;">None identified</span>'
+                            }
+                        </div>
+                        <div>
+                            <span style="color:#64748b; font-weight:600; display:block;">MISSING GAPS ADDRESSED:</span>
+                            ${missingSkills.length > 0 ? 
+                                missingSkills.map(s => `<span class="tag-pill tag-pill-missing">${escapeHtml(typeof s === 'string' ? s : s.name)}</span>`).join('') :
+                                '<span style="color:#94a3b8;">None identified</span>'
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Error loading relevance monitoring:", err);
+        container.innerHTML = `<div style="color:#ef4444; font-size:0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Unable to load relevance data. <button class="btn btn-xs btn-outline-secondary ms-1" onclick="loadCourseRelevanceMonitoring()">Retry</button></div>`;
+    }
+}
+
+function setupRecEventListeners() {
+    // Search input
+    let searchTimeout;
+    const searchInput = document.getElementById('recSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentRecFilters.search = e.target.value.trim();
+                currentRecPage = 1;
+                loadRecRecordsTable();
+            }, 300);
+        });
+    }
+
+    // Category filter
+    const catSelect = document.getElementById('recCategoryFilter');
+    if (catSelect) {
+        catSelect.addEventListener('change', (e) => {
+            currentRecFilters.category = e.target.value;
+            currentRecPage = 1;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Career goal filter
+    const goalSelect = document.getElementById('recCareerGoalFilter');
+    if (goalSelect) {
+        goalSelect.addEventListener('change', (e) => {
+            currentRecFilters.career_goal = e.target.value;
+            currentRecPage = 1;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Status filter
+    const statusSelect = document.getElementById('recStatusFilter');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+            currentRecFilters.status = e.target.value;
+            currentRecPage = 1;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Min score filter slider
+    const minScoreRange = document.getElementById('recMinScoreFilter');
+    const minScoreVal = document.getElementById('minScoreVal');
+    if (minScoreRange) {
+        minScoreRange.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0;
+            if (minScoreVal) minScoreVal.textContent = val;
+            currentRecFilters.min_score = val;
+            currentRecPage = 1;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Reset filters button
+    const btnReset = document.getElementById('btnResetFilters');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            currentRecFilters = { search: '', category: 'all', career_goal: 'all', status: 'all', min_score: 0 };
+            if (searchInput) searchInput.value = '';
+            if (catSelect) catSelect.value = 'all';
+            if (goalSelect) goalSelect.value = 'all';
+            if (statusSelect) statusSelect.value = 'all';
+            if (minScoreRange) minScoreRange.value = 0;
+            if (minScoreVal) minScoreVal.textContent = '0';
+            currentRecPage = 1;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Pagination buttons
+    const btnPrev = document.getElementById('btnPrevPage');
+    if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+            if (currentRecPage > 1) {
+                currentRecPage--;
+                loadRecRecordsTable();
+            }
+        });
+    }
+
+    const btnNext = document.getElementById('btnNextPage');
+    if (btnNext) {
+        btnNext.addEventListener('click', () => {
+            currentRecPage++;
+            loadRecRecordsTable();
+        });
+    }
+
+    // Export CSV button
+    const btnExport = document.getElementById('btnExportCSV');
+    if (btnExport) {
+        btnExport.addEventListener('click', () => {
+            const url = window.api.getAdminRecommendationsExportUrl(currentRecFilters);
+            window.open(url, '_blank');
+        });
+    }
+
+    // Modal Details Close buttons
+    const btnCloseModal = document.getElementById('btnCloseDetailsModal');
+    const btnCloseModalFooter = document.getElementById('btnCloseDetailsModalFooter');
+    const modal = document.getElementById('recDetailsModal');
+    
+    [btnCloseModal, btnCloseModalFooter].forEach(btn => {
+        btn && btn.addEventListener('click', () => {
+            if (modal) modal.style.display = 'none';
+        });
+    });
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+    }
+
+    // Regenerate Modal Controls
+    const btnOpenRegen = document.getElementById('btnOpenRegenerateModal');
+    const regenModal = document.getElementById('regenerateModal');
+    const btnCloseRegen = document.getElementById('btnCloseRegenModal');
+    const btnCancelRegen = document.getElementById('btnCancelRegen');
+    const btnConfirmRegen = document.getElementById('btnConfirmRegen');
+    const regenScopeSelect = document.getElementById('regenScopeSelect');
+    const regenStudentGroup = document.getElementById('regenStudentSelectGroup');
+
+    if (btnOpenRegen && regenModal) {
+        btnOpenRegen.addEventListener('click', async () => {
+            regenModal.style.display = 'flex';
+            await loadRegenStudentList();
+        });
+    }
+
+    [btnCloseRegen, btnCancelRegen].forEach(btn => {
+        btn && btn.addEventListener('click', () => {
+            if (regenModal) regenModal.style.display = 'none';
+        });
+    });
+
+    if (regenScopeSelect && regenStudentGroup) {
+        regenScopeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'single') {
+                regenStudentGroup.style.display = 'block';
+            } else {
+                regenStudentGroup.style.display = 'none';
+            }
+        });
+    }
+
+    if (btnConfirmRegen) {
+        btnConfirmRegen.addEventListener('click', async () => {
+            const scope = regenScopeSelect ? regenScopeSelect.value : 'all';
+            const studentId = document.getElementById('regenStudentSelect') ? document.getElementById('regenStudentSelect').value : null;
+
+            if (scope === 'single' && !studentId) {
+                alert("Please select a student from the dropdown.");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to regenerate recommendations? Backend engine will re-calculate matching scores.`)) {
+                return;
+            }
+
+            btnConfirmRegen.disabled = true;
+            btnConfirmRegen.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processing...`;
+
+            try {
+                let result;
+                if (scope === 'single' && studentId) {
+                    result = await window.api.regenerateAdminRecommendationsForStudent(parseInt(studentId));
+                } else {
+                    result = await window.api.regenerateAdminRecommendationsAll();
+                }
+
+                alert(result.message || "Recommendations regenerated successfully.");
+                if (regenModal) regenModal.style.display = 'none';
+
+                // Refresh all page data
+                await loadRecStats();
+                await loadRecRecordsTable();
+                await loadRecAnalytics();
+                await loadCourseRelevanceMonitoring();
+
+            } catch (err) {
+                alert(err.message || "Failed to regenerate recommendations.");
+            } finally {
+                btnConfirmRegen.disabled = false;
+                btnConfirmRegen.innerHTML = `<i class="fa-solid fa-play"></i> Confirm & Regenerate`;
+            }
+        });
+    }
+}
+
+async function loadRegenStudentList() {
+    const studentSelect = document.getElementById('regenStudentSelect');
+    if (!studentSelect) return;
+
+    try {
+        const response = await window.api.getAdminUsers ? window.api.getAdminUsers({ role: 'Student' }) : null;
+        const students = response ? (response.users || response) : [];
+
+        if (students && Array.isArray(students) && students.length > 0) {
+            studentSelect.innerHTML = `<option value="">-- Select Student --</option>` +
+                students.map(s => `<option value="${s.id}">${escapeHtml(s.full_name || s.name)} (${escapeHtml(s.email)})</option>`).join('');
+        } else {
+            studentSelect.innerHTML = `<option value="">No students found in DB</option>`;
+        }
+    } catch (_) {
+        studentSelect.innerHTML = `<option value="">Failed to load students</option>`;
+    }
+}
+
+// Global View Details Handler
+window.handleViewRecDetails = async function(recId) {
+    const modal = document.getElementById('recDetailsModal');
+    if (!modal) return;
+
+    try {
+        const details = await window.api.getAdminRecommendationDetails(recId);
+        if (!details) throw new Error("Could not load recommendation record details.");
+
+        document.getElementById('modalTitle') && (document.getElementById('modalTitle').textContent = `Recommendation Record #${details.id}`);
+
+        // Student info
+        const sInfo = details.student_info || {};
+        document.getElementById('modalStudentName') && (document.getElementById('modalStudentName').textContent = sInfo.name || 'Unknown Student');
+        document.getElementById('modalStudentEmail') && (document.getElementById('modalStudentEmail').textContent = sInfo.email || '');
+        document.getElementById('modalStudentCareerGoals') && (document.getElementById('modalStudentCareerGoals').textContent = 
+            sInfo.career_goal ? (sInfo.secondary_career_goal ? `${sInfo.career_goal} (Secondary: ${sInfo.secondary_career_goal})` : sInfo.career_goal) : 'None specified');
+
+        // Student skills
+        const sSkillsContainer = document.getElementById('modalStudentSkills');
+        if (sSkillsContainer) {
+            const skills = sInfo.skills || [];
+            if (skills.length === 0) {
+                sSkillsContainer.innerHTML = `<span style="font-size:0.8rem; color:#94a3b8;">No profile skills added</span>`;
+            } else {
+                sSkillsContainer.innerHTML = skills.map(sk => {
+                    const skName = typeof sk === 'string' ? sk : (sk.name || sk.skill || '');
+                    const skProf = typeof sk === 'object' && sk.level ? ` (${sk.level})` : '';
+                    return `<span class="tag-pill">${escapeHtml(skName)}${escapeHtml(skProf)}</span>`;
+                }).join('');
+            }
+        }
+
+        // Student interests
+        const sInterestsContainer = document.getElementById('modalStudentInterests');
+        if (sInterestsContainer) {
+            const interests = sInfo.interests || [];
+            if (interests.length === 0) {
+                sInterestsContainer.innerHTML = `<span style="font-size:0.8rem; color:#94a3b8;">No interests specified</span>`;
+            } else {
+                sInterestsContainer.innerHTML = interests.map(i => {
+                    const iName = typeof i === 'string' ? i : (i.name || i.interest || '');
+                    return `<span class="tag-pill">${escapeHtml(iName)}</span>`;
+                }).join('');
+            }
+        }
+
+        // Student assessment results
+        const sAssessContainer = document.getElementById('modalStudentAssessments');
+        if (sAssessContainer) {
+            const attempts = sInfo.assessment_results || [];
+            if (attempts.length === 0) {
+                sAssessContainer.innerHTML = `<span style="color:#94a3b8;">No assessment attempts taken</span>`;
+            } else {
+                sAssessContainer.innerHTML = attempts.map(a => `
+                    <div style="margin-bottom:0.25rem;">
+                        <strong>${escapeHtml(a.title)}:</strong> ${a.percentage}% (${escapeHtml(a.performance_level)})
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Student skill gaps
+        const sGapsContainer = document.getElementById('modalStudentGaps');
+        if (sGapsContainer) {
+            const gaps = sInfo.identified_skill_gaps || [];
+            if (gaps.length === 0) {
+                sGapsContainer.innerHTML = `<span style="font-size:0.8rem; color:#10b981;">No skill gaps identified</span>`;
+            } else {
+                sGapsContainer.innerHTML = gaps.map(g => `<span class="tag-pill tag-pill-missing">${escapeHtml(typeof g === 'string' ? g : g.name)}</span>`).join('');
+            }
+        }
+
+        // Course info
+        const cInfo = details.course_info || {};
+        document.getElementById('modalCourseTitle') && (document.getElementById('modalCourseTitle').textContent = cInfo.title || 'Course');
+        document.getElementById('modalCourseCategory') && (document.getElementById('modalCourseCategory').textContent = cInfo.category || 'General');
+        document.getElementById('modalCourseDifficulty') && (document.getElementById('modalCourseDifficulty').textContent = cInfo.difficulty || 'Intermediate');
+        document.getElementById('modalCourseInstructor') && (document.getElementById('modalCourseInstructor').textContent = cInfo.instructor || 'Faculty');
+
+        const cSkillsContainer = document.getElementById('modalCourseSkills');
+        if (cSkillsContainer) {
+            const skills = cInfo.skills_taught || [];
+            cSkillsContainer.innerHTML = skills.map(sk => `<span class="tag-pill">${escapeHtml(sk)}</span>`).join('');
+        }
+
+        const cRolesContainer = document.getElementById('modalCourseTargetRoles');
+        if (cRolesContainer) {
+            const roles = cInfo.target_roles || [];
+            cRolesContainer.innerHTML = roles.map(r => `<span class="tag-pill" style="background:#e0e7ff; color:#3730a3;">${escapeHtml(r)}</span>`).join('');
+        }
+
+        const cPrereqsContainer = document.getElementById('modalCoursePrereqs');
+        if (cPrereqsContainer) {
+            const prereqs = cInfo.prerequisites || [];
+            cPrereqsContainer.textContent = prereqs.join(', ') || 'None specified';
+        }
+
+        // Recommendation reasons & scores
+        document.getElementById('modalRecReason') && (document.getElementById('modalRecReason').textContent = details.recommendation_reason || 'Profile match');
+        
+        const scorePill = document.getElementById('modalTotalScorePill');
+        if (scorePill) {
+            const score = details.recommendation_score || 0;
+            scorePill.textContent = `${score}% Match`;
+            scorePill.className = `score-pill ${score >= 75 ? 'score-high' : (score >= 55 ? 'score-med' : 'score-low')}`;
+        }
+
+        // Score Breakdown
+        const breakdownContainer = document.getElementById('modalScoreBreakdown');
+        if (breakdownContainer) {
+            const b = details.scores_breakdown || {};
+            const items = [
+                { label: 'Career Goal Match', val: b.career_score || 0, max: 35, color: 'var(--primary-purple)' },
+                { label: 'Skill Gap & Overlap', val: b.skill_gap_score || 0, max: 30, color: 'var(--magenta-pink)' },
+                { label: 'Interests Match', val: b.interest_score || 0, max: 20, color: '#06B6D4' },
+                { label: 'Assessment Relevance', val: b.assessment_score || 0, max: 15, color: '#10B981' }
+            ];
+
+            breakdownContainer.innerHTML = items.map(it => {
+                const pct = Math.min(100, Math.round((it.val / it.max) * 100));
+                return `
+                    <div class="breakdown-bar-container">
+                        <div class="breakdown-bar-label">
+                            <span>${escapeHtml(it.label)}</span>
+                            <span style="color:${it.color};">${it.val} / ${it.max} pts (${pct}%)</span>
+                        </div>
+                        <div class="breakdown-bar-bg">
+                            <div class="breakdown-bar-fill" style="width:${pct}%; background:${it.color};"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Matching & Missing skills
+        const matchSkillsContainer = document.getElementById('modalMatchingSkills');
+        if (matchSkillsContainer) {
+            const matches = details.matching_skills || [];
+            matchSkillsContainer.innerHTML = matches.length > 0 ?
+                matches.map(m => `<span class="tag-pill tag-pill-match">${escapeHtml(typeof m === 'string' ? m : m.name)}</span>`).join('') :
+                `<span style="font-size:0.8rem; color:#94a3b8;">None identified</span>`;
+        }
+
+        const missSkillsContainer = document.getElementById('modalMissingSkills');
+        if (missSkillsContainer) {
+            const missing = details.missing_skills || [];
+            missSkillsContainer.innerHTML = missing.length > 0 ?
+                missing.map(m => `<span class="tag-pill tag-pill-missing">${escapeHtml(typeof m === 'string' ? m : m.name)}</span>`).join('') :
+                `<span style="font-size:0.8rem; color:#94a3b8;">None identified</span>`;
+        }
+
+        modal.style.display = 'flex';
+
+    } catch (err) {
+        alert(err.message || "Failed to load recommendation details.");
+    }
+};
+
+window.setupAdminRecommendationsPage = setupAdminRecommendationsPage;
+
+// =========================================================================
+// 8. DEDICATED ADMIN REPORTS (reports.html)
+// =========================================================================
+
+const adminReportCharts = {};
+
+function destroyReportChart(chartId) {
+    if (adminReportCharts[chartId]) {
+        adminReportCharts[chartId].destroy();
+        delete adminReportCharts[chartId];
+    }
+}
+
+async function setupAdminReportsPage() {
+    const popularTbody = document.getElementById('popularCoursesTableBody');
+    if (!popularTbody) return;
+
+    // 1. Configure CSV export URLs
+    document.getElementById('exportUsersBtn') && (document.getElementById('exportUsersBtn').href = window.api.getAdminReportExportUrl('users'));
+    document.getElementById('exportCoursesBtn') && (document.getElementById('exportCoursesBtn').href = window.api.getAdminReportExportUrl('courses'));
+    document.getElementById('exportEnrollmentsBtn') && (document.getElementById('exportEnrollmentsBtn').href = window.api.getAdminReportExportUrl('enrollments'));
+    document.getElementById('exportPaymentsBtn') && (document.getElementById('exportPaymentsBtn').href = window.api.getAdminReportExportUrl('payments'));
+
+    // 2. Fetch Summary Statistics Overview
+    try {
+        const overview = await window.api.getAdminReportsOverview();
+        document.getElementById('repTotalUsers') && (document.getElementById('repTotalUsers').textContent = overview.total_users || 0);
+        document.getElementById('repUsersBreakdown') && (document.getElementById('repUsersBreakdown').textContent = `${overview.total_students || 0} Students • ${overview.total_instructors || 0} Inst`);
+        document.getElementById('repTotalEnrollments') && (document.getElementById('repTotalEnrollments').textContent = overview.total_enrollments || 0);
+        document.getElementById('repEnrollmentBreakdown') && (document.getElementById('repEnrollmentBreakdown').textContent = `${overview.active_enrollments || 0} Active`);
+        document.getElementById('repCompleted') && (document.getElementById('repCompleted').textContent = overview.completed_enrollments || 0);
+        document.getElementById('repRate') && (document.getElementById('repRate').textContent = `${overview.completion_rate || 0}%`);
+        document.getElementById('repTotalRevenue') && (document.getElementById('repTotalRevenue').textContent = `₹${(overview.total_revenue || 0).toLocaleString('en-IN')}`);
+        document.getElementById('repPaidCount') && (document.getElementById('repPaidCount').textContent = `${overview.paid_enrollments_count || 0} Verified Orders`);
+    } catch (err) {
+        console.error("Error loading admin reports summary:", err);
+    }
+
+    // 3. Load Popular Courses raw table & bar chart
+    try {
+        const popularRes = await window.api.getAdminPopularCourses();
+        const courses = popularRes.courses || [];
+        renderPopularCoursesTable(courses);
+        renderPopularCoursesBarChart(courses.slice(0, 5));
+    } catch (err) {
+        console.error("Error loading popular courses:", err);
+        popularTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:2rem; color:#EF4444;">Unable to load popular courses.</td></tr>`;
+    }
+
+    // 4. Load Course Catalog dropdown for global filter
+    try {
+        const catalog = await window.api.getAdminCourses();
+        const courseSelect = document.getElementById('reportCourseFilter');
+        if (courseSelect && Array.isArray(catalog)) {
+            let options = `<option value="all">All Courses</option>`;
+            catalog.forEach(c => {
+                options += `<option value="${c.id}">${escapeHtml(c.title)}</option>`;
+            });
+            courseSelect.innerHTML = options;
+        }
+    } catch (e) {
+        console.warn("Could not load course filter options:", e);
+    }
+
+    // 5. Setup Enrollment Report Table with Pagination & Filtering
+    let currentEnrollmentPage = 1;
+    const fetchEnrollments = async () => {
+        const tbody = document.getElementById('enrollmentReportTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#64748B;"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading enrollments...</td></tr>`;
+
+        try {
+            const courseVal = document.getElementById('reportCourseFilter') ? document.getElementById('reportCourseFilter').value : 'all';
+            const statusVal = document.getElementById('reportStatusFilter') ? document.getElementById('reportStatusFilter').value : 'all';
+            const searchVal = document.getElementById('reportSearchInput') ? document.getElementById('reportSearchInput').value.trim() : '';
+
+            const res = await window.api.getAdminEnrollmentsReport({
+                course_id: courseVal,
+                status: statusVal,
+                search: searchVal,
+                page: currentEnrollmentPage,
+                limit: 10
+            });
+
+            renderEnrollmentReportTable(res.items || []);
+            renderEnrollmentPagination(res.total || 0, res.page || 1, res.limit || 10);
+        } catch (err) {
+            console.error("Error loading enrollment report:", err);
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#EF4444;">Unable to load enrollment records.</td></tr>`;
+        }
+    };
+
+    // Filter event listeners
+    const courseFilter = document.getElementById('reportCourseFilter');
+    const statusFilter = document.getElementById('reportStatusFilter');
+    const searchInput = document.getElementById('reportSearchInput');
+    const resetBtn = document.getElementById('btnResetFilters');
+
+    courseFilter && courseFilter.addEventListener('change', () => { currentEnrollmentPage = 1; fetchEnrollments(); });
+    statusFilter && statusFilter.addEventListener('change', () => { currentEnrollmentPage = 1; fetchEnrollments(); });
+    
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { currentEnrollmentPage = 1; fetchEnrollments(); }, 300);
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (courseFilter) courseFilter.value = 'all';
+            if (statusFilter) statusFilter.value = 'all';
+            if (searchInput) searchInput.value = '';
+            currentEnrollmentPage = 1;
+            fetchEnrollments();
+        });
+    }
+
+    document.getElementById('prevEnrollmentPage') && document.getElementById('prevEnrollmentPage').addEventListener('click', () => {
+        if (currentEnrollmentPage > 1) {
+            currentEnrollmentPage--;
+            fetchEnrollments();
+        }
+    });
+
+    document.getElementById('nextEnrollmentPage') && document.getElementById('nextEnrollmentPage').addEventListener('click', () => {
+        currentEnrollmentPage++;
+        fetchEnrollments();
+    });
+
+    await fetchEnrollments();
+
+    // 6. Load Course Completion Performance
+    try {
+        const perfRes = await window.api.getAdminCoursePerformanceReport();
+        renderCourseCompletionTable(perfRes.courses || []);
+    } catch (e) {
+        console.warn("Could not load completion performance:", e);
+    }
+
+    // 7. Load Student Progress Report
+    try {
+        const progRes = await window.api.getAdminStudentProgressReport();
+        renderStudentProgressTable(progRes.students || []);
+    } catch (e) {
+        console.warn("Could not load student progress report:", e);
+    }
+
+    // 8. Load Instructor Performance Report
+    try {
+        const instRes = await window.api.getAdminInstructorsReport();
+        renderInstructorReportTable(instRes.instructors || []);
+    } catch (e) {
+        console.warn("Could not load instructor report:", e);
+    }
+
+    // 9. Load Payment Report
+    try {
+        const payRes = await window.api.getAdminPaymentsReport();
+        renderPaymentReportTable(payRes.items || []);
+    } catch (e) {
+        console.warn("Could not load payment report:", e);
+    }
+
+    // 10. Load Recommendation Report
+    try {
+        const recRes = await window.api.getAdminRecommendationsReport();
+        renderRecommendationReportTable(recRes.items || []);
+    } catch (e) {
+        console.warn("Could not load recommendation report:", e);
+    }
+
+    // 11. Load Distribution & Trend Charts
+    try {
+        const chartData = await window.api.getAdminAnalyticsCharts();
+        renderUserDistributionPieChart(chartData.user_distribution || {});
+        renderCategoryDistributionChart(chartData.courses_by_category || {});
+        renderDifficultyDistributionChart(chartData.courses_by_difficulty || {});
+        renderEnrollmentTrendChart(chartData.enrollment_trend || []);
+    } catch (e) {
+        console.warn("Could not load report distribution charts:", e);
+    }
+}
+
+function renderPopularCoursesTable(courses) {
+    const tbody = document.getElementById('popularCoursesTableBody');
+    if (!tbody) return;
+
+    if (!courses || courses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:2rem; color:var(--secondary-text);">No course activity is available yet.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = courses.map((c, idx) => `
+        <tr>
+            <td><strong style="color:var(--primary-purple);">#${idx + 1}</strong></td>
+            <td><strong style="color:var(--dark-navy); font-size:13px;">${escapeHtml(c.title)}</strong></td>
+            <td><span class="badge-category">${escapeHtml(c.category)}</span></td>
+            <td><span style="color:#475569;">${escapeHtml(c.instructor)}</span></td>
+            <td><span class="badge-role badge-student">${escapeHtml(c.level)}</span></td>
+            <td><strong style="color:var(--primary-purple); font-size:13.5px;">${c.enrollments}</strong></td>
+            <td><strong style="color:#10B981;">${c.completed}</strong></td>
+            <td>${c.avg_progress}%</td>
+            <td>⭐ ${c.rating}</td>
+            <td><strong>₹${(c.revenue || 0).toLocaleString('en-IN')}</strong></td>
+            <td><span class="status-indicator status-active">${escapeHtml(c.status)}</span></td>
+        </tr>
+    `).join('');
+}
+
+function renderPopularCoursesBarChart(topCourses) {
+    const canvas = document.getElementById('popularCoursesBarChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyReportChart('popularCoursesBarChart');
+
+    const labels = topCourses.map(c => c.title.length > 18 ? c.title.substring(0, 16) + '...' : c.title);
+    const data = topCourses.map(c => c.enrollments);
+
+    adminReportCharts['popularCoursesBarChart'] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Enrollments',
+                data: data,
+                backgroundColor: 'rgba(91, 63, 232, 0.85)',
+                borderColor: '#5B3FE8',
+                borderWidth: 1.5,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.raw} Enrolled` } }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } },
+                x: { ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+}
+
+function renderUserDistributionPieChart(dist) {
+    const canvas = document.getElementById('userDistributionChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyReportChart('userDistributionChart');
+
+    const labels = Object.keys(dist);
+    const data = Object.values(dist);
+
+    adminReportCharts['userDistributionChart'] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#5B3FE8', '#8B4AD9', '#E83FA5'],
+                borderWidth: 2,
+                borderColor: '#FFFFFF'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function renderCategoryDistributionChart(catData) {
+    const canvas = document.getElementById('coursesByCategoryChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyReportChart('coursesByCategoryChart');
+
+    const labels = Object.keys(catData);
+    const data = Object.values(catData);
+
+    adminReportCharts['coursesByCategoryChart'] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Courses',
+                data: data,
+                backgroundColor: 'rgba(232, 63, 165, 0.85)',
+                borderColor: '#E83FA5',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderDifficultyDistributionChart(diffData) {
+    const canvas = document.getElementById('difficultyDistributionChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyReportChart('difficultyDistributionChart');
+
+    adminReportCharts['difficultyDistributionChart'] = new Chart(canvas, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(diffData),
+            datasets: [{
+                data: Object.values(diffData),
+                backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'],
+                borderWidth: 2,
+                borderColor: '#FFFFFF'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function renderEnrollmentReportTable(items) {
+    const tbody = document.getElementById('enrollmentReportTableBody');
+    if (!tbody) return;
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--secondary-text);">No enrollments found for current criteria.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map(e => {
+        const isComp = e.status === 'Completed';
+        const isNotStarted = e.status === 'Not Started';
+        const badgeColor = isComp ? '#10B981' : (isNotStarted ? '#64748B' : '#5B3FE8');
+        const badgeBg = isComp ? '#ECFDF5' : (isNotStarted ? '#F1F5F9' : '#F3EEFF');
+
+        return `
+            <tr>
+                <td>
+                    <strong style="color:var(--dark-navy);">${escapeHtml(e.student_name)}</strong>
+                    <div style="font-size:11px; color:#64748B;">${escapeHtml(e.student_email)}</div>
+                </td>
+                <td><strong style="font-size:12.5px; color:#1E293B;">${escapeHtml(e.course_title)}</strong></td>
+                <td><span style="color:#475569;">${escapeHtml(e.instructor_name)}</span></td>
+                <td><span style="color:#64748B;">${escapeHtml(e.enrolled_at)}</span></td>
+                <td>
+                    <div style="min-width:100px;">
+                        <div style="font-size:11px; font-weight:700; color:#5B3FE8; margin-bottom:2px;">${e.progress_percentage}%</div>
+                        <div style="height:5px; background:#E2E8F0; border-radius:9999px; overflow:hidden;">
+                            <div style="height:100%; width:${e.progress_percentage}%; background:${badgeColor};"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:12px; background:${badgeBg}; color:${badgeColor};">
+                        ${escapeHtml(e.status)}
+                    </span>
+                </td>
+                <td><span style="font-size:11.5px; color:#64748B;">${escapeHtml(e.last_accessed)}</span></td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderEnrollmentPagination(total, page, limit) {
+    const meta = document.getElementById('enrollmentPaginationInfo');
+    const prevBtn = document.getElementById('prevEnrollmentPage');
+    const nextBtn = document.getElementById('nextEnrollmentPage');
+
+    const start = total === 0 ? 0 : (page - 1) * limit + 1;
+    const end = Math.min(total, page * limit);
+
+    if (meta) meta.textContent = `Showing ${start}-${end} of ${total} records`;
+    if (prevBtn) prevBtn.disabled = page <= 1;
+    if (nextBtn) nextBtn.disabled = end >= total;
+}
+
+function renderEnrollmentTrendChart(trendData) {
+    const canvas = document.getElementById('enrollmentTrendLineChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyReportChart('enrollmentTrendLineChart');
+
+    const labels = trendData.map(t => t.month);
+    const data = trendData.map(t => t.count);
+
+    adminReportCharts['enrollmentTrendLineChart'] = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Enrollments',
+                data: data,
+                fill: true,
+                backgroundColor: 'rgba(242, 27, 143, 0.1)',
+                borderColor: '#F21B8F',
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#F21B8F'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderCourseCompletionTable(courses) {
+    const tbody = document.getElementById('courseCompletionTableBody');
+    if (!tbody) return;
+
+    if (!courses || courses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748B;">No completion performance data.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = courses.slice(0, 8).map(c => `
+        <tr>
+            <td><strong style="color:var(--dark-navy); font-size:12.5px;">${escapeHtml(c.title)}</strong></td>
+            <td><strong>${c.enrollments}</strong></td>
+            <td><span style="color:#10B981; font-weight:700;">${c.completed}</span></td>
+            <td>${c.in_progress}</td>
+            <td>
+                <span style="font-weight:700; color:${c.completion_rate >= 50 ? '#10B981' : '#F59E0B'};">
+                    ${c.completion_rate}%
+                </span>
+            </td>
+            <td>${c.avg_progress}%</td>
+        </tr>
+    `).join('');
+}
+
+function renderStudentProgressTable(students) {
+    const tbody = document.getElementById('studentProgressTableBody');
+    if (!tbody) return;
+
+    if (!students || students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748B;">No student progress data available.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = students.slice(0, 8).map(s => `
+        <tr>
+            <td>
+                <strong style="color:var(--dark-navy);">${escapeHtml(s.name)}</strong>
+                <div style="font-size:11px; color:#64748B;">${escapeHtml(s.email)}</div>
+            </td>
+            <td><span class="badge-category" style="font-size:11px;">${escapeHtml(s.career_goal)}</span></td>
+            <td><strong>${s.enrolled_courses}</strong></td>
+            <td><span style="color:#10B981; font-weight:700;">${s.completed_courses}</span></td>
+            <td>
+                <span style="font-weight:700; color:#5B3FE8;">${s.avg_progress}%</span>
+            </td>
+            <td><span style="font-size:11px; color:#64748B;">${escapeHtml(s.last_activity)}</span></td>
+        </tr>
+    `).join('');
+}
+
+function renderInstructorReportTable(instructors) {
+    const tbody = document.getElementById('instructorReportTableBody');
+    if (!tbody) return;
+
+    if (!instructors || instructors.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748B;">No instructor data recorded.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = instructors.map(inst => `
+        <tr>
+            <td>
+                <strong style="color:var(--dark-navy);">${escapeHtml(inst.name)}</strong>
+                <div style="font-size:11px; color:#64748B;">${escapeHtml(inst.email)}</div>
+            </td>
+            <td>${inst.courses_created}</td>
+            <td><span style="color:#10B981; font-weight:700;">${inst.published_courses}</span></td>
+            <td><strong>${inst.total_enrollments}</strong></td>
+            <td>${inst.completed_enrollments}</td>
+            <td><span style="font-weight:700; color:#F59E0B;">⭐ ${inst.avg_rating}</span></td>
+        </tr>
+    `).join('');
+}
+
+function renderPaymentReportTable(items) {
+    const tbody = document.getElementById('paymentReportTableBody');
+    if (!tbody) return;
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748B;">No payment records in database yet.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.slice(0, 8).map(p => `
+        <tr>
+            <td><strong style="font-size:11.5px; color:#475569;">${escapeHtml(p.transaction_id)}</strong></td>
+            <td>${escapeHtml(p.student_name)}</td>
+            <td><span style="font-size:12px;">${escapeHtml(p.course_title)}</span></td>
+            <td><strong style="color:#10B981;">₹${p.amount.toLocaleString('en-IN')}</strong></td>
+            <td><span style="font-size:11.5px; color:#64748B;">${escapeHtml(p.payment_method)}</span></td>
+            <td>
+                <span class="status-indicator ${p.status === 'Successful' ? 'status-active' : 'status-inactive'}">
+                    ${escapeHtml(p.status)}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderRecommendationReportTable(items) {
+    const tbody = document.getElementById('recommendationReportTableBody');
+    if (!tbody) return;
+
+    if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748B;">No recommendation activity recorded yet.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.slice(0, 8).map(r => `
+        <tr>
+            <td><strong style="color:var(--dark-navy);">${escapeHtml(r.student_name)}</strong></td>
+            <td><strong style="color:#5B3FE8; font-size:12.5px;">${escapeHtml(r.course_title)}</strong></td>
+            <td><span style="font-size:12px; color:#475569;">${escapeHtml(r.recommendation_reason)}</span></td>
+            <td><span style="font-weight:700; color:#10B981;">${r.recommendation_score}% Fit</span></td>
+            <td><span style="font-size:11.5px; color:#64748B;">${escapeHtml(r.generated_at)}</span></td>
+            <td><span class="badge-role badge-student">${escapeHtml(r.status)}</span></td>
+        </tr>
+    `).join('');
+}
+
+// =========================================================================
+// 9. DEDICATED ADMIN ANALYTICS (analytics.html)
+// =========================================================================
+
+const adminAnalyticsCharts = {};
+
+function destroyAnalyticsChart(chartId) {
+    if (adminAnalyticsCharts[chartId]) {
+        adminAnalyticsCharts[chartId].destroy();
+        delete adminAnalyticsCharts[chartId];
+    }
+}
+
+async function setupAdminAnalyticsPage() {
+    // 1. Fetch Overview & Factual Insights
+    try {
+        const overview = await window.api.getAdminAnalyticsOverview();
+        document.getElementById('anTotalStudents') && (document.getElementById('anTotalStudents').textContent = overview.total_students || 0);
+        document.getElementById('anTotalInstructors') && (document.getElementById('anTotalInstructors').textContent = overview.total_instructors || 0);
+        document.getElementById('anTotalCourses') && (document.getElementById('anTotalCourses').textContent = overview.total_courses || 0);
+        document.getElementById('anActiveStudents') && (document.getElementById('anActiveStudents').textContent = overview.active_students || 0);
+        document.getElementById('anTotalEnrollments') && (document.getElementById('anTotalEnrollments').textContent = overview.total_enrollments || 0);
+        document.getElementById('anCompletionRate') && (document.getElementById('anCompletionRate').textContent = `${overview.completion_rate || 0}%`);
+        document.getElementById('anAvgProgress') && (document.getElementById('anAvgProgress').textContent = `${overview.avg_course_progress || 0}%`);
+        document.getElementById('anPublishedCourses') && (document.getElementById('anPublishedCourses').textContent = overview.published_courses || 0);
+        document.getElementById('anAvgRating') && (document.getElementById('anAvgRating').textContent = `⭐ ${overview.avg_course_rating || 5.0}`);
+
+        // Render dynamic platform insight bullet points
+        const insightList = document.getElementById('analyticsInsightList');
+        if (insightList && Array.isArray(overview.insights)) {
+            if (overview.insights.length > 0) {
+                insightList.innerHTML = overview.insights.map(str => `
+                    <li><i class="fa-solid fa-circle-check"></i> ${escapeHtml(str)}</li>
+                `).join('');
+            } else {
+                insightList.innerHTML = `<li><i class="fa-solid fa-circle-info"></i> Sufficient database activity records are needed to generate platform trends.</li>`;
+            }
+        }
+    } catch (err) {
+        console.error("Error loading analytics overview:", err);
+    }
+
+    // 2. Fetch Charts Data & Render 11 Visualizations
+    try {
+        const cData = await window.api.getAdminAnalyticsCharts();
+        
+        // A. Enrollment Growth (Line)
+        renderAnalyticsLineChart('chartEnrollmentGrowth', cData.enrollment_trend || [], 'month', 'count', 'Enrollments', '#5B3FE8');
+        
+        // B. Course Popularity (Horizontal Bar)
+        renderAnalyticsHorizontalBarChart('chartCoursePopularity', cData.popular_courses || [], 'title', 'enrollments', 'Enrollments', '#F59E0B');
+
+        // C. Completion Rate by Course (Bar)
+        renderAnalyticsBarChart('chartCompletionRateByCourse', cData.completion_rate_by_course || [], 'title', 'rate', 'Completion Rate %', '#10B981');
+
+        // D. Courses by Category (Doughnut)
+        renderAnalyticsDoughnutChart('chartCoursesByCategory', cData.courses_by_category || {}, ['#5B3FE8', '#8B4AD9', '#E83FA5', '#F21B8F', '#10B981', '#3B82F6', '#F59E0B']);
+
+        // E. Courses by Difficulty (Pie)
+        renderAnalyticsPieChart('chartCoursesByDifficulty', cData.courses_by_difficulty || {}, ['#10B981', '#3B82F6', '#F59E0B']);
+
+        // F. Student Enrollment Status (Doughnut)
+        renderAnalyticsDoughnutChart('chartStudentStatus', cData.enrollment_status || {}, ['#64748B', '#5B3FE8', '#10B981']);
+
+        // G. Rating Distribution (Bar)
+        renderAnalyticsRatingBarChart('chartRatingDistribution', cData.rating_distribution || {});
+
+        // H. Monthly Revenue (Line)
+        renderAnalyticsLineChart('chartMonthlyRevenue', cData.monthly_revenue || [], 'month', 'amount', 'Revenue (₹)', '#10B981');
+
+        // I. Recommendation Frequency (Bar)
+        renderAnalyticsBarChart('chartRecommendationDistribution', cData.recommendation_distribution || [], 'title', 'count', 'Times Recommended', '#F21B8F');
+
+        // J. Top Student Skills (Horizontal Bar)
+        renderAnalyticsHorizontalBarChart('chartSkillTrends', cData.skills_insights || [], 'skill', 'count', 'Students with Skill', '#8B4AD9');
+
+        // K. Common Career Goals (Horizontal Bar)
+        renderAnalyticsHorizontalBarChart('chartCareerGoalDistribution', cData.career_goals_insights || [], 'goal', 'count', 'Students pursuing Goal', '#5B3FE8');
+
+    } catch (err) {
+        console.error("Error loading analytics charts:", err);
+    }
+}
+
+function renderAnalyticsLineChart(canvasId, items, labelKey, valueKey, labelName, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    const labels = items.map(it => it[labelKey]);
+    const data = items.map(it => it[valueKey]);
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelName,
+                data: data,
+                fill: true,
+                backgroundColor: `${color}1A`,
+                borderColor: color,
+                borderWidth: 2.5,
+                tension: 0.35,
+                pointRadius: 4,
+                pointBackgroundColor: color
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function renderAnalyticsBarChart(canvasId, items, labelKey, valueKey, labelName, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    const labels = items.map(it => (it[labelKey] || '').length > 18 ? (it[labelKey] || '').substring(0, 16) + '...' : it[labelKey]);
+    const data = items.map(it => it[valueKey]);
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelName,
+                data: data,
+                backgroundColor: color,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function renderAnalyticsHorizontalBarChart(canvasId, items, labelKey, valueKey, labelName, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    const labels = items.map(it => (it[labelKey] || '').length > 20 ? (it[labelKey] || '').substring(0, 18) + '...' : it[labelKey]);
+    const data = items.map(it => it[valueKey]);
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: labelName,
+                data: data,
+                backgroundColor: color,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderAnalyticsDoughnutChart(canvasId, objData, palette) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(objData),
+            datasets: [{
+                data: Object.values(objData),
+                backgroundColor: palette,
+                borderWidth: 2,
+                borderColor: '#FFFFFF'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function renderAnalyticsPieChart(canvasId, objData, palette) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(objData),
+            datasets: [{
+                data: Object.values(objData),
+                backgroundColor: palette,
+                borderWidth: 2,
+                borderColor: '#FFFFFF'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+function renderAnalyticsRatingBarChart(canvasId, ratingObj) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    destroyAnalyticsChart(canvasId);
+
+    const labels = ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'];
+    const data = [ratingObj[1] || 0, ratingObj[2] || 0, ratingObj[3] || 0, ratingObj[4] || 0, ratingObj[5] || 0];
+
+    adminAnalyticsCharts[canvasId] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Reviews',
+                data: data,
+                backgroundColor: '#F59E0B',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+window.setupAdminReportsPage = setupAdminReportsPage;
+window.setupAdminAnalyticsPage = setupAdminAnalyticsPage;
+

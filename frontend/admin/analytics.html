@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Analytics - SmartLearn Admin Portal</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        .analytics-insight-box {
+            background: linear-gradient(135deg, #F3EEFF 0%, #EDE9FE 100%);
+            border: 1px solid #D8B4FE;
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .analytics-insight-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4C1D95;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .analytics-insight-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .analytics-insight-list li {
+            font-size: 13.5px;
+            color: #3730A3;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            line-height: 1.5;
+        }
+        .analytics-insight-list li i {
+            color: #7C3AED;
+            margin-top: 3px;
+        }
+        .chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .chart-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--dark-navy);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .chart-container-large {
+            position: relative;
+            width: 100%;
+            min-height: 280px;
+            max-height: 350px;
+        }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 🛡️ ADMIN SIDEBAR -->
+    <aside class="dashboard-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Students</span></a>
+            <a href="instructors.html" class="nav-item"><i class="fa-solid fa-chalkboard-user"></i> <span class="nav-text">Instructors</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-lightbulb"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="analytics.html" class="nav-item active"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            <div class="nav-label">ACCOUNT</div>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Platform Analytics</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <!-- Header Section -->
+            <div class="welcome-section" style="margin-bottom: 2rem;">
+                <h1>Platform Analytics & Insights 📊</h1>
+                <p>Visual trends, enrollment velocity, course popularity, recommendation performance, and student career goals.</p>
+            </div>
+
+            <!-- Top Analytics Cards -->
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(91, 63, 232, 0.1); color: var(--primary-purple);"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Students</span>
+                        <h3 class="stat-value" id="anTotalStudents">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--violet);"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Instructors</span>
+                        <h3 class="stat-value" id="anTotalInstructors">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3B82F6;"><i class="fa-solid fa-book"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Courses</span>
+                        <h3 class="stat-value" id="anTotalCourses">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><i class="fa-solid fa-user-check"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Active Students</span>
+                        <h3 class="stat-value" id="anActiveStudents">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(232, 63, 165, 0.1); color: var(--magenta-pink);"><i class="fa-solid fa-book-bookmark"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Enrollments</span>
+                        <h3 class="stat-value" id="anTotalEnrollments">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><i class="fa-solid fa-award"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Completion Rate</span>
+                        <h3 class="stat-value" id="anCompletionRate">0%</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--violet);"><i class="fa-solid fa-spinner"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Avg Course Progress</span>
+                        <h3 class="stat-value" id="anAvgProgress">0%</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #D97706;"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Published Courses</span>
+                        <h3 class="stat-value" id="anPublishedCourses">0</h3>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(242, 27, 143, 0.1); color: var(--bright-pink);"><i class="fa-solid fa-star"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Avg Course Rating</span>
+                        <h3 class="stat-value" id="anAvgRating">⭐ 5.0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factual Platform Insights Box -->
+            <div class="analytics-insight-box">
+                <div class="analytics-insight-title">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Platform Key Insights
+                </div>
+                <ul class="analytics-insight-list" id="analyticsInsightList">
+                    <li><i class="fa-solid fa-circle-check"></i> Loading platform analytical facts...</li>
+                </ul>
+            </div>
+
+            <!-- Row 1: Enrollment Growth & Course Popularity -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-chart-line" style="color: #5B3FE8;"></i> A. Enrollment Growth over Time</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartEnrollmentGrowth"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-fire" style="color: #F59E0B;"></i> B. Course Popularity (Top Enrolled)</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartCoursePopularity"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Completion Rate & Category Distribution -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-chart-bar" style="color: #10B981;"></i> C. Completion Rate by Course</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartCompletionRateByCourse"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-chart-pie" style="color: #8B4AD9;"></i> D. Courses by Category</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartCoursesByCategory"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Difficulty & Enrollment Status & Rating Distribution -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-signal" style="color: #E83FA5;"></i> E. Difficulty Breakdown</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartCoursesByDifficulty"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-list-check" style="color: #5B3FE8;"></i> F. Student Enrollment Status</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartStudentStatus"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-star" style="color: #F59E0B;"></i> G. Rating Distribution</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartRatingDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Monthly Revenue & Recommendation Distribution -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-money-bill-trend-up" style="color: #10B981;"></i> H. Monthly Revenue Trend</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartMonthlyRevenue"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-lightbulb" style="color: #F21B8F;"></i> I. Recommendation Frequency</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartRecommendationDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Skills & Career Goals Insights -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-bolt" style="color: #8B4AD9;"></i> J. Top Student Skills</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartSkillTrends"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <span class="chart-card-title"><i class="fa-solid fa-bullseye" style="color: #5B3FE8;"></i> K. Common Career Goals</span>
+                    </div>
+                    <div class="chart-container-large">
+                        <canvas id="chartCareerGoalDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>

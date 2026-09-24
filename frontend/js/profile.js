@@ -36,9 +36,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sidebarAvatar) sidebarAvatar.textContent = initials;
         }
     } catch (err) {
-        console.error('Not authenticated in profile:', err);
-        window.location.href = '../login.html';
-        return;
+        console.error('Profile user header notice:', err);
+        if (err && err.message && (err.message.includes('401') || err.message.includes('Not authenticated'))) {
+            window.location.href = '../login.html';
+            return;
+        }
     }
 
     // ----------------------------------------------------
@@ -277,8 +279,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } catch (error) {
-            console.error('Authentication or profile load error:', error);
-            window.location.href = 'login.html';
+            console.error('Profile load error notice:', error);
+            if (error && error.message && (error.message.includes('401') || error.message.includes('Not authenticated'))) {
+                window.location.href = 'login.html';
+            }
         }
     }
     

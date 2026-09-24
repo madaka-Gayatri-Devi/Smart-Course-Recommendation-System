@@ -3,24 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports & Analytics - Admin Portal</title>
+    <title>System Reports - SmartLearn Admin Portal</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
     <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        .report-filter-bar {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .filter-select, .filter-input {
+            padding: 0.5rem 0.85rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            color: #1E293B;
+            background-color: #FFFFFF;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .filter-select:focus, .filter-input:focus {
+            border-color: #5B3FE8;
+            box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.15);
+        }
+        .export-btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-export {
+            background: #F3EEFF;
+            color: #5B3FE8;
+            border: 1px solid #D8B4FE;
+            padding: 0.5rem 0.85rem;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-export:hover {
+            background: #5B3FE8;
+            color: #FFFFFF;
+        }
+        .chart-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            min-height: 260px;
+            max-height: 340px;
+        }
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.25rem;
+            font-size: 13px;
+            color: #64748B;
+        }
+        .pagination-btns {
+            display: flex;
+            gap: 0.35rem;
+        }
+        .page-btn {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid #CBD5E1;
+            background: #FFFFFF;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #334155;
+        }
+        .page-btn.active {
+            background: #5B3FE8;
+            color: #FFFFFF;
+            border-color: #5B3FE8;
+        }
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body class="dashboard-body">
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    
-            <!-- 🛡️ ADMIN SIDEBAR -->
+    <!-- 🛡️ ADMIN SIDEBAR -->
     <aside class="dashboard-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
@@ -39,10 +140,9 @@
             <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
             <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
             <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
-            <a href="career-goals.html#assessments" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
-            <a href="reports.html#enrollments" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-lightbulb"></i> <span class="nav-text">Recommendations</span></a>
             <a href="reports.html" class="nav-item active"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
-            <a href="reports.html#analytics" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
             <div class="nav-label">ACCOUNT</div>
             <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
             <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
@@ -79,25 +179,37 @@
         </header>
 
         <div class="dashboard-content fade-in-up">
-            <div class="welcome-section" style="margin-bottom: 2rem;">
-                <h1>System Analytics & Usage Reports 📈</h1>
-                <p>Live metrics covering platform enrollment velocity, completions, and popular curricula.</p>
+            <!-- Header Section -->
+            <div class="welcome-section" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>System Analytics & Usage Reports 📈</h1>
+                    <p>Comprehensive live database reports, student activity logs, enrollment records, and revenue details.</p>
+                </div>
+                <div class="export-btn-group">
+                    <a href="#" id="exportUsersBtn" class="btn-export"><i class="fa-solid fa-download"></i> Users CSV</a>
+                    <a href="#" id="exportCoursesBtn" class="btn-export"><i class="fa-solid fa-download"></i> Courses CSV</a>
+                    <a href="#" id="exportEnrollmentsBtn" class="btn-export"><i class="fa-solid fa-download"></i> Enrollments CSV</a>
+                    <a href="#" id="exportPaymentsBtn" class="btn-export"><i class="fa-solid fa-download"></i> Payments CSV</a>
+                </div>
             </div>
 
-            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Summary Stat Cards -->
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: rgba(91, 63, 232, 0.1); color: var(--primary-purple);"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-info">
                         <span class="stat-label">Total Accounts</span>
                         <h3 class="stat-value" id="repTotalUsers">0</h3>
+                        <span style="font-size: 11px; color: #64748B;" id="repUsersBreakdown">0 Students • 0 Inst</span>
                     </div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-icon" style="background: rgba(232, 63, 165, 0.1); color: var(--magenta-pink);"><i class="fa-solid fa-graduation-cap"></i></div>
                     <div class="stat-info">
-                        <span class="stat-label">Enrollments</span>
+                        <span class="stat-label">Total Enrollments</span>
                         <h3 class="stat-value" id="repTotalEnrollments">0</h3>
+                        <span style="font-size: 11px; color: #64748B;" id="repEnrollmentBreakdown">0 Active</span>
                     </div>
                 </div>
 
@@ -106,6 +218,7 @@
                     <div class="stat-info">
                         <span class="stat-label">Completions</span>
                         <h3 class="stat-value" id="repCompleted">0</h3>
+                        <span style="font-size: 11px; color: #64748B;">100% Finished</span>
                     </div>
                 </div>
 
@@ -114,21 +227,282 @@
                     <div class="stat-info">
                         <span class="stat-label">Completion Rate</span>
                         <h3 class="stat-value" id="repRate">0%</h3>
+                        <span style="font-size: 11px; color: #64748B;">Calculated Live</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #D97706;"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Revenue</span>
+                        <h3 class="stat-value" id="repTotalRevenue">₹0</h3>
+                        <span style="font-size: 11px; color: #64748B;" id="repPaidCount">0 Verified Orders</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Popular Courses List -->
-            <div class="dashboard-card" style="padding: 2rem;">
-                <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy);">Most Popular Courses</h3>
-                <div id="popularCoursesContainer">
-                    <p style="color: var(--secondary-text);">Loading popular courses...</p>
+            <!-- Global Filter Bar -->
+            <div class="report-filter-bar">
+                <div class="filter-group">
+                    <i class="fa-solid fa-filter" style="color: #5B3FE8;"></i>
+                    <strong style="font-size: 13.5px; color: #1E293B;">Filters:</strong>
+                </div>
+                <div class="filter-group">
+                    <select id="reportCourseFilter" class="filter-select">
+                        <option value="all">All Courses</option>
+                    </select>
+                    <select id="reportStatusFilter" class="filter-select">
+                        <option value="all">All Statuses</option>
+                        <option value="completed">Completed</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="not_started">Not Started</option>
+                    </select>
+                    <input type="text" id="reportSearchInput" class="filter-input" placeholder="Search student or course...">
+                </div>
+                <div>
+                    <button id="btnResetFilters" class="btn-export" style="background: #F1F5F9; color: #475569; border-color: #CBD5E1;">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Filters
+                    </button>
                 </div>
             </div>
+
+            <!-- Popular Courses Section -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 17px;"><i class="fa-solid fa-fire mr-1" style="color: #F59E0B;"></i> Most Popular Courses</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12.5px;">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Course</th>
+                                    <th>Category</th>
+                                    <th>Instructor</th>
+                                    <th>Level</th>
+                                    <th>Enrollments</th>
+                                    <th>Completed</th>
+                                    <th>Avg Progress</th>
+                                    <th>Rating</th>
+                                    <th>Revenue</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="popularCoursesTableBody">
+                                <tr>
+                                    <td colspan="11" style="text-align:center; padding: 2rem; color: var(--secondary-text);">
+                                        <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8;"></i> Loading popular courses...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-chart-column mr-1" style="color: #5B3FE8;"></i> Top Courses by Enrollment</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="popularCoursesBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution Charts Grid -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-pie-chart mr-1" style="color: #8B4AD9;"></i> User Distribution</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="userDistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-layer-group mr-1" style="color: #E83FA5;"></i> Courses by Category</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="coursesByCategoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-signal mr-1" style="color: #10B981;"></i> Difficulty Distribution</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="difficultyDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enrollment Status Report & Trend -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <h3 style="color: var(--dark-navy); font-size: 17px; margin: 0;"><i class="fa-solid fa-list-check mr-1" style="color: #5B3FE8;"></i> Enrollment Status Report</h3>
+                        <span style="font-size: 12px; color: #64748B;" id="enrollmentReportMeta">Showing records</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12.5px;">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Course</th>
+                                    <th>Instructor</th>
+                                    <th>Enrolled Date</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th>Last Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enrollmentReportTableBody">
+                                <tr>
+                                    <td colspan="7" style="text-align:center; padding: 2rem; color: var(--secondary-text);">
+                                        Loading enrollment records...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-container">
+                        <span id="enrollmentPaginationInfo">Showing 0-0 of 0</span>
+                        <div class="pagination-btns" id="enrollmentPaginationBtns">
+                            <button class="page-btn" id="prevEnrollmentPage" disabled><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                            <button class="page-btn" id="nextEnrollmentPage" disabled>Next <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <div class="chart-card-header">
+                        <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-chart-line mr-1" style="color: #F21B8F;"></i> Enrollment Trend over Time</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="enrollmentTrendLineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Completion & Student Progress Reports -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-award mr-1" style="color: #10B981;"></i> Course Completion Performance</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Enrollments</th>
+                                    <th>Completed</th>
+                                    <th>In Progress</th>
+                                    <th>Completion Rate</th>
+                                    <th>Avg Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courseCompletionTableBody">
+                                <tr><td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748B;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-user-graduate mr-1" style="color: #8B4AD9;"></i> Student Progress Report</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Career Goal</th>
+                                    <th>Enrolled</th>
+                                    <th>Completed</th>
+                                    <th>Avg Progress</th>
+                                    <th>Last Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentProgressTableBody">
+                                <tr><td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748B;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructor Performance & Payment Logs -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-chalkboard-user mr-1" style="color: #5B3FE8;"></i> Instructor Performance Report</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Instructor</th>
+                                    <th>Created</th>
+                                    <th>Published</th>
+                                    <th>Enrollments</th>
+                                    <th>Completions</th>
+                                    <th>Avg Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody id="instructorReportTableBody">
+                                <tr><td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748B;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="dashboard-card" style="padding: 1.5rem;">
+                    <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-receipt mr-1" style="color: #D97706;"></i> Payment & Revenue Log</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Txn ID</th>
+                                    <th>Student</th>
+                                    <th>Course</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentReportTableBody">
+                                <tr><td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748B;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendation Activity Report -->
+            <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-lightbulb mr-1" style="color: #F59E0B;"></i> Recommendation Activity Report</h3>
+                <div style="overflow-x: auto;">
+                    <table class="admin-table" style="font-size: 12.5px;">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Recommended Course</th>
+                                <th>Recommendation Reason</th>
+                                <th>Match Score</th>
+                                <th>Recommendation Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recommendationReportTableBody">
+                            <tr><td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748B;">Loading recommendation logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </main>
 
     <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
     <script src="../js/notifications.js"></script>
     <script src="../js/admin.js"></script>
 </body>

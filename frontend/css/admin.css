@@ -119,12 +119,13 @@ body.admin-theme {
 .admin-title {
   font-size: 1.75rem;
   font-weight: 800;
+  color: #ffffff !important;
   margin: 0 0 0.5rem 0;
 }
 
 .admin-subtitle {
   font-size: 0.95rem;
-  color: #94a3b8;
+  color: #94a3b8 !important;
   margin: 0;
   max-width: 650px;
   line-height: 1.5;
@@ -238,31 +239,43 @@ body.admin-theme {
 
 /* Tables */
 .table-responsive {
+  width: 100%;
   overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
 }
 
 .admin-data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.85rem;
 }
 
 .admin-data-table th {
   text-align: left;
-  padding: 0.75rem 0.6rem;
+  padding: 0.85rem 1rem;
   background-color: #f8fafc;
   color: #475569;
-  font-weight: 600;
-  border-bottom: 2px solid var(--admin-border);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--admin-border, #e2e8f0);
+  white-space: nowrap;
 }
 
 .admin-data-table td {
-  padding: 0.75rem 0.6rem;
-  border-bottom: 1px solid var(--admin-border);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--admin-border, #f1f5f9);
   vertical-align: middle;
 }
 
-.admin-data-table tr:hover {
+.admin-data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-data-table tr:hover td {
   background-color: #f8fafc;
 }
 
@@ -520,4 +533,91 @@ body.admin-theme {
   color: var(--admin-text-muted);
   font-size: 0.8rem;
   border-top: 1px solid var(--admin-border);
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS & MOBILE FIXES
+   ========================================================================= */
+
+@media (max-width: 1024px) {
+  .dashboard-main {
+    margin-left: 0 !important;
+    padding: 1rem !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .dashboard-topbar {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .topbar-left h2, .page-title {
+    font-size: 1.15rem !important;
+  }
+
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar-right .profile-name {
+    display: none !important;
+  }
+
+  .admin-kpi-grid, .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .admin-kpi-card {
+    padding: 1rem !important;
+  }
+
+  .admin-kpi-number {
+    font-size: 1.35rem !important;
+  }
+
+  .panel-header-actions, .filter-bar, .search-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .admin-search-input, .admin-filter-select, .form-control, .form-select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .modal-dialog, .modal-content {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 1rem auto !important;
+  }
+
+  .chart-container-large {
+    min-height: 220px !important;
+    max-height: 260px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-kpi-grid, .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card {
+    padding: 1rem !important;
+  }
+
+  .btn, .btn-primary, .btn-secondary {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  .table-responsive {
+    border-radius: 6px !important;
+  }
 }

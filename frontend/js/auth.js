@@ -117,7 +117,57 @@ window.addEventListener('pageshow', (event) => {
     }
 });
 
+// Asynchronous Backend Token & Role Verification
+async function verifyBackendSession() {
+    const currentPath = window.location.pathname.toLowerCase();
+    const isProtected = currentPath.includes('/student/') || currentPath.includes('/instructor/') || currentPath.includes('/admin/');
+    if (!isProtected) return;
+
+    const token = localStorage.getItem('smartlearn_token');
+    if (!token) {
+        window.location.replace('../login.html');
+        return;
+    }
+
+    try {
+        if (!window.api || typeof window.api.getMe !== 'function') return;
+        const verifiedUser = await window.api.getMe();
+        if (verifiedUser && verifiedUser.role) {
+            localStorage.setItem('smartlearn_user', JSON.stringify(verifiedUser));
+            localStorage.setItem('smartlearn_role', verifiedUser.role);
+
+            const role = (verifiedUser.role || '').toUpperCase();
+            const isStudentPage = currentPath.includes('/student/');
+            const isInstructorPage = currentPath.includes('/instructor/');
+            const isAdminPage = currentPath.includes('/admin/');
+
+            if (isStudentPage && role !== 'STUDENT') {
+                console.warn(`Backend verified role [${role}] is unauthorized for student portal. Safely redirecting without logout...`);
+                if (role === 'ADMIN') window.location.replace('../admin/dashboard.html');
+                else if (role === 'INSTRUCTOR') window.location.replace('../instructor/dashboard.html');
+            } else if (isInstructorPage && role !== 'INSTRUCTOR' && role !== 'ADMIN') {
+                console.warn(`Backend verified role [${role}] is unauthorized for instructor portal. Safely redirecting without logout...`);
+                window.location.replace('../student/dashboard.html');
+            } else if (isAdminPage && role !== 'ADMIN') {
+                console.warn(`Backend verified role [${role}] is unauthorized for admin portal. Safely redirecting without logout...`);
+                if (role === 'INSTRUCTOR') window.location.replace('../instructor/dashboard.html');
+                else window.location.replace('../student/dashboard.html');
+            }
+        }
+    } catch (err) {
+        console.error("Backend session verification error notice:", err);
+        // ONLY clear session & redirect to login if token is genuinely invalid/expired (401)
+        if (err.message && (err.message.includes('401') || err.message.includes('expired') || err.message.includes('Not authenticated') || err.message.includes('Missing authentication token'))) {
+            localStorage.removeItem('smartlearn_token');
+            localStorage.removeItem('smartlearn_user');
+            localStorage.removeItem('smartlearn_role');
+            window.location.replace('../login.html');
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    verifyBackendSession();
     setupLoginForm();
     setupRegisterForm();
     setupGoogleLogin();

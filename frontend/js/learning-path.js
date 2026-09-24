@@ -24,8 +24,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initials);
         }
     } catch (e) {
-        window.location.href = '../login.html';
-        return;
+        console.error("Learning path user header notice:", e);
+        if (e && e.message && (e.message.includes('401') || e.message.includes('Not authenticated'))) {
+            window.location.href = '../login.html';
+            return;
+        }
     }
 
     // Toggle & Logout

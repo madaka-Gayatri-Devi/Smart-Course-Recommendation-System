@@ -1195,17 +1195,164 @@ const api = {
     },
 
     async getAdminReports() {
+        return this.getAdminReportsOverview();
+    },
+
+    async getAdminReportsOverview() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
 
-        const res = await safeFetch(`${API_URL}/admin/reports?token=${encodeURIComponent(token)}`, {
+        const res = await safeFetch(`${API_URL}/admin/reports/overview?token=${encodeURIComponent(token)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-            const msg = await parseErrorResponse(res, 'Failed to fetch reports');
+            const msg = await parseErrorResponse(res, 'Failed to fetch reports summary');
             throw new Error(msg);
         }
         return res.json();
+    },
+
+    async getAdminPopularCourses() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/popular-courses?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch popular courses');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminEnrollmentsReport(params = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('token', token);
+        Object.keys(params).forEach(k => {
+            const v = params[k];
+            if (v !== undefined && v !== null && v !== '' && v !== 'all') {
+                queryParams.append(k, v);
+            }
+        });
+
+        const res = await safeFetch(`${API_URL}/admin/reports/enrollments?${queryParams.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch enrollments report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminCoursePerformanceReport() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/course-performance?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch course performance report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminStudentProgressReport() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/student-progress?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch student progress report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminInstructorsReport() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/instructors?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch instructors report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminPaymentsReport() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/payments?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch payments report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminRecommendationsReport() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/reports/recommendations?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch recommendations report');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminAnalyticsOverview() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/analytics/overview?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch analytics overview');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminAnalyticsCharts() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/analytics/charts?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch analytics charts data');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    getAdminReportExportUrl(reportType) {
+        const token = this.getToken();
+        const queryParams = new URLSearchParams();
+        if (token) queryParams.append('token', token);
+        queryParams.append('type', reportType);
+        return `${API_URL}/admin/reports/export?${queryParams.toString()}`;
     },
 
     // --- PAYMENT & RAZORPAY API ---
@@ -1423,6 +1570,159 @@ const api = {
         return res.json();
     },
 
+    // --- ADMIN RECOMMENDATION MANAGEMENT ---
+
+    async getAdminRecommendations(params = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const queryParams = new URLSearchParams();
+        queryParams.append('token', token);
+        if (params.search) queryParams.append('search', params.search);
+        if (params.student_id) queryParams.append('student_id', params.student_id);
+        if (params.course_id) queryParams.append('course_id', params.course_id);
+        if (params.category) queryParams.append('category', params.category);
+        if (params.career_goal) queryParams.append('career_goal', params.career_goal);
+        if (params.status) queryParams.append('status', params.status);
+        if (params.min_score !== undefined && params.min_score !== null && params.min_score !== '') queryParams.append('min_score', params.min_score);
+        if (params.date) queryParams.append('date', params.date);
+        if (params.page) queryParams.append('page', params.page);
+        if (params.limit) queryParams.append('limit', params.limit);
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations?${queryParams.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch recommendation records');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminRecommendationStats() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/stats?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch recommendation statistics');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminRecommendationDetails(recommendationId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/${recommendationId}?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch recommendation details');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminStudentRecommendations(studentId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/student/${studentId}?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch student recommendations');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async regenerateAdminRecommendationsForStudent(studentId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/regenerate/${studentId}?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to regenerate recommendations for student');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async regenerateAdminRecommendationsAll(studentIds = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+        if (studentIds && Array.isArray(studentIds) && studentIds.length > 0) {
+            options.body = JSON.stringify({ student_ids: studentIds });
+        }
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/regenerate-all?token=${encodeURIComponent(token)}`, options);
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to regenerate recommendations');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminRecommendationAnalytics() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/admin/recommendations/analytics?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch recommendation analytics');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getCategories() {
+        const res = await safeFetch(`${API_URL}/categories`);
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch categories');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getCareerGoals() {
+        const res = await safeFetch(`${API_URL}/career-goals`);
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch career goals');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    getAdminRecommendationsExportUrl(params = {}) {
+        const token = this.getToken();
+        const queryParams = new URLSearchParams();
+        if (token) queryParams.append('token', token);
+        if (params.search) queryParams.append('search', params.search);
+        if (params.category) queryParams.append('category', params.category);
+        if (params.career_goal) queryParams.append('career_goal', params.career_goal);
+        if (params.status) queryParams.append('status', params.status);
+        if (params.min_score !== undefined && params.min_score !== null && params.min_score !== '') queryParams.append('min_score', params.min_score);
+        return `${API_URL}/admin/recommendations/export?${queryParams.toString()}`;
+    },
+
     // --- UNIVERSAL LOGOUT ---
 
     async logout() {
@@ -1450,4 +1750,6 @@ const api = {
     }
 };
 
-window.api = api;
+if (typeof window !== 'undefined') {
+    window.api = api;
+}

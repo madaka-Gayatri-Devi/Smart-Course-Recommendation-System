@@ -37,10 +37,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } catch (e) {
         console.error("Auth check notice:", e);
-        // If student is not logged in, redirect to login
-        if (window.location.pathname.includes('/student/')) {
-            window.location.href = '../login.html';
-            return;
+        if (e && e.message && (e.message.includes('401') || e.message.includes('Not authenticated'))) {
+            if (window.location.pathname.includes('/student/')) {
+                window.location.href = '../login.html';
+                return;
+            }
         }
     }
 

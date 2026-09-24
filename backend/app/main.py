@@ -314,6 +314,22 @@ class EmailLogDB(Base):
     sent_at = Column(String)
     failure_reason = Column(String, nullable=True)
 
+class RecommendationDB(Base):
+    __tablename__ = "recommendations"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), index=True)
+    recommendation_score = Column(Float, default=0.0)
+    scores_breakdown = Column(JSON, nullable=True)
+    recommendation_reason = Column(String, nullable=True)
+    matching_skills = Column(JSON, nullable=True)
+    missing_skills = Column(JSON, nullable=True)
+    matching_interests = Column(JSON, nullable=True)
+    matching_career_goals = Column(JSON, nullable=True)
+    status = Column(String, default="Recommended")  # Recommended, Viewed, Wishlisted, Enrolled, Completed, Dismissed
+    generated_at = Column(String, nullable=True)
+    updated_at = Column(String, nullable=True)
+
 Base.metadata.create_all(bind=engine)
 
 # --- MIGRATIONS ---
@@ -325,6 +341,9 @@ def run_migrations():
 
     if "email_logs" not in inspector.get_table_names():
         EmailLogDB.__table__.create(bind=engine)
+
+    if "recommendations" not in inspector.get_table_names():
+        RecommendationDB.__table__.create(bind=engine)
     
     # Profile table migrations
     if "profiles" in inspector.get_table_names():
@@ -951,9 +970,176 @@ def seed_assessments():
     finally:
         db.close()
 
+def get_db_course_dicts(db: Session) -> List[Dict[str, Any]]:
+    courses = db.query(CourseDB).all()
+    res = []
+    for c in courses:
+        res.append({
+            "id": c.id,
+            "title": c.title,
+            "category": c.category,
+            "description": c.description or c.short_description or "",
+            "instructor": c.instructor_name or "Faculty",
+            "rating": c.rating or 4.8,
+            "review_count": c.review_count or 0,
+            "duration": c.duration or "30 hours",
+            "level": c.level or "Intermediate",
+            "icon": c.icon or "fa-solid fa-graduation-cap",
+            "color_theme": c.color_theme or "linear-gradient(135deg, #5B3FE8, #8B4AD9)",
+            "skills": c.skills or [],
+            "target_roles": c.target_roles or [c.category],
+            "domains": [c.category, c.subcategory] if c.subcategory else [c.category]
+        })
+    return res
+
+def sync_student_recommendations(db: Session, student_id: int, force: bool = False) -> List[RecommendationDB]:
+    user = db.query(UserDB).filter(UserDB.id == student_id).first()
+    if not user or (user.role or '').capitalize() != "Student":
+        return []
+        
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == student_id).first()
+    attempts_db = db.query(AssessmentAttemptDB).filter(AssessmentAttemptDB.user_id == student_id).all()
+    attempts = []
+    for a in attempts_db:
+        assess = db.query(AssessmentDB).filter(AssessmentDB.id == a.assessment_id).first()
+        attempts.append({
+            "assessment_id": a.assessment_id,
+            "category": assess.category if assess else "",
+            "score": a.score,
+            "percentage": a.percentage,
+            "performance_level": a.performance_level
+        })
+        
+    enrollments = db.query(EnrollmentDB).filter(EnrollmentDB.user_id == student_id).all()
+    enrolled_map = {e.course_id: e for e in enrollments}
+
+    wishlist_db = db.query(WishlistDB).filter(WishlistDB.user_id == student_id).all()
+    wishlisted_course_ids = set([w.course_id for w in wishlist_db])
+    if profile and isinstance(profile.wishlist, list):
+        for item in profile.wishlist:
+            if isinstance(item, int):
+                wishlisted_course_ids.add(item)
+            elif isinstance(item, dict) and "id" in item:
+                wishlisted_course_ids.add(item["id"])
+
+    profile_dict = {}
+    if profile:
+        profile_dict = {
+            "career_goal": profile.career_goal,
+            "secondary_career_goal": profile.secondary_career_goal,
+            "skills": profile.skills or [],
+            "interests": profile.interests or [],
+            "education": profile.education or [],
+            "courses": profile.courses or [],
+            "learning_style": profile.learning_style
+        }
+
+    db_courses = get_db_course_dicts(db)
+    db_goals = {g.title: g.required_skills for g in db.query(CareerGoalDB).all()}
+
+    rec_result = RecommendationEngine.get_recommendations(
+        profile_data=profile_dict,
+        assessment_attempts=attempts,
+        limit=100,
+        courses_catalog=db_courses,
+        enrolled_course_ids=list(enrolled_map.keys()),
+        completed_course_ids=[c_id for c_id, e in enrolled_map.items() if (e.status or '').lower() == "completed" or (e.progress_percentage or 0) >= 100],
+        goals_map=db_goals
+    )
+
+    scored_courses = rec_result.get("recommendations", [])
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    existing_recs = {r.course_id: r for r in db.query(RecommendationDB).filter(RecommendationDB.student_id == student_id).all()}
+    
+    updated_records = []
+    for sc in scored_courses:
+        c_id = sc.get("id")
+        if not c_id:
+            continue
+
+        score = float(sc.get("match_percentage", 0.0))
+        breakdown = sc.get("scores_breakdown", {})
+        
+        # Build clean recommendation reason
+        reason_list = sc.get("reasons", [])
+        if isinstance(reason_list, list) and len(reason_list) > 0:
+            reason = "; ".join(reason_list[:2])
+        elif sc.get("recommendation_reason"):
+            reason = str(sc.get("recommendation_reason"))
+        else:
+            reason = f"Profile match for {profile.career_goal if profile and profile.career_goal else 'learning goals'}"
+
+        matching_skills = sc.get("matching_skills", [])
+        missing_skills = sc.get("missing_skills", [])
+        matching_interests = sc.get("matching_interests", [])
+        matching_career_goals = sc.get("matching_career_goals", [])
+
+        # Determine status
+        rec_status = "Recommended"
+        if c_id in enrolled_map:
+            e_obj = enrolled_map[c_id]
+            if (e_obj.status or '').lower() == "completed" or (e_obj.progress_percentage or 0) >= 100:
+                rec_status = "Completed"
+            else:
+                rec_status = "Enrolled"
+        elif c_id in wishlisted_course_ids:
+            rec_status = "Wishlisted"
+        elif c_id in existing_recs:
+            curr_st = existing_recs[c_id].status
+            if curr_st in ["Viewed", "Dismissed"]:
+                rec_status = curr_st
+
+        if c_id in existing_recs:
+            rec_obj = existing_recs[c_id]
+            rec_obj.recommendation_score = score
+            rec_obj.scores_breakdown = breakdown
+            rec_obj.recommendation_reason = reason
+            rec_obj.matching_skills = matching_skills
+            rec_obj.missing_skills = missing_skills
+            rec_obj.matching_interests = matching_interests
+            rec_obj.matching_career_goals = matching_career_goals
+            rec_obj.status = rec_status
+            rec_obj.updated_at = now_str
+        else:
+            rec_obj = RecommendationDB(
+                student_id=student_id,
+                course_id=c_id,
+                recommendation_score=score,
+                scores_breakdown=breakdown,
+                recommendation_reason=reason,
+                matching_skills=matching_skills,
+                missing_skills=missing_skills,
+                matching_interests=matching_interests,
+                matching_career_goals=matching_career_goals,
+                status=rec_status,
+                generated_at=now_str,
+                updated_at=now_str
+            )
+            db.add(rec_obj)
+            existing_recs[c_id] = rec_obj
+        
+        updated_records.append(rec_obj)
+
+    db.commit()
+    return updated_records
+
+def seed_initial_recommendations():
+    db = SessionLocal()
+    try:
+        students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).all()
+        for s in students:
+            sync_student_recommendations(db, s.id)
+        print(f"[SmartLearn] Initial Recommendations synced for {len(students)} students.")
+    except Exception as _rec_err:
+        print(f"[SmartLearn Rec Seeding Warning] {_rec_err}")
+    finally:
+        db.close()
+
 seed_initial_admin()
 seed_catalogs()
 seed_assessments()
+seed_initial_recommendations()
 
 # --- FASTAPI APP ---
 app = FastAPI(title="SmartLearn Role-Based API")
@@ -1195,6 +1381,9 @@ class CareerGoalPayload(BaseModel):
     description: Optional[str] = None
     required_skills: Optional[List[str]] = []
     recommended_categories: Optional[List[str]] = []
+
+class RegenerateRecommendationsPayload(BaseModel):
+    student_ids: Optional[List[int]] = None
 
 class PaymentOrderCreatePayload(BaseModel):
     course_id: int
@@ -4402,29 +4591,640 @@ def delete_career_goal(goal_id: int, user: UserDB = Depends(get_current_admin), 
     return {"message": "Career goal deleted"}
 
 @app.get("/admin/reports")
-def get_admin_reports(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+@app.get("/admin/reports/overview")
+def get_admin_reports_overview(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
     total_users = db.query(UserDB).count()
-    total_enrollments = db.query(EnrollmentDB).count()
-    completed_enrollments = db.query(EnrollmentDB).filter(EnrollmentDB.status == "completed").count()
-    attempts_count = db.query(AssessmentAttemptDB).count()
+    total_students = db.query(UserDB).filter(func.lower(UserDB.role) == "student").count()
+    total_instructors = db.query(UserDB).filter(func.lower(UserDB.role) == "instructor").count()
+    total_admins = db.query(UserDB).filter(func.lower(UserDB.role) == "admin").count()
     
-    completion_rate = round((completed_enrollments / total_enrollments) * 100) if total_enrollments > 0 else 0
+    total_courses = db.query(CourseDB).count()
+    published_courses = db.query(CourseDB).filter(func.lower(CourseDB.status) == "published").count()
+    draft_courses = db.query(CourseDB).filter(func.lower(CourseDB.status) == "draft").count()
+    
+    total_enrollments = db.query(EnrollmentDB).count()
+    completed_enrollments = db.query(EnrollmentDB).filter(
+        (func.lower(EnrollmentDB.status) == "completed") | (EnrollmentDB.progress_percentage >= 100)
+    ).count()
+    active_enrollments = max(0, total_enrollments - completed_enrollments)
+    
+    completion_rate = round((completed_enrollments / total_enrollments) * 100, 1) if total_enrollments > 0 else 0.0
+    
+    successful_payments = db.query(PaymentDB).filter(func.lower(PaymentDB.status) == "successful").all()
+    paid_enrollments_count = len(successful_payments)
+    total_revenue = round(sum(p.amount for p in successful_payments), 2)
     
     courses = db.query(CourseDB).all()
-    popular_courses = sorted(
-        [{"id": c.id, "title": c.title, "category": c.category, "rating": c.rating, "enrollments": c.enrollment_count or 0} for c in courses],
-        key=lambda x: x["enrollments"],
-        reverse=True
-    )[:5]
+    
+    # Calculate enrollments per course dynamically from EnrollmentDB if course.enrollment_count is not synchronized
+    enrollment_counts_by_course = {}
+    for e in db.query(EnrollmentDB).all():
+        enrollment_counts_by_course[e.course_id] = enrollment_counts_by_course.get(e.course_id, 0) + 1
+
+    popular_courses_list = []
+    for c in courses:
+        e_count = max(c.enrollment_count or 0, enrollment_counts_by_course.get(c.id, 0))
+        popular_courses_list.append({
+            "id": c.id,
+            "title": c.title,
+            "category": c.category or "General",
+            "instructor_name": c.instructor_name or "Faculty",
+            "level": c.level or "Intermediate",
+            "rating": c.rating or 0.0,
+            "enrollments": e_count,
+            "status": c.status or "published"
+        })
+        
+    popular_courses_list.sort(key=lambda x: x["enrollments"], reverse=True)
+    popular_courses = popular_courses_list[:10]
     
     return {
         "total_users": total_users,
+        "total_students": total_students,
+        "total_instructors": total_instructors,
+        "total_admins": total_admins,
+        "total_courses": total_courses,
+        "published_courses": published_courses,
+        "draft_courses": draft_courses,
         "total_enrollments": total_enrollments,
         "completed_enrollments": completed_enrollments,
+        "active_enrollments": active_enrollments,
+        "completion_rate": completion_rate,
         "system_completion_rate": completion_rate,
-        "total_assessments_taken": attempts_count,
+        "paid_enrollments_count": paid_enrollments_count,
+        "total_revenue": total_revenue,
         "popular_courses": popular_courses
     }
+
+@app.get("/admin/reports/popular-courses")
+def get_admin_popular_courses(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    courses = db.query(CourseDB).all()
+    enrollments = db.query(EnrollmentDB).all()
+    payments = db.query(PaymentDB).filter(func.lower(PaymentDB.status) == "successful").all()
+    
+    enrollment_counts = {}
+    completed_counts = {}
+    progress_sums = {}
+    revenue_sums = {}
+    
+    for e in enrollments:
+        cid = e.course_id
+        enrollment_counts[cid] = enrollment_counts.get(cid, 0) + 1
+        if e.status == "completed" or (e.progress_percentage or 0) >= 100:
+            completed_counts[cid] = completed_counts.get(cid, 0) + 1
+        progress_sums[cid] = progress_sums.get(cid, 0) + (e.progress_percentage or 0)
+        
+    for p in payments:
+        if p.course_id:
+            revenue_sums[p.course_id] = revenue_sums.get(p.course_id, 0.0) + (p.amount or 0.0)
+            
+    result = []
+    for c in courses:
+        cid = c.id
+        e_count = max(c.enrollment_count or 0, enrollment_counts.get(cid, 0))
+        comp_count = completed_counts.get(cid, 0)
+        avg_prog = round(progress_sums[cid] / e_count, 1) if e_count > 0 else 0.0
+        rev = round(revenue_sums.get(cid, 0.0), 2)
+        
+        result.append({
+            "id": c.id,
+            "title": c.title,
+            "category": c.category or "General",
+            "instructor": c.instructor_name or "Faculty",
+            "level": c.level or "Intermediate",
+            "enrollments": e_count,
+            "completed": comp_count,
+            "avg_progress": avg_prog,
+            "rating": round(c.rating or 4.8, 1),
+            "revenue": rev,
+            "status": c.status or "published"
+        })
+        
+    result.sort(key=lambda x: x["enrollments"], reverse=True)
+    return {"courses": result}
+
+@app.get("/admin/reports/enrollments")
+def get_admin_enrollments_report(
+    course_id: Optional[Union[int, str]] = None,
+    student_id: Optional[Union[int, str]] = None,
+    status: Optional[str] = None,
+    date_range: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = 1,
+    limit: int = 25,
+    user: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    query = db.query(EnrollmentDB)
+    
+    if course_id and str(course_id).lower() != "all":
+        try:
+            query = query.filter(EnrollmentDB.course_id == int(course_id))
+        except ValueError:
+            pass
+            
+    if student_id and str(student_id).lower() != "all":
+        try:
+            query = query.filter(EnrollmentDB.user_id == int(student_id))
+        except ValueError:
+            pass
+            
+    if status and status.lower() != "all":
+        st = status.lower()
+        if st in ["completed", "complete"]:
+            query = query.filter((func.lower(EnrollmentDB.status) == "completed") | (EnrollmentDB.progress_percentage >= 100))
+        elif st in ["in_progress", "in progress"]:
+            query = query.filter((func.lower(EnrollmentDB.status) != "completed") & (EnrollmentDB.progress_percentage < 100) & (EnrollmentDB.progress_percentage > 0))
+        elif st in ["not_started", "not started"]:
+            query = query.filter(EnrollmentDB.progress_percentage == 0)
+
+    # Load users & courses for fast joining
+    users_dict = {u.id: u for u in db.query(UserDB).all()}
+    courses_dict = {c.id: c for c in db.query(CourseDB).all()}
+    
+    all_enrollments = query.order_by(EnrollmentDB.id.desc()).all()
+    
+    items = []
+    for e in all_enrollments:
+        u = users_dict.get(e.user_id)
+        c = courses_dict.get(e.course_id)
+        
+        student_name = u.full_name if u else f"Student #{e.user_id}"
+        student_email = u.email if u else "N/A"
+        course_title = c.title if c else f"Course #{e.course_id}"
+        instructor_name = c.instructor_name if c else "Faculty"
+        
+        # Search filter match
+        if search:
+            kw = search.lower()
+            if kw not in student_name.lower() and kw not in student_email.lower() and kw not in course_title.lower() and kw not in instructor_name.lower():
+                continue
+                
+        pct = e.progress_percentage or 0
+        norm_status = "Completed" if (e.status == "completed" or pct >= 100) else ("In Progress" if pct > 0 else "Not Started")
+        
+        items.append({
+            "id": e.id,
+            "student_id": e.user_id,
+            "student_name": student_name,
+            "student_email": student_email,
+            "course_id": e.course_id,
+            "course_title": course_title,
+            "instructor_name": instructor_name,
+            "enrolled_at": e.enrolled_at or "Recent",
+            "progress_percentage": pct,
+            "status": norm_status,
+            "completed_lessons": e.completed_lessons or 0,
+            "last_accessed": e.last_accessed or e.enrolled_at or "Recent"
+        })
+        
+    total_count = len(items)
+    start = (page - 1) * limit
+    paginated_items = items[start:start + limit]
+    
+    return {
+        "items": paginated_items,
+        "total": total_count,
+        "page": page,
+        "limit": limit
+    }
+
+@app.get("/admin/reports/course-performance")
+def get_admin_course_performance(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    courses = db.query(CourseDB).all()
+    enrollments = db.query(EnrollmentDB).all()
+    
+    enrollments_by_course = {}
+    completed_by_course = {}
+    progress_by_course = {}
+    
+    for e in enrollments:
+        cid = e.course_id
+        enrollments_by_course[cid] = enrollments_by_course.get(cid, 0) + 1
+        pct = e.progress_percentage or 0
+        if e.status == "completed" or pct >= 100:
+            completed_by_course[cid] = completed_by_course.get(cid, 0) + 1
+        progress_by_course[cid] = progress_by_course.get(cid, 0) + pct
+        
+    result = []
+    for c in courses:
+        cid = c.id
+        total_enr = max(c.enrollment_count or 0, enrollments_by_course.get(cid, 0))
+        comp = completed_by_course.get(cid, 0)
+        in_prog = max(0, total_enr - comp)
+        comp_rate = round((comp / total_enr * 100), 1) if total_enr > 0 else 0.0
+        avg_prog = round((progress_by_course.get(cid, 0) / total_enr), 1) if total_enr > 0 else 0.0
+        
+        result.append({
+            "course_id": c.id,
+            "title": c.title,
+            "category": c.category or "General",
+            "instructor": c.instructor_name or "Faculty",
+            "enrollments": total_enr,
+            "completed": comp,
+            "in_progress": in_prog,
+            "completion_rate": comp_rate,
+            "avg_progress": avg_prog
+        })
+        
+    result.sort(key=lambda x: x["enrollments"], reverse=True)
+    return {"courses": result}
+
+@app.get("/admin/reports/student-progress")
+def get_admin_student_progress_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    students = db.query(UserDB).filter(func.lower(UserDB.role) == "student").all()
+    profiles = {p.user_id: p for p in db.query(ProfileDB).all()}
+    enrollments = db.query(EnrollmentDB).all()
+    
+    enr_by_student = {}
+    for e in enrollments:
+        enr_by_student.setdefault(e.user_id, []).append(e)
+        
+    result = []
+    for s in students:
+        p = profiles.get(s.id)
+        s_enrs = enr_by_student.get(s.id, [])
+        total_enr = len(s_enrs)
+        completed = sum(1 for e in s_enrs if e.status == "completed" or (e.progress_percentage or 0) >= 100)
+        in_progress = max(0, total_enr - completed)
+        avg_prog = round(sum(e.progress_percentage or 0 for e in s_enrs) / total_enr, 1) if total_enr > 0 else 0.0
+        
+        last_act = "Never"
+        if s_enrs:
+            valid_dates = [e.last_accessed or e.enrolled_at for e in s_enrs if (e.last_accessed or e.enrolled_at)]
+            if valid_dates:
+                last_act = max(valid_dates)
+                
+        result.append({
+            "student_id": s.id,
+            "name": s.full_name,
+            "email": s.email,
+            "career_goal": (p.career_goal if p else None) or "Not set",
+            "enrolled_courses": total_enr,
+            "completed_courses": completed,
+            "in_progress_courses": in_progress,
+            "avg_progress": avg_prog,
+            "last_activity": last_act
+        })
+        
+    result.sort(key=lambda x: x["enrolled_courses"], reverse=True)
+    return {"students": result}
+
+@app.get("/admin/reports/instructors")
+def get_admin_instructors_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    instructors = db.query(UserDB).filter(func.lower(UserDB.role) == "instructor").all()
+    courses = db.query(CourseDB).all()
+    enrollments = db.query(EnrollmentDB).all()
+    
+    courses_by_instructor = {}
+    for c in courses:
+        if c.instructor_id:
+            courses_by_instructor.setdefault(c.instructor_id, []).append(c)
+            
+    enrollments_by_course = {}
+    completed_by_course = {}
+    for e in enrollments:
+        enrollments_by_course[e.course_id] = enrollments_by_course.get(e.course_id, 0) + 1
+        if e.status == "completed" or (e.progress_percentage or 0) >= 100:
+            completed_by_course[e.course_id] = completed_by_course.get(e.course_id, 0) + 1
+
+    result = []
+    for inst in instructors:
+        inst_courses = courses_by_instructor.get(inst.id, [])
+        published = sum(1 for c in inst_courses if (c.status or "").lower() == "published")
+        total_enr = sum(max(c.enrollment_count or 0, enrollments_by_course.get(c.id, 0)) for c in inst_courses)
+        total_comp = sum(completed_by_course.get(c.id, 0) for c in inst_courses)
+        
+        ratings = [c.rating for c in inst_courses if c.rating and c.rating > 0]
+        avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 4.8
+        
+        result.append({
+            "instructor_id": inst.id,
+            "name": inst.full_name,
+            "email": inst.email,
+            "courses_created": len(inst_courses),
+            "published_courses": published,
+            "total_enrollments": total_enr,
+            "completed_enrollments": total_comp,
+            "avg_rating": avg_rating
+        })
+        
+    result.sort(key=lambda x: x["total_enrollments"], reverse=True)
+    return {"instructors": result}
+
+@app.get("/admin/reports/payments")
+def get_admin_payments_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    payments = db.query(PaymentDB).order_by(PaymentDB.id.desc()).all()
+    users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
+    courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
+    
+    items = []
+    successful_count = 0
+    failed_count = 0
+    total_revenue = 0.0
+    
+    for p in payments:
+        st = (p.status or "Successful").capitalize()
+        if st == "Successful":
+            successful_count += 1
+            total_revenue += (p.amount or 0.0)
+        elif st in ["Failed", "Cancelled"]:
+            failed_count += 1
+            
+        items.append({
+            "id": p.id,
+            "transaction_id": p.transaction_id or f"TXN-{p.id}",
+            "student_name": users_dict.get(p.user_id, f"Student #{p.user_id}"),
+            "course_title": courses_dict.get(p.course_id, f"Course #{p.course_id}"),
+            "amount": round(p.amount or 0.0, 2),
+            "currency": p.currency or "INR",
+            "payment_method": p.payment_method or "Card",
+            "status": st,
+            "created_at": p.created_at or "Recent"
+        })
+        
+    return {
+        "items": items,
+        "successful_count": successful_count,
+        "failed_count": failed_count,
+        "total_revenue": round(total_revenue, 2)
+    }
+
+@app.get("/admin/reports/recommendations")
+def get_admin_recommendations_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    recs = db.query(RecommendationDB).order_by(RecommendationDB.id.desc()).all()
+    users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
+    courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
+    
+    items = []
+    students_set = set()
+    enrolled_count = 0
+    
+    for r in recs:
+        students_set.add(r.student_id)
+        if (r.status or "").lower() == "enrolled":
+            enrolled_count += 1
+            
+        items.append({
+            "id": r.id,
+            "student_id": r.student_id,
+            "student_name": users_dict.get(r.student_id, f"Student #{r.student_id}"),
+            "course_id": r.course_id,
+            "course_title": courses_dict.get(r.course_id, f"Course #{r.course_id}"),
+            "recommendation_reason": r.recommendation_reason or "Skill & Career Fit Match",
+            "recommendation_score": round((r.recommendation_score or 0.8) * 100, 1),
+            "status": r.status or "Recommended",
+            "generated_at": r.generated_at or "Recent"
+        })
+        
+    return {
+        "items": items,
+        "total_recommendations": len(recs),
+        "students_receiving_recommendations": len(students_set),
+        "enrolled_from_rec_count": enrolled_count
+    }
+
+@app.get("/admin/analytics/overview")
+def get_admin_analytics_overview(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    # Active students: Students who have enrolled in courses or updated progress
+    student_ids_with_enrollment = db.query(EnrollmentDB.user_id).distinct().all()
+    active_student_ids = {sid[0] for sid in student_ids_with_enrollment}
+    active_students_count = len(active_student_ids)
+    
+    enrollments = db.query(EnrollmentDB).all()
+    total_enrollments = len(enrollments)
+    completed_enrollments = sum(1 for e in enrollments if e.status == "completed" or (e.progress_percentage or 0) >= 100)
+    completion_rate = round((completed_enrollments / total_enrollments * 100), 1) if total_enrollments > 0 else 0.0
+    avg_progress = round(sum(e.progress_percentage or 0 for e in enrollments) / total_enrollments, 1) if total_enrollments > 0 else 0.0
+    
+    courses = db.query(CourseDB).all()
+    published_courses = sum(1 for c in courses if (c.status or "").lower() == "published")
+    ratings = [c.rating for c in courses if c.rating and c.rating > 0]
+    avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else 4.8
+    
+    # Generate dynamic factual insights
+    insights = []
+    if courses:
+        top_course = max(courses, key=lambda c: c.enrollment_count or 0)
+        if top_course and (top_course.enrollment_count or 0) > 0:
+            insights.append(f"'{top_course.title}' currently leads the platform with {top_course.enrollment_count} total enrollments.")
+            
+    if total_enrollments > 0:
+        insights.append(f"{completed_enrollments} of {total_enrollments} total course enrollments have reached 100% completion ({completion_rate}% completion rate).")
+    else:
+        insights.append("No student course enrollments recorded yet.")
+        
+    categories_list = db.query(CourseDB.category, func.count(CourseDB.id)).group_by(CourseDB.category).all()
+    if categories_list:
+        top_cat = max(categories_list, key=lambda x: x[1])
+        if top_cat and top_cat[0]:
+            insights.append(f"Category '{top_cat[0]}' holds the largest curriculum volume with {top_cat[1]} active course offerings.")
+            
+    successful_payments = db.query(PaymentDB).filter(func.lower(PaymentDB.status) == "successful").all()
+    if successful_payments:
+        rev_total = sum(p.amount for p in successful_payments)
+        insights.append(f"Platform total verified revenue stands at ₹{rev_total:,.2f} across {len(successful_payments)} successful transactions.")
+        
+    total_students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).count()
+    total_instructors = db.query(UserDB).filter(UserDB.role.in_(["Instructor", "INSTRUCTOR", "instructor"])).count()
+    total_courses = len(courses)
+
+    return {
+        "total_students": total_students,
+        "total_instructors": total_instructors,
+        "total_courses": total_courses,
+        "active_students": active_students_count,
+        "total_enrollments": total_enrollments,
+        "completion_rate": completion_rate,
+        "avg_course_progress": avg_progress,
+        "published_courses": published_courses,
+        "avg_course_rating": avg_rating,
+        "insights": insights
+    }
+
+@app.get("/admin/analytics/charts")
+def get_admin_analytics_charts(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    courses = db.query(CourseDB).all()
+    enrollments = db.query(EnrollmentDB).all()
+    users = db.query(UserDB).all()
+    payments = db.query(PaymentDB).filter(func.lower(PaymentDB.status) == "successful").all()
+    profiles = db.query(ProfileDB).all()
+    recs = db.query(RecommendationDB).all()
+    reviews = db.query(ReviewDB).all()
+    
+    # 1. User distribution
+    students_cnt = sum(1 for u in users if (u.role or "").lower() == "student")
+    instructors_cnt = sum(1 for u in users if (u.role or "").lower() == "instructor")
+    admins_cnt = sum(1 for u in users if (u.role or "").lower() == "admin")
+    
+    # 2. Courses by category
+    category_counts = {}
+    for c in courses:
+        cat = c.category or "Uncategorized"
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+        
+    # 3. Courses by difficulty
+    difficulty_counts = {"Beginner": 0, "Intermediate": 0, "Advanced": 0}
+    for c in courses:
+        lvl = (c.level or "Intermediate").capitalize()
+        if lvl in difficulty_counts:
+            difficulty_counts[lvl] += 1
+        else:
+            difficulty_counts["Intermediate"] += 1
+            
+    # 4. Student enrollment status
+    status_counts = {"Not Started": 0, "In Progress": 0, "Completed": 0}
+    for e in enrollments:
+        pct = e.progress_percentage or 0
+        if e.status == "completed" or pct >= 100:
+            status_counts["Completed"] += 1
+        elif pct > 0:
+            status_counts["In Progress"] += 1
+        else:
+            status_counts["Not Started"] += 1
+            
+    # 5. Rating distribution (from reviews or courses)
+    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    if reviews:
+        for r in reviews:
+            star = min(5, max(1, int(r.rating or 5)))
+            rating_counts[star] += 1
+    else:
+        for c in courses:
+            if c.rating:
+                star = min(5, max(1, int(round(c.rating))))
+                rating_counts[star] += 1
+
+    # 6. Popular courses (Top 10)
+    course_enr_map = {c.title: max(c.enrollment_count or 0, sum(1 for e in enrollments if e.course_id == c.id)) for c in courses}
+    sorted_popular = sorted(course_enr_map.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # 7. Completion rate by course
+    course_comp_map = {}
+    for c in courses:
+        c_enrs = [e for e in enrollments if e.course_id == c.id]
+        c_total = max(c.enrollment_count or 0, len(c_enrs))
+        c_comp = sum(1 for e in c_enrs if e.status == "completed" or (e.progress_percentage or 0) >= 100)
+        rate = round((c_comp / c_total * 100), 1) if c_total > 0 else 0.0
+        course_comp_map[c.title] = rate
+        
+    sorted_completion = sorted(course_comp_map.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    # 8. Monthly Revenue
+    revenue_by_month = {}
+    for p in payments:
+        date_str = p.created_at or ""
+        month = date_str[:7] if len(date_str) >= 7 else "Recent"
+        revenue_by_month[month] = revenue_by_month.get(month, 0.0) + (p.amount or 0.0)
+        
+    # 9. Recommendation distribution
+    rec_counts_by_course = {}
+    courses_dict = {c.id: c.title for c in courses}
+    for r in recs:
+        title = courses_dict.get(r.course_id, f"Course #{r.course_id}")
+        rec_counts_by_course[title] = rec_counts_by_course.get(title, 0) + 1
+    sorted_recs = sorted(rec_counts_by_course.items(), key=lambda x: x[1], reverse=True)[:8]
+
+    # 10. Skills & Career Goals insights
+    skill_counts = {}
+    goal_counts = {}
+    for p in profiles:
+        if p.career_goal:
+            goal_counts[p.career_goal] = goal_counts.get(p.career_goal, 0) + 1
+        if p.skills and isinstance(p.skills, list):
+            for sk in p.skills:
+                sk_name = sk.get("name") if isinstance(sk, dict) else str(sk)
+                if sk_name:
+                    skill_counts[sk_name] = skill_counts.get(sk_name, 0) + 1
+                    
+    sorted_skills = sorted(skill_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+    sorted_goals = sorted(goal_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+
+    # 11. Enrollment Trend (by date/month)
+    enrollment_trend_dict = {}
+    for e in enrollments:
+        d_str = e.enrolled_at or ""
+        m_str = d_str[:7] if len(d_str) >= 7 else "Recent"
+        enrollment_trend_dict[m_str] = enrollment_trend_dict.get(m_str, 0) + 1
+    sorted_trend = sorted(enrollment_trend_dict.items(), key=lambda x: x[0])
+
+    return {
+        "user_distribution": {
+            "Students": students_cnt,
+            "Instructors": instructors_cnt,
+            "Admins": admins_cnt
+        },
+        "courses_by_category": category_counts,
+        "courses_by_difficulty": difficulty_counts,
+        "enrollment_status": status_counts,
+        "rating_distribution": rating_counts,
+        "popular_courses": [{"title": k, "enrollments": v} for k, v in sorted_popular],
+        "completion_rate_by_course": [{"title": k, "rate": v} for k, v in sorted_completion],
+        "monthly_revenue": [{"month": k, "amount": round(v, 2)} for k, v in sorted(revenue_by_month.items())],
+        "recommendation_distribution": [{"title": k, "count": v} for k, v in sorted_recs],
+        "skills_insights": [{"skill": k, "count": v} for k, v in sorted_skills],
+        "career_goals_insights": [{"goal": k, "count": v} for k, v in sorted_goals],
+        "enrollment_trend": [{"month": k, "count": v} for k, v in sorted_trend]
+    }
+
+@app.get("/admin/reports/export")
+def export_admin_report_csv(
+    report_type: str = Query(..., alias="type"),
+    user: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import Response
+    import csv
+    import io
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    rt = report_type.lower()
+    
+    if rt == "users":
+        writer.writerow(["ID", "Name", "Email", "Role", "Status", "Created At"])
+        for u in db.query(UserDB).all():
+            writer.writerow([u.id, u.full_name, u.email, u.role, "Active" if u.is_active else "Disabled", u.created_at or ""])
+    elif rt == "courses":
+        writer.writerow(["ID", "Title", "Category", "Instructor", "Level", "Price", "Enrollments", "Status", "Rating"])
+        for c in db.query(CourseDB).all():
+            writer.writerow([c.id, c.title, c.category or "General", c.instructor_name or "", c.level or "", c.price or 0.0, c.enrollment_count or 0, c.status or "", c.rating or 0.0])
+    elif rt == "enrollments":
+        writer.writerow(["Enrollment ID", "Student ID", "Student Name", "Course Title", "Enrolled At", "Progress %", "Status"])
+        users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
+        courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
+        for e in db.query(EnrollmentDB).all():
+            writer.writerow([e.id, e.user_id, users_dict.get(e.user_id, ""), courses_dict.get(e.course_id, ""), e.enrolled_at or "", e.progress_percentage or 0, e.status or ""])
+    elif rt == "payments":
+        writer.writerow(["Transaction ID", "Student Name", "Course Title", "Amount", "Currency", "Method", "Status", "Date"])
+        users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
+        courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
+        for p in db.query(PaymentDB).all():
+            writer.writerow([p.transaction_id or f"TXN-{p.id}", users_dict.get(p.user_id, ""), courses_dict.get(p.course_id, ""), p.amount or 0.0, p.currency or "INR", p.payment_method or "Card", p.status or "Successful", p.created_at or ""])
+    elif rt == "student_progress":
+        writer.writerow(["Student ID", "Name", "Email", "Enrolled Courses", "Completed Courses", "Avg Progress %"])
+        students = db.query(UserDB).filter(func.lower(UserDB.role) == "student").all()
+        enrollments = db.query(EnrollmentDB).all()
+        enr_map = {}
+        for e in enrollments:
+            enr_map.setdefault(e.user_id, []).append(e)
+        for s in students:
+            s_enrs = enr_map.get(s.id, [])
+            t_cnt = len(s_enrs)
+            c_cnt = sum(1 for e in s_enrs if e.status == "completed" or (e.progress_percentage or 0) >= 100)
+            a_prog = round(sum(e.progress_percentage or 0 for e in s_enrs) / t_cnt, 1) if t_cnt > 0 else 0.0
+            writer.writerow([s.id, s.full_name, s.email, t_cnt, c_cnt, a_prog])
+    else:
+        raise HTTPException(status_code=400, detail="Invalid report export type.")
+        
+    csv_content = output.getvalue()
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=smartlearn_{rt}_report.csv"}
+    )
+
 
 
 # --- UNIFIED DASHBOARD SUMMARY ROUTES ---
@@ -4955,6 +5755,430 @@ def get_admin_dashboard_summary(
         "recent_courses": recent_courses,
         "category_distribution": cat_distribution,
         "popular_courses": popular_courses
+    }
+
+# --- ADMIN RECOMMENDATION MANAGEMENT APIs ---
+
+@app.get("/admin/recommendations")
+def get_admin_recommendations(
+    search: Optional[str] = Query(None),
+    student_id: Optional[int] = Query(None),
+    course_id: Optional[int] = Query(None),
+    category: Optional[str] = Query(None),
+    career_goal: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    min_score: Optional[float] = Query(None),
+    date: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    query = db.query(RecommendationDB, UserDB, CourseDB)\
+        .join(UserDB, RecommendationDB.student_id == UserDB.id)\
+        .join(CourseDB, RecommendationDB.course_id == CourseDB.id)
+        
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            (UserDB.full_name.ilike(term)) |
+            (UserDB.email.ilike(term)) |
+            (CourseDB.title.ilike(term))
+        )
+        
+    if student_id:
+        query = query.filter(RecommendationDB.student_id == student_id)
+        
+    if course_id:
+        query = query.filter(RecommendationDB.course_id == course_id)
+        
+    if category and category.strip() and category.lower() != "all":
+        query = query.filter(CourseDB.category.ilike(f"%{category.strip()}%"))
+        
+    if status and status.strip() and status.lower() != "all":
+        query = query.filter(RecommendationDB.status.ilike(status.strip()))
+        
+    if min_score is not None:
+        query = query.filter(RecommendationDB.recommendation_score >= min_score)
+        
+    if date and date.strip():
+        query = query.filter(RecommendationDB.generated_at.startswith(date.strip()))
+        
+    if career_goal and career_goal.strip() and career_goal.lower() != "all":
+        query = query.join(ProfileDB, ProfileDB.user_id == UserDB.id)\
+            .filter((ProfileDB.career_goal.ilike(f"%{career_goal.strip()}%")) | (ProfileDB.secondary_career_goal.ilike(f"%{career_goal.strip()}%")))
+
+    total_records = query.count()
+    total_pages = (total_records + limit - 1) // limit if limit > 0 else 1
+    
+    offset = (page - 1) * limit
+    results = query.order_by(RecommendationDB.recommendation_score.desc(), RecommendationDB.id.desc()).offset(offset).limit(limit).all()
+    
+    records = []
+    for rec, user_obj, course_obj in results:
+        records.append({
+            "id": rec.id,
+            "student_id": user_obj.id,
+            "student_name": user_obj.full_name,
+            "student_email": user_obj.email,
+            "course_id": course_obj.id,
+            "course_title": course_obj.title,
+            "category": course_obj.category,
+            "difficulty_level": course_obj.level or "Intermediate",
+            "recommendation_score": round(rec.recommendation_score, 1),
+            "recommendation_reason": rec.recommendation_reason or "Profile match",
+            "generated_at": rec.generated_at,
+            "status": rec.status or "Recommended",
+            "scores_breakdown": rec.scores_breakdown or {},
+            "matching_skills": rec.matching_skills or [],
+            "missing_skills": rec.missing_skills or [],
+            "matching_interests": rec.matching_interests or [],
+            "matching_career_goals": rec.matching_career_goals or []
+        })
+        
+    return {
+        "total": total_records,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+        "records": records
+    }
+
+@app.get("/admin/recommendations/stats")
+def get_admin_recommendations_stats(
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    total_records = db.query(func.count(RecommendationDB.id)).scalar() or 0
+    students_with_recs = db.query(func.count(func.distinct(RecommendationDB.student_id))).scalar() or 0
+    recommended_courses_count = db.query(func.count(func.distinct(RecommendationDB.course_id))).scalar() or 0
+    
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    generated_today = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.generated_at.startswith(today_str)).scalar() or 0
+    
+    accepted_enrolled = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.status.in_(["Enrolled", "Completed"])).scalar() or 0
+    wishlisted_count = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.status == "Wishlisted").scalar() or 0
+    
+    conversion_rate = round((accepted_enrolled / total_records * 100), 1) if total_records > 0 else 0.0
+    
+    return {
+        "total_recommendation_records": total_records,
+        "students_with_recommendations": students_with_recs,
+        "recommended_courses_count": recommended_courses_count,
+        "recommendations_generated_today": generated_today,
+        "accepted_enrolled_count": accepted_enrolled,
+        "wishlisted_count": wishlisted_count,
+        "enrollment_conversion_rate": conversion_rate
+    }
+
+@app.get("/admin/recommendations/analytics")
+def get_admin_recommendations_analytics(
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    course_stats = db.query(
+        CourseDB.id, CourseDB.title, CourseDB.category, CourseDB.level,
+        func.count(RecommendationDB.id).label("rec_count"),
+        func.avg(RecommendationDB.recommendation_score).label("avg_score")
+    ).join(RecommendationDB, CourseDB.id == RecommendationDB.course_id)\
+     .group_by(CourseDB.id)\
+     .order_by(text("rec_count DESC"))\
+     .limit(6).all()
+     
+    most_recommended_courses = []
+    for c_id, title, cat, level, cnt, avg_s in course_stats:
+        enrolled_cnt = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.course_id == c_id, RecommendationDB.status.in_(["Enrolled", "Completed"])).scalar() or 0
+        most_recommended_courses.append({
+            "course_id": c_id,
+            "title": title,
+            "category": cat,
+            "level": level or "Intermediate",
+            "recommendation_count": cnt,
+            "avg_score": round(float(avg_s or 0.0), 1),
+            "enrolled_count": enrolled_cnt
+        })
+
+    cat_stats = db.query(
+        CourseDB.category,
+        func.count(RecommendationDB.id).label("rec_count")
+    ).join(RecommendationDB, CourseDB.id == RecommendationDB.course_id)\
+     .group_by(CourseDB.category)\
+     .order_by(text("rec_count DESC")).all()
+     
+    most_recommended_categories = [{"category": cat or "General", "count": cnt} for cat, cnt in cat_stats]
+
+    student_stats = db.query(
+        UserDB.id, UserDB.full_name, UserDB.email,
+        func.count(RecommendationDB.id).label("rec_count")
+    ).join(RecommendationDB, UserDB.id == RecommendationDB.student_id)\
+     .group_by(UserDB.id)\
+     .order_by(text("rec_count DESC"))\
+     .limit(5).all()
+     
+    students_receiving_most = [{"student_id": s_id, "name": name, "email": email, "count": cnt} for s_id, name, email, cnt in student_stats]
+
+    goal_stats = db.query(
+        ProfileDB.career_goal,
+        func.count(RecommendationDB.id).label("rec_count")
+    ).join(UserDB, ProfileDB.user_id == UserDB.id)\
+     .join(RecommendationDB, UserDB.id == RecommendationDB.student_id)\
+     .group_by(ProfileDB.career_goal)\
+     .order_by(text("rec_count DESC")).all()
+     
+    recs_by_career_goal = [{"career_goal": g or "Unspecified", "count": cnt} for g, cnt in goal_stats]
+
+    diff_stats = db.query(
+        CourseDB.level,
+        func.count(RecommendationDB.id).label("rec_count")
+    ).join(RecommendationDB, CourseDB.id == RecommendationDB.course_id)\
+     .group_by(CourseDB.level).all()
+     
+    recs_by_difficulty = [{"level": lvl or "Intermediate", "count": cnt} for lvl, cnt in diff_stats]
+
+    total_recs = db.query(func.count(RecommendationDB.id)).scalar() or 0
+    enrolled_recs = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.status.in_(["Enrolled", "Completed"])).scalar() or 0
+    completed_recs = db.query(func.count(RecommendationDB.id)).filter(RecommendationDB.status == "Completed").scalar() or 0
+    
+    enrollment_conversion_pct = round((enrolled_recs / total_recs * 100), 1) if total_recs > 0 else 0.0
+    completion_conversion_pct = round((completed_recs / total_recs * 100), 1) if total_recs > 0 else 0.0
+
+    return {
+        "most_recommended_courses": most_recommended_courses,
+        "most_recommended_categories": most_recommended_categories,
+        "students_receiving_most": students_receiving_most,
+        "recs_by_career_goal": recs_by_career_goal,
+        "recs_by_difficulty": recs_by_difficulty,
+        "total_recommendations": total_recs,
+        "enrollment_conversion": {
+            "count": enrolled_recs,
+            "percentage": enrollment_conversion_pct
+        },
+        "completion_conversion": {
+            "count": completed_recs,
+            "percentage": completion_conversion_pct
+        }
+    }
+
+@app.get("/admin/recommendations/export")
+def export_admin_recommendations_csv(
+    search: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    career_goal: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    min_score: Optional[float] = Query(None),
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from fastapi.responses import Response
+    import csv
+    import io
+
+    query = db.query(RecommendationDB, UserDB, CourseDB)\
+        .join(UserDB, RecommendationDB.student_id == UserDB.id)\
+        .join(CourseDB, RecommendationDB.course_id == CourseDB.id)
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter((UserDB.full_name.ilike(term)) | (UserDB.email.ilike(term)) | (CourseDB.title.ilike(term)))
+    if category and category.strip() and category.lower() != "all":
+        query = query.filter(CourseDB.category.ilike(f"%{category.strip()}%"))
+    if career_goal and career_goal.strip() and career_goal.lower() != "all":
+        query = query.join(ProfileDB, ProfileDB.user_id == UserDB.id)\
+            .filter((ProfileDB.career_goal.ilike(f"%{career_goal.strip()}%")) | (ProfileDB.secondary_career_goal.ilike(f"%{career_goal.strip()}%")))
+    if status and status.strip() and status.lower() != "all":
+        query = query.filter(RecommendationDB.status.ilike(status.strip()))
+    if min_score is not None:
+        query = query.filter(RecommendationDB.recommendation_score >= min_score)
+
+    results = query.order_by(RecommendationDB.recommendation_score.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Recommendation ID", "Student Name", "Student Email",
+        "Recommended Course", "Category", "Difficulty",
+        "Match Score (%)", "Recommendation Reason", "Generated Date", "Status"
+    ])
+
+    for rec, user_obj, course_obj in results:
+        writer.writerow([
+            rec.id, user_obj.full_name, user_obj.email,
+            course_obj.title, course_obj.category, course_obj.level or "Intermediate",
+            round(rec.recommendation_score, 1), rec.recommendation_reason or "", rec.generated_at or "", rec.status or "Recommended"
+        ])
+
+    csv_data = output.getvalue()
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=recommendations_report.csv"}
+    )
+
+@app.get("/admin/recommendations/student/{student_id}")
+def get_admin_student_recommendations(
+    student_id: int,
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    student = db.query(UserDB).filter(UserDB.id == student_id).first()
+    if not student or (student.role or '').capitalize() != "Student":
+        raise HTTPException(status_code=404, detail="Student user not found.")
+
+    sync_student_recommendations(db, student_id)
+    
+    recs = db.query(RecommendationDB, CourseDB)\
+        .join(CourseDB, RecommendationDB.course_id == CourseDB.id)\
+        .filter(RecommendationDB.student_id == student_id)\
+        .order_by(RecommendationDB.recommendation_score.desc()).all()
+
+    records = []
+    for rec, course in recs:
+        records.append({
+            "id": rec.id,
+            "course_id": course.id,
+            "course_title": course.title,
+            "category": course.category,
+            "difficulty_level": course.level or "Intermediate",
+            "recommendation_score": round(rec.recommendation_score, 1),
+            "recommendation_reason": rec.recommendation_reason,
+            "status": rec.status,
+            "generated_at": rec.generated_at,
+            "scores_breakdown": rec.scores_breakdown or {}
+        })
+
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == student_id).first()
+
+    return {
+        "student": {
+            "id": student.id,
+            "name": student.full_name,
+            "email": student.email,
+            "career_goal": profile.career_goal if profile else None,
+            "skills_count": len(profile.skills or []) if profile else 0
+        },
+        "total_recommendations": len(records),
+        "records": records
+    }
+
+@app.post("/admin/recommendations/regenerate/{student_id}")
+def regenerate_admin_recommendations_for_student(
+    student_id: int,
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    student = db.query(UserDB).filter(UserDB.id == student_id).first()
+    if not student or (student.role or '').capitalize() != "Student":
+        raise HTTPException(status_code=404, detail="Student user not found.")
+
+    updated = sync_student_recommendations(db, student_id, force=True)
+    return {
+        "status": "success",
+        "message": f"Successfully regenerated {len(updated)} recommendation records for {student.full_name}.",
+        "student_id": student_id,
+        "count": len(updated)
+    }
+
+@app.post("/admin/recommendations/regenerate-all")
+def regenerate_admin_recommendations_all(
+    payload: Optional[RegenerateRecommendationsPayload] = None,
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    if payload and payload.student_ids and len(payload.student_ids) > 0:
+        students = db.query(UserDB).filter(UserDB.id.in_(payload.student_ids), UserDB.role.in_(["Student", "STUDENT", "student"])).all()
+    else:
+        students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).all()
+
+    total_records = 0
+    for s in students:
+        updated = sync_student_recommendations(db, s.id, force=True)
+        total_records += len(updated)
+
+    return {
+        "status": "success",
+        "message": f"Regenerated recommendations for {len(students)} students ({total_records} total recommendation records refreshed).",
+        "students_processed": len(students),
+        "total_records_updated": total_records
+    }
+
+@app.get("/admin/recommendations/{recommendation_id}")
+def get_admin_recommendation_details(
+    recommendation_id: int,
+    admin: UserDB = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    rec = db.query(RecommendationDB).filter(RecommendationDB.id == recommendation_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation record not found.")
+
+    student = db.query(UserDB).filter(UserDB.id == rec.student_id).first()
+    course = db.query(CourseDB).filter(CourseDB.id == rec.course_id).first()
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == rec.student_id).first() if student else None
+
+    if not student or not course:
+        raise HTTPException(status_code=404, detail="Associated student or course record not found.")
+
+    attempts_db = db.query(AssessmentAttemptDB).filter(AssessmentAttemptDB.user_id == student.id).all()
+    assessment_results = []
+    for a in attempts_db:
+        assess = db.query(AssessmentDB).filter(AssessmentDB.id == a.assessment_id).first()
+        assessment_results.append({
+            "title": assess.title if assess else "Assessment",
+            "category": assess.category if assess else "",
+            "score": a.score,
+            "percentage": a.percentage,
+            "performance_level": a.performance_level
+        })
+
+    student_skills = (profile.skills or []) if profile else []
+    career_goal = (profile.career_goal or "Full Stack Web Developer") if profile else "Full Stack Web Developer"
+    
+    db_courses = get_db_course_dicts(db)
+    db_goals = [{"title": g.title, "required_skills": g.required_skills} for g in db.query(CareerGoalDB).all()]
+    skill_gap_res = SkillGapAnalyzer.analyze(
+        career_goal=career_goal,
+        student_skills=student_skills,
+        courses_catalog=db_courses,
+        db_career_goals=db_goals
+    )
+    identified_gaps = skill_gap_res.get("missing_skills", [])
+
+    return {
+        "id": rec.id,
+        "recommendation_score": round(rec.recommendation_score, 1),
+        "scores_breakdown": rec.scores_breakdown or {},
+        "recommendation_reason": rec.recommendation_reason or "Profile match",
+        "matching_skills": rec.matching_skills or [],
+        "missing_skills": rec.missing_skills or [],
+        "matching_interests": rec.matching_interests or [],
+        "matching_career_goals": rec.matching_career_goals or [],
+        "status": rec.status or "Recommended",
+        "generated_at": rec.generated_at,
+        "updated_at": rec.updated_at,
+        "student_info": {
+            "id": student.id,
+            "name": student.full_name,
+            "email": student.email,
+            "career_goal": profile.career_goal if profile else None,
+            "secondary_career_goal": profile.secondary_career_goal if profile else None,
+            "skills": profile.skills if profile else [],
+            "interests": profile.interests if profile else [],
+            "education": profile.education if profile else [],
+            "learning_style": profile.learning_style if profile else None,
+            "assessment_results": assessment_results,
+            "identified_skill_gaps": identified_gaps
+        },
+        "course_info": {
+            "id": course.id,
+            "title": course.title,
+            "instructor": course.instructor_name or "Faculty",
+            "category": course.category,
+            "difficulty": course.level or "Intermediate",
+            "duration": course.duration or "30 hours",
+            "skills_taught": course.skills or [],
+            "target_roles": course.target_roles or [],
+            "prerequisites": course.prerequisites or []
+        }
     }
 
 
