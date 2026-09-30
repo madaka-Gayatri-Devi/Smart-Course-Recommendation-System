@@ -857,18 +857,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Mobile Sidebar Toggle & Logout
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('dashboardSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (menuToggle && sidebar && overlay) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
-        });
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+    if (typeof setupMobileSidebarToggle === 'function') {
+        setupMobileSidebarToggle();
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {

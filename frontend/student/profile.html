@@ -158,6 +158,7 @@
                         <button type="button" class="profile-tab-btn" data-tab="education"><i class="fa-solid fa-graduation-cap"></i> Education</button>
                         <button type="button" class="profile-tab-btn" data-tab="experience"><i class="fa-solid fa-briefcase"></i> Experience</button>
                         <button type="button" class="profile-tab-btn" data-tab="projects"><i class="fa-solid fa-diagram-project"></i> Projects</button>
+                        <button type="button" class="profile-tab-btn" data-tab="security"><i class="fa-solid fa-shield-halved"></i> Account & Security</button>
                     </div>
 
                     <div class="profile-tab-content">
@@ -329,6 +330,57 @@
                             </div>
                         </div>
 
+                        <!-- TAB 8: Account & Security -->
+                        <div class="profile-tab-pane" id="tab-security">
+                            <h3 style="font-size: 16px; margin-bottom: 0.5rem; color: var(--dark-navy);">Account Security & Authentication</h3>
+                            <p style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.5rem;">Manage your password and security options. Two-Factor Authentication is disabled by default for convenient login.</p>
+
+                            <!-- 2FA Control Card -->
+                            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 250px;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <i class="fa-solid fa-shield-halved" style="color: #4F46E5; font-size: 1.1rem;"></i>
+                                        <h4 style="font-size: 15px; color: #1E1B4B; margin: 0;">Two-Factor Authentication (2FA)</h4>
+                                        <span id="twoFactorStatusBadge" class="badge" style="background: #F1F5F9; color: #64748B; font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid #CBD5E1;">Disabled (Default)</span>
+                                    </div>
+                                    <p style="font-size: 12.5px; color: #64748B; margin: 0;">Require a 6-digit verification OTP dispatched to your registered email when logging in.</p>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 12px; font-weight: 600; color: #64748B;">OFF</span>
+                                    <label class="toggle-switch" style="position: relative; display: inline-block; width: 48px; height: 26px;">
+                                        <input type="checkbox" id="twoFactorToggle" style="opacity: 0; width: 0; height: 0;">
+                                        <span class="toggle-slider" style="position: absolute; cursor: pointer; inset: 0; background-color: #CBD5E1; transition: .3s; border-radius: 26px;"></span>
+                                    </label>
+                                    <span style="font-size: 12px; font-weight: 600; color: #4F46E5;">ON</span>
+                                </div>
+                            </div>
+
+                            <!-- Change Password Form -->
+                            <div style="background: white; border: 1px solid #EDE9FE; border-radius: 12px; padding: 1.5rem;">
+                                <h4 style="font-size: 15px; color: var(--dark-navy); margin-bottom: 1rem;"><i class="fa-solid fa-lock mr-2" style="color: var(--primary-purple);"></i> Change Password</h4>
+                                <form id="studentChangePasswordForm">
+                                    <div class="form-group mb-3">
+                                        <label style="font-size: 13px; font-weight: 600;">Current Password</label>
+                                        <input type="password" class="form-control" id="changeOldPassword" placeholder="••••••••" required>
+                                    </div>
+                                    <div class="form-row mb-3">
+                                        <div class="form-group">
+                                            <label style="font-size: 13px; font-weight: 600;">New Password</label>
+                                            <input type="password" class="form-control" id="changeNewPassword" placeholder="Minimum 8 characters" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-size: 13px; font-weight: 600;">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="changeConfirmPassword" placeholder="••••••••" required>
+                                        </div>
+                                    </div>
+                                    <div id="changePasswordMsg" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 13px;"></div>
+                                    <button type="submit" class="btn-primary" id="changePasswordSubmitBtn" style="padding: 0.65rem 1.5rem; font-size: 13px;">
+                                        <i class="fa-solid fa-key mr-1"></i> Update Password
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -496,8 +548,92 @@
                 renderExperienceList(profileData.experience || []);
                 // Projects List
                 renderProjectsList(profileData.projects || []);
+
+                // Security Settings & 2FA initialization
+                try {
+                    const secSettings = await window.api.getSecuritySettings();
+                    const is2FAEnabled = secSettings.two_factor_enabled;
+                    const toggle = document.getElementById('twoFactorToggle');
+                    const badge = document.getElementById('twoFactorStatusBadge');
+                    if (toggle) toggle.checked = is2FAEnabled;
+                    if (badge) {
+                        badge.textContent = is2FAEnabled ? 'Enabled' : 'Disabled (Default)';
+                        badge.style.background = is2FAEnabled ? '#ECFDF5' : '#F1F5F9';
+                        badge.style.color = is2FAEnabled ? '#065F46' : '#64748B';
+                        badge.style.borderColor = is2FAEnabled ? '#A7F3D0' : '#CBD5E1';
+                    }
+                } catch (_) {}
             }
         }
+
+        // 2FA Toggle switch listener
+        document.getElementById('twoFactorToggle')?.addEventListener('change', async (e) => {
+            const enabled = e.target.checked;
+            try {
+                const res = await window.api.toggle2FA(enabled);
+                const badge = document.getElementById('twoFactorStatusBadge');
+                if (badge) {
+                    badge.textContent = enabled ? 'Enabled' : 'Disabled (Default)';
+                    badge.style.background = enabled ? '#ECFDF5' : '#F1F5F9';
+                    badge.style.color = enabled ? '#065F46' : '#64748B';
+                    badge.style.borderColor = enabled ? '#A7F3D0' : '#CBD5E1';
+                }
+                showAlert(res.message || `2FA has been ${enabled ? 'enabled' : 'disabled'}.`);
+            } catch (err) {
+                e.target.checked = !enabled;
+                showAlert('Failed to update 2FA status: ' + (err.message || 'Error'), false);
+            }
+        });
+
+        // Change Password form handler
+        document.getElementById('studentChangePasswordForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPass = document.getElementById('changeOldPassword').value;
+            const newPass = document.getElementById('changeNewPassword').value;
+            const confirmPass = document.getElementById('changeConfirmPassword').value;
+            const msgBox = document.getElementById('changePasswordMsg');
+            const submitBtn = document.getElementById('changePasswordSubmitBtn');
+
+            if (newPass.length < 8) {
+                msgBox.style.display = 'block';
+                msgBox.style.background = '#FEF2F2';
+                msgBox.style.color = '#991B1B';
+                msgBox.style.border = '1px solid #FCA5A5';
+                msgBox.textContent = 'New password must be at least 8 characters long.';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                msgBox.style.display = 'block';
+                msgBox.style.background = '#FEF2F2';
+                msgBox.style.color = '#991B1B';
+                msgBox.style.border = '1px solid #FCA5A5';
+                msgBox.textContent = 'New passwords do not match.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+
+            try {
+                const res = await window.api.changePassword(oldPass, newPass);
+                msgBox.style.display = 'block';
+                msgBox.style.background = '#ECFDF5';
+                msgBox.style.color = '#065F46';
+                msgBox.style.border = '1px solid #A7F3D0';
+                msgBox.textContent = res.message || 'Password changed successfully.';
+                document.getElementById('studentChangePasswordForm').reset();
+            } catch (err) {
+                msgBox.style.display = 'block';
+                msgBox.style.background = '#FEF2F2';
+                msgBox.style.color = '#991B1B';
+                msgBox.style.border = '1px solid #FCA5A5';
+                msgBox.textContent = err.message || 'Failed to change password.';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-key mr-1"></i> Update Password';
+            }
+        });
 
         // Skills rendering
         const editSkillsGrid = document.getElementById('editSelectedSkillsGrid');

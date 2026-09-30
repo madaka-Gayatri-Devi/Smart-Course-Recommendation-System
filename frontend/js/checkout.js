@@ -38,19 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Menu toggle for mobile
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('dashboardSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (menuToggle && sidebar && overlay) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        });
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+    if (typeof setupMobileSidebarToggle === 'function') {
+        setupMobileSidebarToggle();
     }
 
     // 2. Parse course ID from URL query params

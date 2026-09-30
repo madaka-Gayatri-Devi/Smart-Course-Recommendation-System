@@ -105,6 +105,51 @@ const api = {
         return res.json();
     },
 
+    async verify2FA(preAuthToken, otpCode) {
+        const res = await safeFetch(`${API_URL}/auth/verify-2fa`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pre_auth_token: preAuthToken, otp_code: otpCode })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, '2FA Verification failed');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async resend2FA(preAuthToken) {
+        const res = await safeFetch(`${API_URL}/auth/resend-2fa`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pre_auth_token: preAuthToken })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to resend 2FA code');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async toggle2FA(enabled) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/auth/2fa/toggle?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ enabled: !!enabled })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to toggle 2FA');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+
     async googleLogin(idToken, role = 'Student') {
         const res = await safeFetch(`${API_URL}/auth/google-login`, {
             method: 'POST',
@@ -1721,6 +1766,403 @@ const api = {
         if (params.status) queryParams.append('status', params.status);
         if (params.min_score !== undefined && params.min_score !== null && params.min_score !== '') queryParams.append('min_score', params.min_score);
         return `${API_URL}/admin/recommendations/export?${queryParams.toString()}`;
+    },
+
+    // --- REAL-TIME CHAT & COMMUNICATION ---
+
+    async getConversations() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch conversations');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async createConversation(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getConversationDetails(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch conversation details');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async leaveConversation(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}?token=${encodeURIComponent(token)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to leave conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getMessages(convId, limit = 50, beforeId = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        let url = `${API_URL}/chat/conversations/${convId}/messages?token=${encodeURIComponent(token)}&limit=${limit}`;
+        if (beforeId) url += `&before_id=${beforeId}`;
+
+        const res = await safeFetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch messages');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async sendMessage(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to send message');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async editMessage(messageId, content) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}?token=${encodeURIComponent(token)}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to edit message');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteMessage(messageId, forEveryone = true) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}?token=${encodeURIComponent(token)}&for_everyone=${forEveryone}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete message');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async toggleReaction(messageId, emoji) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}/reactions?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ emoji })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update reaction');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async forwardMessage(messageId, targetConversationIds) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}/forward?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ target_conversation_ids: targetConversationIds })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to forward message');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async markConversationRead(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}/read?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to mark read');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async uploadChatFile(file) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await safeFetch(`${API_URL}/chat/upload?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to upload attachment');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAllowedContacts() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/allowed-contacts?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch allowed contacts');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async togglePinConversation(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}/pin?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to pin conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async toggleMuteConversation(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}/mute?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to mute conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async searchChat(query) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/search?token=${encodeURIComponent(token)}&q=${encodeURIComponent(query)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to search chat');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getGroupMembers(groupId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${groupId}/members?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch group members');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getSharedContent(convId, q = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        let url = `${API_URL}/chat/conversations/${convId}/shared-content?token=${encodeURIComponent(token)}`;
+        if (q) url += `&q=${encodeURIComponent(q)}`;
+
+        const res = await safeFetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Unable to load shared files. Please try again.');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getContactInfo(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}/contact-info?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Unable to load contact info. Please try again.');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async clearConversation(convId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/conversations/${convId}/clear?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to clear chat history');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    // --- SECURITY & ACCOUNT SETTINGS ---
+
+    async getSecuritySettings() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/auth/security-settings?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch security settings');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getSecuritySettings() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/auth/security-settings?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch security settings');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async toggle2FA(enabled, currentPassword = '') {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/auth/2fa/toggle?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ enabled: !!enabled, current_password: currentPassword })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to toggle 2FA');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async changePassword(currentPassword, newPassword) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/auth/change-password?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to change password');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async forgotPassword(email) {
+        const res = await safeFetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to request password reset');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async resetPasswordWithToken(token, newPassword) {
+        const res = await safeFetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: token, new_password: newPassword })
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to reset password');
+            throw new Error(msg);
+        }
+        return res.json();
     },
 
     // --- UNIVERSAL LOGOUT ---

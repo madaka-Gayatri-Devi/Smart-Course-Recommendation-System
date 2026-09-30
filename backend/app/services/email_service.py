@@ -28,10 +28,14 @@ def _clean_env(key: str, default: str = "") -> str:
         val = val.strip().strip('"').strip("'")
     return val
 
-SMTP_HOST = _clean_env("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(_clean_env("SMTP_PORT", "587"))
-SMTP_USERNAME = _clean_env("SMTP_USERNAME", "")
-SMTP_PASSWORD = _clean_env("SMTP_PASSWORD", "")
+SMTP_HOST = _clean_env("EMAIL_HOST", _clean_env("SMTP_HOST", "smtp.gmail.com"))
+SMTP_PORT_VAL = _clean_env("EMAIL_PORT", _clean_env("SMTP_PORT", "587"))
+try:
+    SMTP_PORT = int(SMTP_PORT_VAL)
+except (ValueError, TypeError):
+    SMTP_PORT = 587
+SMTP_USERNAME = _clean_env("EMAIL_USERNAME", _clean_env("SMTP_USERNAME", ""))
+SMTP_PASSWORD = _clean_env("EMAIL_PASSWORD", _clean_env("SMTP_PASSWORD", ""))
 EMAIL_FROM = _clean_env("EMAIL_FROM", "SmartLearn <noreply@smartlearn.edu>")
 SMTP_TLS = _clean_env("SMTP_TLS", "true").lower() in ["true", "1", "yes"]
 

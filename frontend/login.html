@@ -55,58 +55,129 @@
         <!-- Right Panel: Form -->
         <div class="auth-form-panel">
             <div class="auth-card">
-                <div class="auth-header">
-                    <h2>Welcome Back</h2>
-                    <p>Log in to continue your learning journey.</p>
-                </div>
                 
                 <div id="authAlertBanner" style="display:none; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; font-weight: 500;"></div>
 
-                <form id="loginForm" class="auth-form" novalidate>
-                    <div class="form-group">
-                        <label for="loginEmail">Email Address</label>
-                        <div class="input-wrapper">
-                            <i class="fa-regular fa-envelope"></i>
-                            <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
-                        </div>
-                        <span class="form-error" id="loginEmailError"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="loginPassword">Password</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-lock"></i>
-                            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
-                            <i class="fa-regular fa-eye toggle-password" style="cursor: pointer;"></i>
-                        </div>
-                        <span class="form-error" id="loginPasswordError"></span>
-                    </div>
-                    
-                    <div class="form-options">
-                        <label class="custom-checkbox">
-                            <input type="checkbox" id="rememberMe">
-                            <span class="checkmark"></span>
-                            Remember Me
-                        </label>
-                        <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary auth-btn" id="loginSubmitBtn">Log In</button>
-
-                    <div class="auth-divider" style="display: flex; align-items: center; margin: 1.25rem 0; color: #888; font-size: 0.85rem;">
-                        <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
-                        <span style="padding: 0 10px;">OR</span>
-                        <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
+                <!-- STEP 1: Email + Password Login Form -->
+                <div id="loginStep1">
+                    <div class="auth-header">
+                        <h2>Welcome Back</h2>
+                        <p>Log in to continue your learning journey.</p>
                     </div>
 
-                    <button type="button" class="btn btn-secondary auth-btn google-btn" id="googleLoginBtn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; font-weight: 600; padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                        <i class="fa-brands fa-google" style="color: #4285F4; font-size: 1.1rem;"></i>
-                        <span>Continue with Google</span>
-                    </button>
-                    
-                    <p class="auth-switch" style="margin-top: 1rem;">Don't have an account? <a href="register.html">Sign Up</a></p>
-                </form>
+                    <form id="loginForm" class="auth-form" novalidate>
+                        <div class="form-group">
+                            <label for="loginEmail">Email Address</label>
+                            <div class="input-wrapper">
+                                <i class="fa-regular fa-envelope"></i>
+                                <input type="email" id="loginEmail" placeholder="you@example.com" required autocomplete="email">
+                            </div>
+                            <span class="form-error" id="loginEmailError"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <div class="input-wrapper">
+                                <i class="fa-solid fa-lock"></i>
+                                <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+                                <i class="fa-regular fa-eye toggle-password" style="cursor: pointer;"></i>
+                            </div>
+                            <span class="form-error" id="loginPasswordError"></span>
+                        </div>
+                        
+                        <div class="form-options">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="rememberMe">
+                                <span class="checkmark"></span>
+                                Remember Me
+                            </label>
+                            <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary auth-btn" id="loginSubmitBtn">Log In</button>
+
+                        <div class="auth-divider" style="display: flex; align-items: center; margin: 1.25rem 0; color: #888; font-size: 0.85rem;">
+                            <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
+                            <span style="padding: 0 10px;">OR</span>
+                            <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
+                        </div>
+
+                        <button type="button" class="btn btn-secondary auth-btn google-btn" id="googleLoginBtn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; font-weight: 600; padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                            <i class="fa-brands fa-google" style="color: #4285F4; font-size: 1.1rem;"></i>
+                            <span>Continue with Google</span>
+                        </button>
+                        
+                        <p class="auth-switch" style="margin-top: 1rem;">Don't have an account? <a href="register.html">Sign Up</a></p>
+                    </form>
+                </div>
+
+                <!-- STEP 2: 2FA OTP Verification Section (Hidden by default) -->
+                <div id="loginStep2" style="display: none;">
+                    <div class="auth-header" style="margin-bottom: 1.25rem; text-align: center;">
+                        <div style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); color: #4F46E5; display: inline-flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 0.75rem; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h2 style="font-size: 1.4rem; margin-bottom: 0.35rem; color: #1E1B4B;">Enter Verification Code</h2>
+                        <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 0.5rem;">Verification code sent to:</p>
+                        <div id="maskedEmailDisplay" style="background: #F1F5F9; color: #4338CA; padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 700; display: inline-block; font-size: 0.9rem; border: 1px solid #E2E8F0;">
+                            g******@gmail.com
+                        </div>
+                    </div>
+
+                    <form id="twoFactorForm" class="auth-form" novalidate>
+                        <div class="form-group" style="margin-bottom: 1.25rem;">
+                            <label for="otpCodeInput" style="font-weight: 600; font-size: 0.9rem; display: block; text-align: center; margin-bottom: 0.5rem;">6-Digit OTP</label>
+                            <div class="input-wrapper" style="max-width: 280px; margin: 0 auto;">
+                                <input type="text" id="otpCodeInput" placeholder="• • • • • •" maxlength="6" pattern="[0-9]*" autocomplete="one-time-code" style="letter-spacing: 10px; font-size: 1.4rem; font-weight: 800; text-align: center; height: 50px; border: 2px solid #CBD5E1; border-radius: 10px; color: #1E1B4B; background: #FAFAFC;" required>
+                            </div>
+                            <span class="form-error" id="otpCodeError" style="text-align: center; display: block; margin-top: 0.4rem;"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary auth-btn" id="verifyOtpBtn" style="width: 100%; padding: 0.8rem; font-size: 1rem; font-weight: 700;">Verify OTP</button>
+
+                        <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: #64748B;">
+                            <p style="margin-bottom: 0.35rem;">Didn't receive the code?</p>
+                            <button type="button" id="resendOtpBtn" style="background: none; border: none; color: #4F46E5; font-weight: 700; cursor: pointer; padding: 4px 8px; text-decoration: underline;" disabled>Resend OTP (30s)</button>
+                        </div>
+
+                        <a href="#" id="backToLoginLink" style="display: block; text-align: center; margin-top: 1.25rem; color: #64748B; font-size: 0.85rem; font-weight: 500; text-decoration: none;">
+                            <i class="fa-solid fa-arrow-left"></i> Back to Login
+                        </a>
+                    </form>
+                </div>
+
             </div>
+        </div>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div id="forgotPasswordModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background: white; border-radius: 16px; width: 100%; max-width: 440px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative;">
+            <button type="button" id="closeForgotModalBtn" style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 18px; color: #64748B; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div style="text-align: center; margin-bottom: 1.25rem;">
+                <div style="width: 52px; height: 52px; border-radius: 50%; background: #EEF2FF; color: #4F46E5; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 style="font-size: 1.25rem; color: #1E1B4B; margin-bottom: 0.35rem;">Forgot Password?</h3>
+                <p style="font-size: 0.85rem; color: #64748B;">Enter your registered email address to receive a password reset link.</p>
+            </div>
+
+            <form id="forgotPasswordModalForm" novalidate>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="forgotModalEmail" style="font-weight: 600; font-size: 0.85rem;">Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fa-regular fa-envelope"></i>
+                        <input type="email" id="forgotModalEmail" placeholder="you@example.com" required>
+                    </div>
+                    <span class="form-error" id="forgotModalEmailError"></span>
+                </div>
+
+                <div id="forgotModalAlert" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; word-break: break-word;"></div>
+
+                <button type="submit" class="btn btn-primary auth-btn" id="sendForgotLinkBtn" style="width: 100%;">Send Reset Link</button>
+            </form>
         </div>
     </div>
 

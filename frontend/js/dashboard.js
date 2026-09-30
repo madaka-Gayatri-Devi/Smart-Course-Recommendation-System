@@ -46,20 +46,9 @@ function setupHeaderAndSidebar(user) {
         });
     }
 
-    // Sidebar Mobile Drawer Toggle
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('dashboardSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    if (menuToggle && sidebar && overlay) {
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        });
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+    // Sidebar Mobile Drawer Toggle handled by setupMobileSidebarToggle in auth.js
+    if (typeof setupMobileSidebarToggle === 'function') {
+        setupMobileSidebarToggle();
     }
 }
 

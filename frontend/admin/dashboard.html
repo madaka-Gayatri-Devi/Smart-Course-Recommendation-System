@@ -43,8 +43,11 @@
             <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-lightbulb"></i> <span class="nav-text">Recommendations</span></a>
             <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
-            <div class="nav-label">ACCOUNT</div>
+            <div class="nav-label">COMMUNICATION & GOVERNANCE</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Chat & Group Management</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
             <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+
+            <div class="nav-label">ACCOUNT</div>
             <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
         </nav>
         
@@ -317,21 +320,54 @@
                     </div>
                 </div>
 
-                <!-- 13. PLATFORM SETTINGS -->
+                <!-- 13. PLATFORM SETTINGS & ACCOUNT SECURITY -->
                 <div class="dashboard-card" style="padding: 1.75rem;" id="settings">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-gear mr-1" style="color: #4B5563;"></i> Platform Settings</h3>
+                        <h3 style="font-size: 17px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-gear mr-1" style="color: #4B5563;"></i> Platform Settings & Security</h3>
                     </div>
-                    <div style="font-size: 13px; color: var(--secondary-text);">
+                    <div style="font-size: 13px; color: var(--secondary-text); margin-bottom: 1.25rem;">
                         <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #EDE9FE;">
                             <span>Public Registration:</span>
                             <span class="badge-role student">Enabled (Student/Instructor)</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
-                            <span>Database Version:</span>
-                            <span>SQLite (Live)</span>
+                        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #EDE9FE;">
+                            <span>Database Engine:</span>
+                            <span>SQLite3 (Live Migration Ready)</span>
                         </div>
                     </div>
+
+                    <!-- Admin 2FA Controls -->
+                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                <strong style="font-size: 13.5px; color: #1E1B4B;">Admin 2FA Security</strong>
+                                <span id="admin2FABadge" style="background: #F1F5F9; color: #64748B; font-size: 10px; padding: 2px 6px; border-radius: 99px; border: 1px solid #CBD5E1;">Disabled (Default)</span>
+                            </div>
+                            <span style="font-size: 11.5px; color: #64748B;">Dispatches 6-digit OTP verification upon Admin login.</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; font-weight: 600; color: #64748B;">OFF</span>
+                            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                                <input type="checkbox" id="admin2FAToggle" style="opacity: 0; width: 0; height: 0;">
+                                <span class="toggle-slider" style="position: absolute; cursor: pointer; inset: 0; background-color: #CBD5E1; transition: .3s; border-radius: 24px;"></span>
+                            </label>
+                            <span style="font-size: 11px; font-weight: 600; color: #4F46E5;">ON</span>
+                        </div>
+                    </div>
+
+                    <!-- Admin Change Password Form -->
+                    <form id="adminChangePasswordForm">
+                        <h4 style="font-size: 13.5px; color: var(--dark-navy); margin-bottom: 0.75rem;"><i class="fa-solid fa-lock mr-1" style="color: #4F46E5;"></i> Change Admin Password</h4>
+                        <div style="margin-bottom: 0.75rem;">
+                            <input type="password" id="adminOldPassword" class="form-input" style="width:100%; padding:0.65rem; border:1px solid #D1D5DB; border-radius:6px; font-size: 13px;" placeholder="Current Password" required>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+                            <input type="password" id="adminNewPassword" class="form-input" style="width:100%; padding:0.65rem; border:1px solid #D1D5DB; border-radius:6px; font-size: 13px;" placeholder="New Password (min 8)" required>
+                            <input type="password" id="adminConfirmPassword" class="form-input" style="width:100%; padding:0.65rem; border:1px solid #D1D5DB; border-radius:6px; font-size: 13px;" placeholder="Confirm New Password" required>
+                        </div>
+                        <div id="adminPassMsg" style="display:none; padding:0.5rem 0.75rem; border-radius:6px; margin-bottom:0.75rem; font-size:12.5px;"></div>
+                        <button type="submit" id="adminChangePassBtn" class="btn-primary" style="padding:0.5rem 1.25rem; font-size: 12.5px; border:none; cursor:pointer; width: 100%;">Update Admin Password</button>
+                    </form>
                 </div>
             </div>
 
@@ -340,8 +376,95 @@
 
     <!-- Scripts -->
     <script src="../js/api.js"></script>
-    <script src="../js/auth.js"></script>
+    <script src="../js/auth.js?v=20260924_banner_fix"></script>
     <script src="../js/notifications.js"></script>
     <script src="../js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load 2FA status
+            try {
+                const sec = await window.api.getSecuritySettings();
+                const toggle = document.getElementById('admin2FAToggle');
+                const badge = document.getElementById('admin2FABadge');
+                if (toggle) toggle.checked = sec.two_factor_enabled;
+                if (badge) {
+                    badge.textContent = sec.two_factor_enabled ? 'Enabled' : 'Disabled (Default)';
+                    badge.style.background = sec.two_factor_enabled ? '#ECFDF5' : '#F1F5F9';
+                    badge.style.color = sec.two_factor_enabled ? '#065F46' : '#64748B';
+                    badge.style.borderColor = sec.two_factor_enabled ? '#A7F3D0' : '#CBD5E1';
+                }
+            } catch (_) {}
+
+            // Admin 2FA Switch Listener
+            document.getElementById('admin2FAToggle')?.addEventListener('change', async (e) => {
+                const enabled = e.target.checked;
+                try {
+                    const res = await window.api.toggle2FA(enabled);
+                    const badge = document.getElementById('admin2FABadge');
+                    if (badge) {
+                        badge.textContent = enabled ? 'Enabled' : 'Disabled (Default)';
+                        badge.style.background = enabled ? '#ECFDF5' : '#F1F5F9';
+                        badge.style.color = enabled ? '#065F46' : '#64748B';
+                        badge.style.borderColor = enabled ? '#A7F3D0' : '#CBD5E1';
+                    }
+                    alert(res.message || `Admin 2FA has been ${enabled ? 'enabled' : 'disabled'}.`);
+                } catch (err) {
+                    e.target.checked = !enabled;
+                    alert('Failed to update Admin 2FA status: ' + (err.message || 'Error'));
+                }
+            });
+
+            // Admin Change Password Listener
+            document.getElementById('adminChangePasswordForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const oldPass = document.getElementById('adminOldPassword').value;
+                const newPass = document.getElementById('adminNewPassword').value;
+                const confirmPass = document.getElementById('adminConfirmPassword').value;
+                const msgBox = document.getElementById('adminPassMsg');
+                const btn = document.getElementById('adminChangePassBtn');
+
+                if (newPass.length < 8) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = 'New password must be at least 8 characters long.';
+                    return;
+                }
+
+                if (newPass !== confirmPass) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = 'New passwords do not match.';
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = 'Updating...';
+
+                try {
+                    const res = await window.api.changePassword(oldPass, newPass);
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#ECFDF5';
+                    msgBox.style.color = '#065F46';
+                    msgBox.style.border = '1px solid #A7F3D0';
+                    msgBox.textContent = res.message || 'Admin password updated successfully!';
+                    document.getElementById('adminChangePasswordForm').reset();
+                    setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                } catch (err) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = err.message || 'Failed to update Admin password.';
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Update Admin Password';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

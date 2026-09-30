@@ -118,8 +118,30 @@ class UserDB(Base):
     hashed_password = Column(String)
     role = Column(String, default="Student")  # Student, Instructor, Admin
     is_active = Column(Integer, default=1)
+    two_factor_enabled = Column(Integer, default=0)
     firebase_uid = Column(String, nullable=True, index=True)
     created_at = Column(String, nullable=True)
+
+class TwoFactorOTPDB(Base):
+    __tablename__ = "two_factor_otps"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    pre_auth_token = Column(String, unique=True, index=True)
+    otp_hash = Column(String)
+    expires_at = Column(String)
+    attempts = Column(Integer, default=0)
+    is_used = Column(Integer, default=0)
+    created_at = Column(String)
+
+class PasswordResetTokenDB(Base):
+    __tablename__ = "password_reset_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    token = Column(String, unique=True, index=True)
+    expires_at = Column(String)
+    is_used = Column(Integer, default=0)
+    created_at = Column(String)
+
 
 class ProfileDB(Base):
     __tablename__ = "profiles"
@@ -344,7 +366,29 @@ def run_migrations():
 
     if "recommendations" not in inspector.get_table_names():
         RecommendationDB.__table__.create(bind=engine)
-    
+
+    if "two_factor_otps" not in inspector.get_table_names():
+        TwoFactorOTPDB.__table__.create(bind=engine)
+
+    if "password_reset_tokens" not in inspector.get_table_names():
+        PasswordResetTokenDB.__table__.create(bind=engine)
+
+    # Chat Tables
+    try:
+        from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+    except ImportError:
+        try:
+            from models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+        except ImportError:
+            from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+
+    ConversationDB.__table__.create(bind=engine, checkfirst=True)
+    ConversationMemberDB.__table__.create(bind=engine, checkfirst=True)
+    MessageDB.__table__.create(bind=engine, checkfirst=True)
+    MessageReactionDB.__table__.create(bind=engine, checkfirst=True)
+    MessageAttachmentDB.__table__.create(bind=engine, checkfirst=True)
+    MessageForwardDB.__table__.create(bind=engine, checkfirst=True)
+
     # Profile table migrations
     if "profiles" in inspector.get_table_names():
         profile_cols = [col["name"] for col in inspector.get_columns("profiles")]
@@ -371,6 +415,9 @@ def run_migrations():
         with engine.connect() as conn:
             if "is_active" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1;"))
+                conn.commit()
+            if "two_factor_enabled" not in user_cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 1;"))
                 conn.commit()
             if "created_at" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN created_at VARCHAR;"))
@@ -1256,6 +1303,19 @@ def get_current_instructor(
         )
     return user
 
+def get_current_student(
+    token: Optional[str] = Query(None),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+) -> UserDB:
+    user = get_current_user(token=token, authorization=authorization, db=db)
+    if user.role.upper() != "STUDENT":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Student privileges are required to perform this action."
+        )
+    return user
+
 # --- SCHEMAS ---
 class UserRegister(BaseModel):
     full_name: str
@@ -1266,6 +1326,29 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class Verify2FAPayload(BaseModel):
+    pre_auth_token: str
+    otp_code: str
+
+class Resend2FAPayload(BaseModel):
+    pre_auth_token: str
+
+class Toggle2FAPayload(BaseModel):
+    enabled: bool
+    current_password: Optional[str] = None
+
+class ChangePasswordPayload(BaseModel):
+    current_password: str
+    new_password: str
+
+class ForgotPasswordPayload(BaseModel):
+    email: EmailStr
+
+class ResetPasswordWithTokenPayload(BaseModel):
+    token: str
+    new_password: str
+
 
 class GoogleLoginPayload(BaseModel):
     id_token: str
@@ -1422,6 +1505,17 @@ except Exception:
     except Exception as _nr_err:
         print(f"[SmartLearn] Could not include notifications_router: {_nr_err}")
 
+# --- CHAT ROUTER & WEBSOCKET ---
+try:
+    from app.routers.chat import router as chat_router
+    app.include_router(chat_router)
+except Exception:
+    try:
+        from routers.chat import router as chat_router
+        app.include_router(chat_router)
+    except Exception as _cr_err:
+        print(f"[SmartLearn] Could not include chat_router: {_cr_err}")
+
 @app.websocket("/ws/notifications")
 async def websocket_notifications_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
     if not token:
@@ -1530,6 +1624,77 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if getattr(db_user, "is_active", 1) == 0:
         raise HTTPException(status_code=403, detail="Account is deactivated. Please contact support.")
     
+    is_2fa_enabled = getattr(db_user, "two_factor_enabled", 1) == 1
+    if is_2fa_enabled:
+        import secrets
+        otp_code = str(secrets.randbelow(900000) + 100000)
+        otp_hash = bcrypt.hashpw(otp_code.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        
+        pre_auth_payload = {
+            "sub": db_user.email,
+            "user_id": db_user.id,
+            "type": "2fa_pending",
+            "exp": datetime.utcnow() + timedelta(minutes=5)
+        }
+        pre_auth_token = jwt.encode(pre_auth_payload, SECRET_KEY, algorithm=ALGORITHM)
+        
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        exp_str = (datetime.utcnow() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Save OTP record
+        otp_record = TwoFactorOTPDB(
+            user_id=db_user.id,
+            pre_auth_token=pre_auth_token,
+            otp_hash=otp_hash,
+            expires_at=exp_str,
+            attempts=0,
+            is_used=0,
+            created_at=now_str
+        )
+        db.add(otp_record)
+        db.commit()
+        
+        try:
+            from app.services.email_service import EmailService
+        except ImportError:
+            try:
+                from services.email_service import EmailService
+            except ImportError:
+                from backend.app.services.email_service import EmailService
+        
+        email_subject = "[SmartLearn] Your 2FA Verification Code"
+        email_body_html = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #5B3FE8; margin-bottom: 8px;">SmartLearn Security Verification</h2>
+            <p style="color: #334155;">Hello <strong>{db_user.full_name}</strong>,</p>
+            <p style="color: #334155;">Your two-factor authentication verification code is:</p>
+            <div style="background-color: #f1f5f9; padding: 16px; text-align: center; border-radius: 6px; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b; margin: 20px 0; border: 1px dashed #6366f1;">
+                {otp_code}
+            </div>
+            <p style="color: #64748b; font-size: 13px; margin-top: 16px;">This code will expire in 5 minutes. If you did not request this login, please update your password immediately.</p>
+        </div>
+        """
+        email_body_text = f"Hello {db_user.full_name},\nYour SmartLearn 2FA verification code is: {otp_code}\nThis code will expire in 5 minutes."
+        
+        try:
+            EmailService.send_raw_email(
+                to_email=db_user.email,
+                subject=email_subject,
+                html_content=email_body_html,
+                text_content=email_body_text
+            )
+        except Exception as _mail_err:
+            print(f"[2FA Email Notice] {_mail_err}")
+            
+        print(f"[2FA Security Notice] Generated 2FA OTP for user {db_user.email}: {otp_code}")
+        
+        return {
+            "two_factor_required": True,
+            "pre_auth_token": pre_auth_token,
+            "email": db_user.email,
+            "message": "Two-factor authentication code sent to your email."
+        }
+
     access_token = create_access_token(data={"sub": db_user.email})
     return {
         "id": db_user.id,
@@ -1545,6 +1710,242 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             "role": db_user.role
         }
     }
+
+@app.post("/auth/verify-2fa")
+def verify_2fa(payload: Verify2FAPayload, db: Session = Depends(get_db)):
+    clean_otp = (payload.otp_code or "").strip()
+    if not clean_otp:
+        raise HTTPException(status_code=400, detail="Verification code is required.")
+        
+    try:
+        token_data = jwt.decode(payload.pre_auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if token_data.get("type") != "2fa_pending":
+            raise HTTPException(status_code=401, detail="Invalid verification session state.")
+        user_id = token_data.get("user_id")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Verification session has expired. Please log in again.")
+        
+    db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+        
+    otp_record = db.query(TwoFactorOTPDB).filter(TwoFactorOTPDB.pre_auth_token == payload.pre_auth_token).first()
+    if not otp_record or otp_record.is_used == 1:
+        raise HTTPException(status_code=400, detail="Verification code already used or session is invalid.")
+        
+    if otp_record.attempts >= 5:
+        raise HTTPException(status_code=400, detail="Maximum verification attempts exceeded. Please log in again.")
+        
+    if otp_record.expires_at:
+        try:
+            exp_dt = datetime.strptime(otp_record.expires_at, "%Y-%m-%d %H:%M:%S")
+            if datetime.utcnow() > exp_dt:
+                raise HTTPException(status_code=400, detail="Verification code has expired. Please request a new code.")
+        except (ValueError, TypeError):
+            pass
+        
+    is_valid = verify_password(clean_otp, otp_record.otp_hash)
+    if not is_valid:
+        otp_record.attempts += 1
+        db.commit()
+        remaining = max(0, 5 - otp_record.attempts)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Incorrect verification code. {remaining} attempt(s) remaining."
+        )
+        
+    otp_record.is_used = 1
+    db.commit()
+    
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {
+        "id": db_user.id,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": db_user.role,
+        "full_name": db_user.full_name,
+        "email": db_user.email,
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "full_name": db_user.full_name,
+            "role": db_user.role
+        }
+    }
+
+@app.post("/auth/resend-2fa")
+def resend_2fa(payload: Resend2FAPayload, db: Session = Depends(get_db)):
+    try:
+        token_data = jwt.decode(payload.pre_auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if token_data.get("type") != "2fa_pending":
+            raise HTTPException(status_code=401, detail="Invalid verification session.")
+        user_id = token_data.get("user_id")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Verification session has expired. Please log in again.")
+        
+    db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+        
+    otp_record = db.query(TwoFactorOTPDB).filter(TwoFactorOTPDB.pre_auth_token == payload.pre_auth_token).first()
+    if not otp_record or otp_record.is_used == 1:
+        raise HTTPException(status_code=400, detail="Invalid verification session.")
+        
+    import secrets
+    new_otp_code = str(secrets.randbelow(900000) + 100000)
+    new_otp_hash = bcrypt.hashpw(new_otp_code.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    
+    exp_str = (datetime.utcnow() + timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    otp_record.otp_hash = new_otp_hash
+    otp_record.expires_at = exp_str
+    otp_record.attempts = 0
+    db.commit()
+    
+    try:
+        from app.services.email_service import EmailService
+    except ImportError:
+        try:
+            from services.email_service import EmailService
+        except ImportError:
+            from backend.app.services.email_service import EmailService
+            
+    email_subject = "[SmartLearn] Resent 2FA Verification Code"
+    email_body_html = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #5B3FE8;">SmartLearn Security Verification</h2>
+        <p>Hello {db_user.full_name},</p>
+        <p>Your new two-factor authentication verification code is:</p>
+        <div style="background-color: #f1f5f9; padding: 16px; text-align: center; border-radius: 6px; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b; margin: 20px 0; border: 1px dashed #6366f1;">
+            {new_otp_code}
+        </div>
+        <p style="color: #64748b; font-size: 13px;">This code will expire in 5 minutes.</p>
+    </div>
+    """
+    try:
+        EmailService.send_raw_email(to_email=db_user.email, subject=email_subject, body_html=email_body_html, body_text=f"Your new code: {new_otp_code}")
+    except Exception as _err:
+        pass
+        
+    print(f"[2FA Resend Notice] New 2FA code for user {db_user.email}: {new_otp_code}")
+    return {"message": "A new verification code has been sent to your email."}
+
+@app.get("/auth/security-settings")
+def get_security_settings(user: UserDB = Depends(get_current_user)):
+    return {
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "two_factor_enabled": bool(getattr(user, "two_factor_enabled", 0)),
+        "created_at": user.created_at or "N/A"
+    }
+
+@app.post("/auth/2fa/toggle")
+def toggle_2fa(payload: Toggle2FAPayload, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not payload.enabled and payload.current_password:
+        if not verify_password(payload.current_password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is required to disable 2FA.")
+
+    user.two_factor_enabled = 1 if payload.enabled else 0
+    db.commit()
+    return {
+        "message": f"Two-factor authentication has been {'enabled' if payload.enabled else 'disabled'}.",
+        "two_factor_enabled": bool(user.two_factor_enabled)
+    }
+
+@app.post("/auth/change-password")
+def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not verify_password(payload.current_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect current password.")
+
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    return {"message": "Password changed successfully."}
+
+@app.post("/auth/forgot-password")
+def forgot_password(payload: ForgotPasswordPayload, db: Session = Depends(get_db)):
+    clean_email = payload.email.strip().lower()
+    user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
+    if not user:
+        # Generic response to prevent user enumeration
+        return {"message": "If an account exists with this email, a password reset link has been dispatched."}
+
+    import secrets
+    token_str = secrets.token_urlsafe(32)
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    exp_str = (datetime.utcnow() + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+
+    reset_rec = PasswordResetTokenDB(
+        user_id=user.id,
+        token=token_str,
+        expires_at=exp_str,
+        is_used=0,
+        created_at=now_str
+    )
+    db.add(reset_rec)
+    db.commit()
+
+    reset_link = f"http://localhost:5500/reset-password.html?token={token_str}"
+
+    try:
+        from app.services.email_service import EmailService
+    except ImportError:
+        try:
+            from services.email_service import EmailService
+        except ImportError:
+            from backend.app.services.email_service import EmailService
+
+    email_subject = "[SmartLearn] Password Reset Request"
+    email_body_html = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #5B3FE8;">SmartLearn Password Reset</h2>
+        <p>Hello {user.full_name},</p>
+        <p>We received a request to reset your password. Click the link below to set a new password:</p>
+        <p><a href="{reset_link}" style="background-color: #6366F1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a></p>
+        <p style="color: #64748b; font-size: 13px;">This link will expire in 30 minutes.</p>
+    </div>
+    """
+    try:
+        EmailService.send_raw_email(to_email=user.email, subject=email_subject, body_html=email_body_html, body_text=f"Reset link: {reset_link}")
+    except Exception as _err:
+        pass
+
+    print(f"[Password Reset Link generated for {user.email}]: {reset_link}")
+
+    return {
+        "message": "If an account exists with this email, a password reset link has been dispatched.",
+        "reset_link": reset_link
+    }
+
+@app.post("/auth/reset-password")
+def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends(get_db)):
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+
+    token_rec = db.query(PasswordResetTokenDB).filter(
+        PasswordResetTokenDB.token == payload.token,
+        PasswordResetTokenDB.is_used == 0
+    ).first()
+
+    if not token_rec:
+        raise HTTPException(status_code=400, detail="Invalid or already used password reset token.")
+
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    if token_rec.expires_at < now_str:
+        raise HTTPException(status_code=400, detail="Password reset link has expired. Please request a new one.")
+
+    user = db.query(UserDB).filter(UserDB.id == token_rec.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    token_rec.is_used = 1
+    db.commit()
+
+    return {"message": "Password reset successfully. You can now log in with your new password."}
+
 
 @app.get("/auth/firebase-config")
 @app.get("/config/firebase")

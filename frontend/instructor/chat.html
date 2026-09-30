@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Chat Studio - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20260928_redesign">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20260928_redesign">
+    <link rel="stylesheet" href="../css/chat.css?v=20260928_redesign">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-layout">
+        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+        <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+            <div class="sidebar-glow-1"></div>
+            <div class="sidebar-glow-2"></div>
+
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-label">TEACHING</div>
+                <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+                <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+                <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+                <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+                
+                <div class="nav-label">COMMUNICATION</div>
+                <a href="chat.html" class="nav-item active"><i class="fa-solid fa-comments"></i> <span class="nav-text">Course Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+                <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+                <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+                
+                <div class="nav-label">ACCOUNT</div>
+                <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+                <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                    <div class="sidebar-user-info">
+                        <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                        <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                    </div>
+                </div>
+                <div class="sidebar-footer-links">
+                    <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                    <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN APPLICATION AREA -->
+        <div class="app-main dashboard-main">
+            <!-- Top Bar Header -->
+            <header class="dashboard-topbar app-header">
+                <div class="topbar-left">
+                    <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                    <h2 class="page-title">Instructor Course Communication Studio</h2>
+                </div>
+                
+                <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                    <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="topNotificationBadge" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;"></span>
+                    </a>
+
+                    <div class="profile-dropdown-container" style="position: relative;">
+                        <div class="profile-dropdown" id="topProfileDropdownToggle" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: #FFFFFF; border: 1px solid var(--border-light);">
+                            <div class="avatar" id="topAvatar">IN</div>
+                            <span class="profile-name" id="topName" style="font-size: 13.5px; font-weight: 600; color: var(--dark-navy);">Instructor</span>
+                            <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: var(--secondary-text); margin-left: 2px;"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- CHAT APP WORKSPACE -->
+            <main class="dashboard-content" style="padding: 1rem 1.5rem;">
+                <div class="chat-app-container" id="chatAppContainer">
+                    <!-- LEFT SIDEBAR -->
+                    <div class="chat-sidebar">
+                        <div class="chat-sidebar-header">
+                            <div class="chat-sidebar-top">
+                                <h3 class="chat-sidebar-title"><i class="fa-solid fa-comments"></i> Course Studio</h3>
+                                <button class="chat-new-btn" id="chatNewBtn"><i class="fa-solid fa-plus"></i> New Message</button>
+                            </div>
+                            <div class="chat-search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" class="chat-search-input" id="chatSearchInput" placeholder="Search conversations...">
+                            </div>
+                            <!-- CATEGORY NAVIGATION TABS -->
+                            <div class="chat-category-tabs" id="chatCategoryTabs">
+                                <button type="button" class="chat-cat-tab active" data-cat="chats" title="All Conversations">
+                                    <span>Chats</span>
+                                </button>
+                                <button type="button" class="chat-cat-tab" data-cat="unread" title="Unread Messages Only">
+                                    <span>Unread</span>
+                                    <span class="chat-cat-badge" id="catUnreadBadge" style="display: none;">0</span>
+                                </button>
+                                <button type="button" class="chat-cat-tab" data-cat="groups" title="Teaching Course Groups">
+                                    <span>Groups</span>
+                                    <span class="chat-cat-badge" id="catGroupsBadge" style="display: none;">0</span>
+                                </button>
+                                <button type="button" class="chat-cat-tab" data-cat="personal" title="Direct Student & Admin Messages">
+                                    <span>Personal</span>
+                                    <span class="chat-cat-badge" id="catPersonalBadge" style="display: none;">0</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="chat-conv-list" id="chatConvListContainer">
+                            <!-- Populated dynamically by chat.js -->
+                        </div>
+                    </div>
+
+                    <!-- CENTER CHAT AREA -->
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <div class="chat-header-left">
+                                <button class="chat-mobile-back" id="chatMobileBackBtn"><i class="fa-solid fa-arrow-left"></i></button>
+                                <div class="chat-avatar" id="chatHeaderAvatar">IN</div>
+                                <div class="chat-header-info">
+                                    <h4 class="chat-header-title" id="chatHeaderTitle">Select a course group or student</h4>
+                                    <span class="chat-header-subtitle" id="chatHeaderSubtitle">Message course groups or enrolled students</span>
+                                </div>
+                            </div>
+                            <div class="chat-header-actions">
+                                <span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: #6366F1; font-weight: 600; margin-right: 0.5rem;"></span>
+                            </div>
+                        </div>
+
+                        <!-- MESSAGES CONTAINER -->
+                        <div class="chat-messages-container" id="chatMessagesContainer">
+                            <div style="margin: auto; text-align: center; color: #94A3B8;">
+                                <i class="fa-solid fa-chalkboard-user" style="font-size: 3rem; margin-bottom: 0.75rem; color: #C7D2FE;"></i>
+                                <h3 style="color: #334155; font-weight: 700; margin-bottom: 0.25rem;">Instructor Communication Hub</h3>
+                                <p style="font-size: 0.9rem;">Interact with your course groups or send direct messages to enrolled students.</p>
+                            </div>
+                        </div>
+
+                        <!-- COMPOSER AREA -->
+                        <div class="chat-composer">
+                            <div class="emoji-picker-popup" id="chatEmojiPopup" style="display: none;">
+                                <span class="emoji-option">👍</span>
+                                <span class="emoji-option">❤️</span>
+                                <span class="emoji-option">😂</span>
+                                <span class="emoji-option">😮</span>
+                                <span class="emoji-option">😢</span>
+                                <span class="emoji-option">👏</span>
+                                <span class="emoji-option">🔥</span>
+                                <span class="emoji-option">🎉</span>
+                                <span class="emoji-option">💡</span>
+                                <span class="emoji-option">🎓</span>
+                                <span class="emoji-option">📢</span>
+                                <span class="emoji-option">✅</span>
+                            </div>
+
+                            <input type="file" id="chatFileInput" style="display: none;">
+
+                            <div class="composer-input-row">
+                                <button class="composer-btn" id="chatEmojiBtn" title="Emojis"><i class="fa-regular fa-face-smile"></i></button>
+                                <button class="composer-btn" id="chatAttachBtn" title="Attach file"><i class="fa-solid fa-paperclip"></i></button>
+                                <textarea class="composer-textarea" id="chatComposerTextarea" placeholder="Write a message or announcement..." rows="1"></textarea>
+                                <button class="composer-send-btn" id="chatSendBtn" title="Send message" disabled><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/api.js?v=20260928_redesign"></script>
+    <script src="../js/auth.js?v=20260928_redesign"></script>
+    <script src="../js/chat.js?v=20260928_redesign"></script>
+</body>
+</html>

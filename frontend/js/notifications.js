@@ -45,13 +45,30 @@
         // --- BROWSER DESKTOP NOTIFICATIONS ---
 
         requestDesktopPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission().catch(() => {});
-            }
+            // Do NOT prompt permission automatically on initial load to obey user settings & browser guidelines
         }
 
         showDesktopNotification(data) {
+            console.log("Notification permission:", Notification.permission);
+            console.log("Visibility:", document.visibilityState);
+
             if (!('Notification' in window) || Notification.permission !== 'granted') {
+                return;
+            }
+
+            // Check SmartLearn notification settings
+            const settingsStr = localStorage.getItem('smartlearn_notif_settings');
+            let settings = { desktopNotifs: true, messageNotifs: true, groupNotifs: true };
+            if (settingsStr) {
+                try { settings = Object.assign(settings, JSON.parse(settingsStr)); } catch (_) {}
+            }
+
+            if (!settings.desktopNotifs) {
+                console.log('[DesktopNotif] Suppressed in notifications.js: Settings OFF');
+                return;
+            }
+
+            if (data.type === 'CHAT_MESSAGE' && !settings.messageNotifs && !settings.groupNotifs) {
                 return;
             }
 
@@ -59,8 +76,8 @@
                 const title = data.title || 'SmartLearn Notification';
                 const options = {
                     body: data.message || 'You have a new update.',
-                    icon: '../css/favicon.ico', // fallback
-                    tag: `smartlearn-notif-${data.id || Date.now()}`,
+                    icon: '../css/favicon.ico',
+                    tag: data.reference_id ? `chat-${data.reference_id}` : `smartlearn-notif-${data.id || Date.now()}`,
                     renotify: true
                 };
 
@@ -68,11 +85,14 @@
                 notif.onclick = (e) => {
                     e.preventDefault();
                     window.focus();
-                    if (data.related_course_id) {
+                    if (data.type === 'CHAT_MESSAGE' || data.reference_id) {
+                        window.location.href = 'chat.html';
+                    } else if (data.related_course_id) {
                         window.location.href = `course-details.html?id=${data.related_course_id}`;
                     } else {
                         window.location.href = 'notifications.html';
                     }
+                    notif.close();
                 };
             } catch (e) {
                 console.warn('[Desktop Notification Error]', e);
