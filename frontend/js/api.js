@@ -1881,14 +1881,36 @@ const api = {
     },
 
     async deleteMessage(messageId, forEveryone = true) {
+        if (forEveryone) {
+            return this.deleteMessageForEveryone(messageId);
+        } else {
+            return this.deleteMessageForMe(messageId);
+        }
+    },
+
+    async deleteMessageForMe(messageId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
-        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}?token=${encodeURIComponent(token)}&for_everyone=${forEveryone}`, {
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}/me?token=${encodeURIComponent(token)}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) {
-            const msg = await parseErrorResponse(res, 'Failed to delete message');
+            const msg = await parseErrorResponse(res, 'Failed to delete message for me');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteMessageForEveryone(messageId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}/everyone?token=${encodeURIComponent(token)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete message for everyone');
             throw new Error(msg);
         }
         return res.json();

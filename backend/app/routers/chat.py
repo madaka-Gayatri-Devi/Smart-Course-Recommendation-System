@@ -12,7 +12,7 @@ from jose import jwt, JWTError
 try:
     from app.models.chat import (
         ConversationDB, ConversationMemberDB, MessageDB,
-        MessageReactionDB, MessageAttachmentDB
+        MessageReactionDB, MessageAttachmentDB, MessageUserDeletionDB
     )
     from app.schemas.chat import (
         ConversationResponse, MessageResponse, CreateConversationPayload,
@@ -26,7 +26,7 @@ except ImportError:
     try:
         from models.chat import (
             ConversationDB, ConversationMemberDB, MessageDB,
-            MessageReactionDB, MessageAttachmentDB
+            MessageReactionDB, MessageAttachmentDB, MessageUserDeletionDB
         )
         from schemas.chat import (
             ConversationResponse, MessageResponse, CreateConversationPayload,
@@ -39,7 +39,7 @@ except ImportError:
     except ImportError:
         from backend.app.models.chat import (
             ConversationDB, ConversationMemberDB, MessageDB,
-            MessageReactionDB, MessageAttachmentDB
+            MessageReactionDB, MessageAttachmentDB, MessageUserDeletionDB
         )
         from backend.app.schemas.chat import (
             ConversationResponse, MessageResponse, CreateConversationPayload,
@@ -292,6 +292,36 @@ def delete_message(
         raise HTTPException(status_code=404, detail=str(ve))
 
 
+@router.delete("/messages/{message_id}/me")
+def delete_message_for_me(
+    message_id: int,
+    user=Depends(authenticate_user),
+    db: Session = Depends(get_db_session)
+):
+    try:
+        ChatService.delete_message(db, user, message_id, for_everyone=False)
+        return {"status": "success", "message": "Message deleted for me."}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.delete("/messages/{message_id}/everyone")
+def delete_message_for_everyone(
+    message_id: int,
+    user=Depends(authenticate_user),
+    db: Session = Depends(get_db_session)
+):
+    try:
+        ChatService.delete_message(db, user, message_id, for_everyone=True)
+        return {"status": "success", "message": "Message deleted for everyone."}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
 @router.post("/messages/{message_id}/reactions")
 def toggle_reaction(
     message_id: int,
@@ -435,8 +465,17 @@ def download_chat_file(
 
     if att.message_id > 0:
         msg = db.query(MessageDB).filter(MessageDB.id == att.message_id).first()
-        if msg and not ChatService.can_access_conversation(db, user, msg.conversation_id):
-            raise HTTPException(status_code=403, detail="Access denied to file attachment.")
+        if msg:
+            if msg.is_deleted or msg.deleted_for_everyone:
+                raise HTTPException(status_code=404, detail="File is no longer accessible.")
+            user_del = db.query(MessageUserDeletionDB).filter(
+                MessageUserDeletionDB.message_id == msg.id,
+                MessageUserDeletionDB.user_id == user.id
+            ).first()
+            if user_del:
+                raise HTTPException(status_code=404, detail="File is no longer accessible.")
+            if not ChatService.can_access_conversation(db, user, msg.conversation_id):
+                raise HTTPException(status_code=403, detail="Access denied to file attachment.")
 
     full_path = BASE_DIR / att.file_path.lstrip("/")
     if not full_path.exists():

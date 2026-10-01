@@ -58,9 +58,21 @@ class MessageDB(Base):
     is_deleted = Column(Integer, default=0)
     deleted_for_everyone = Column(Integer, default=0)
     deleted_at = Column(String, nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     is_announcement = Column(Integer, default=0)
     created_at = Column(String, index=True)
     updated_at = Column(String, nullable=True)
+
+
+class MessageUserDeletionDB(Base):
+    __tablename__ = "message_user_deletions"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    deleted_at = Column(String)
+
 
 
 class MessageReactionDB(Base):

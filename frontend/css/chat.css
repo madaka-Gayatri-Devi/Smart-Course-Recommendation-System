@@ -1858,3 +1858,288 @@
     text-align: center;
 }
 
+/* DELETED MESSAGE STYLING */
+.deleted-msg-bubble {
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
+    color: #64748B !important;
+    font-style: italic;
+    padding: 0.65rem 0.95rem !important;
+    border-radius: 14px !important;
+}
+
+.chat-msg-row.outgoing .deleted-msg-bubble {
+    background: #F3EEFF !important;
+    border: 1px solid #E9D5FF !important;
+    color: #6B21A8 !important;
+}
+
+.msg-deleted-content {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.context-divider {
+    height: 1px;
+    background: #E2E8F0;
+    margin: 0.35rem 0;
+}
+
+/* SMARTLEARN DELETE CONFIRMATION MODAL */
+.smartlearn-delete-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 420px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);
+    border: 1px solid #E2E8F0;
+}
+
+.delete-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+}
+
+.delete-modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.delete-modal-header .close-btn {
+    background: #F1F5F9;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.delete-modal-header .close-btn:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+}
+
+.delete-modal-body {
+    margin-bottom: 1.35rem;
+}
+
+.delete-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.delete-modal-footer .btn-cancel {
+    background: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.delete-modal-footer .btn-cancel:hover {
+    background: #E2E8F0;
+    color: #0F172A;
+}
+
+.delete-modal-footer .btn-delete-confirm {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.delete-modal-footer .btn-delete-confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* --- SELECTION TOOLBAR & REFERENCE 1 UI --- */
+.chat-header {
+    position: relative;
+}
+
+.chat-selection-toolbar {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #172033 0%, #2A1B54 100%);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    z-index: 50;
+    animation: fadeIn 0.15s ease-out;
+    border-radius: 16px 16px 0 0;
+}
+
+.chat-selection-toolbar .selection-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-selection-toolbar .selection-btn {
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 1.15rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.chat-selection-toolbar .selection-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.chat-selection-toolbar .selection-count {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.chat-selection-toolbar .selection-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-selection-toolbar .selection-action-btn {
+    background: transparent;
+    border: none;
+    color: #E2E8F0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.chat-selection-toolbar .selection-action-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+.chat-selection-toolbar .selection-action-btn.disabled,
+.chat-selection-toolbar .selection-action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.chat-selection-toolbar .selection-action-btn.selection-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #F87171;
+}
+
+/* MESSAGE HIGHLIGHT WHEN SELECTED */
+.chat-msg-row.is-selected {
+    background: rgba(99, 102, 241, 0.08) !important;
+}
+
+.chat-msg-row.is-selected .chat-msg-bubble {
+    border: 2px solid #6366F1 !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.25) !important;
+}
+
+/* --- REFERENCE 2 DELETE DIALOG MODAL --- */
+.smartlearn-delete-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.smartlearn-delete-dialog-card {
+    background: #181528;
+    border-radius: 24px;
+    padding: 1.75rem 2.25rem 1.5rem;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+.smartlearn-delete-dialog-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    margin: 0 0 1.75rem 0;
+    text-align: left;
+}
+
+.delete-dialog-options {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1.25rem;
+}
+
+.delete-dialog-opt-btn {
+    background: transparent;
+    border: none;
+    color: #C084FC;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.15s ease, opacity 0.15s ease;
+    text-align: right;
+    outline: none;
+}
+
+.delete-dialog-opt-btn:hover {
+    color: #E9D5FF;
+    text-decoration: none;
+}
+
+.delete-dialog-opt-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+
+

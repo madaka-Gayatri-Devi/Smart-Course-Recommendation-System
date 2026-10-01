@@ -50,6 +50,8 @@ class MessageResponse(BaseModel):
     reply_to_message: Optional[Dict[str, Any]] = None
     is_deleted: bool = False
     deleted_for_everyone: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[int] = None
     is_announcement: bool = False
     created_at: str
     reactions: List[MessageReactionSchema] = []

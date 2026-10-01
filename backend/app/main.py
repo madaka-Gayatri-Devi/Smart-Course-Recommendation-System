@@ -375,12 +375,12 @@ def run_migrations():
 
     # Chat Tables
     try:
-        from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+        from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
     except ImportError:
         try:
-            from models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+            from models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
         except ImportError:
-            from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+            from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
 
     ConversationDB.__table__.create(bind=engine, checkfirst=True)
     ConversationMemberDB.__table__.create(bind=engine, checkfirst=True)
@@ -388,6 +388,17 @@ def run_migrations():
     MessageReactionDB.__table__.create(bind=engine, checkfirst=True)
     MessageAttachmentDB.__table__.create(bind=engine, checkfirst=True)
     MessageForwardDB.__table__.create(bind=engine, checkfirst=True)
+    MessageUserDeletionDB.__table__.create(bind=engine, checkfirst=True)
+
+    if "messages" in inspector.get_table_names():
+        msg_cols = [col["name"] for col in inspector.get_columns("messages")]
+        with engine.connect() as conn:
+            if "deleted_by" not in msg_cols:
+                try:
+                    conn.execute(text("ALTER TABLE messages ADD COLUMN deleted_by INTEGER;"))
+                    conn.commit()
+                except Exception:
+                    pass
 
     # Profile table migrations
     if "profiles" in inspector.get_table_names():

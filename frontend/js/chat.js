@@ -21,6 +21,7 @@
 
     // Deduplication set for notifications to prevent duplicate alerts for the same message ID
     let processedNotificationIds = new Set();
+    let selectedMsgIds = new Set();
 
     // --- CATEGORY & FILTER STATE ---
     let activeCategory = 'chats'; // 'chats', 'unread', 'groups', 'personal'
@@ -160,15 +161,30 @@
             }
             loadConversations();
         } else if (type === 'MESSAGE_DELETED') {
-            if (data.conversation_id === activeConvId) {
-                const msg = activeMessages.find(m => m.id === data.message_id);
-                if (msg) {
-                    msg.content = 'This message was deleted';
-                    msg.is_deleted = true;
+            const { message_id, conversation_id, for_everyone, deleted_for_user_id } = data;
+            if (conversation_id === activeConvId) {
+                if (for_everyone) {
+                    const msg = activeMessages.find(m => m.id === message_id);
+                    if (msg) {
+                        msg.content = 'This message was deleted';
+                        msg.is_deleted = true;
+                        msg.deleted_for_everyone = true;
+                        msg.attachments = [];
+                        msg.reactions = [];
+                        msg.reply_to_message = null;
+                    }
                     renderMessages(activeMessages);
+                } else {
+                    if (currentUser && String(deleted_for_user_id) === String(currentUser.id)) {
+                        activeMessages = activeMessages.filter(m => m.id !== message_id);
+                        renderMessages(activeMessages);
+                    }
                 }
             }
             loadConversations();
+            if (document.getElementById('chatSharedPanel')) {
+                window.openSharedContentPanel(activeConvId, activeSharedTab);
+            }
         } else if (type === 'REACTION_UPDATED') {
             if (data.conversation_id === activeConvId) {
                 loadActiveMessages(activeConvId);
@@ -514,6 +530,7 @@
 
     async function openConversation(convId) {
         activeConvId = convId;
+        if (window.clearMessageSelection) window.clearMessageSelection();
         const appContainer = document.getElementById('chatAppContainer');
         if (appContainer) appContainer.classList.add('mobile-open');
 
@@ -1254,6 +1271,43 @@
             const showSenderHeader = isGroup && !isOwnMessage && (lastSenderId !== msg.sender_id);
             lastSenderId = msg.sender_id;
 
+            const isNearTopEdge = (idx === 0);
+            const toolbarPlacementClass = isNearTopEdge ? 'position-below' : 'position-above';
+
+            // DELETED MESSAGE HANDLING (MUST NOT RENDER ATTACHMENTS, PREVIEWS, OR REPLIES)
+            if (msg.is_deleted || msg.deleted_for_everyone) {
+                const deletedHoverToolbar = `
+                    <div class="msg-hover-toolbar ${toolbarPlacementClass}">
+                        <button type="button" class="hover-action-btn" onclick="window.showMsgOptionsMenu(${msg.id}, event)" title="More Actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    </div>
+                `;
+
+                html += `
+                    <div class="chat-msg-row ${msgClass} is-deleted-row" id="msg-row-${msg.id}" data-msg-id="${msg.id}">
+                        ${!isOwnMessage ? `
+                            <div class="chat-msg-avatar">
+                                ${msg.sender_avatar ? `<img src="${window.api.getImageUrl(msg.sender_avatar)}" alt="${escapeHTML(msg.sender_name)}">` : getInitials(msg.sender_name)}
+                            </div>
+                        ` : ''}
+
+                        <div class="chat-msg-bubble-box">
+                            <div class="chat-msg-bubble deleted-msg-bubble">
+                                ${deletedHoverToolbar}
+                                ${showSenderHeader ? `<span class="msg-sender-name">${escapeHTML(msg.sender_name)}</span>` : ''}
+                                <div class="msg-deleted-content">
+                                    <i class="fa-solid fa-ban" style="font-size: 0.85rem; color: #94A3B8;"></i>
+                                    <span>This message was deleted</span>
+                                </div>
+                                <div class="msg-meta-row">
+                                    <span>${formatTime(msg.created_at)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             // ATTACHMENTS HTML
             let attachmentsHtml = '';
             if (msg.attachments && msg.attachments.length > 0) {
@@ -1327,10 +1381,6 @@
                 statusIconHtml = `<i class="fa-solid fa-check-double read-status-icon read" title="Read"></i>`;
             }
 
-            // HOVER TOOLBAR EDGE DETECTION (FIRST MESSAGE / INDEX 0 PLACEMENT FIX)
-            const isNearTopEdge = (idx === 0);
-            const toolbarPlacementClass = isNearTopEdge ? 'position-below' : 'position-above';
-
             const hoverToolbarHtml = `
                 <div class="msg-hover-toolbar ${toolbarPlacementClass}">
                     <span class="hover-quick-emoji" onclick="window.toggleReactionAction(${msg.id}, '👍')">👍</span>
@@ -1358,9 +1408,9 @@
                             ${forwardedHtml}
                             ${replyHtml}
                             ${attachmentsHtml}
-                            ${msg.is_deleted ? `<div class="msg-deleted-content"><i class="fa-solid fa-circle-minus"></i> This message was deleted</div>` : `<div class="msg-text-content">${escapeHTML(msg.content)}</div>`}
+                            <div class="msg-text-content">${escapeHTML(msg.content)}</div>
                             <div class="msg-meta-row">
-                                ${msg.is_edited && !msg.is_deleted ? `<span class="msg-edited-tag">Edited</span> • ` : ''}
+                                ${msg.is_edited ? `<span class="msg-edited-tag">Edited</span> • ` : ''}
                                 <span>${formatTime(msg.created_at)}</span>
                                 ${statusIconHtml}
                             </div>
@@ -1372,6 +1422,55 @@
         });
 
         container.innerHTML = html;
+
+        // Attach Selection & Interactive Listeners to Message Rows
+        container.querySelectorAll('.chat-msg-row').forEach(row => {
+            const msgId = parseInt(row.dataset.msgId, 10);
+            if (!msgId) return;
+
+            if (selectedMsgIds.has(msgId)) {
+                row.classList.add('is-selected');
+            }
+
+            // Row click in selection mode
+            row.addEventListener('click', (e) => {
+                if (selectedMsgIds.size > 0) {
+                    if (!e.target.closest('.hover-action-btn')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.toggleSelectMessage(msgId);
+                    }
+                }
+            });
+
+            // Long press handler (400ms hold)
+            let pressTimer = null;
+            const startPress = (e) => {
+                if (e.target.closest('button, a, .hover-quick-emoji, .msg-reply-quoted-card')) return;
+                pressTimer = setTimeout(() => {
+                    if (window.navigator && window.navigator.vibrate) {
+                        try { window.navigator.vibrate(40); } catch (_) {}
+                    }
+                    window.toggleSelectMessage(msgId);
+                }, 400);
+            };
+            const cancelPress = () => {
+                if (pressTimer) clearTimeout(pressTimer);
+            };
+
+            row.addEventListener('touchstart', startPress, { passive: true });
+            row.addEventListener('touchend', cancelPress);
+            row.addEventListener('touchmove', cancelPress);
+            row.addEventListener('mousedown', (e) => {
+                if (e.button === 0 && selectedMsgIds.size === 0) startPress(e);
+            });
+            row.addEventListener('mouseup', cancelPress);
+            row.addEventListener('mouseleave', cancelPress);
+        });
+
+        if (window.updateSelectionUI) {
+            window.updateSelectionUI();
+        }
     }
 
     // --- DOM EVENT LISTENERS ---
@@ -1715,6 +1814,248 @@
         }
     };
 
+    // --- SELECTION TOOLBAR & STATE (REFERENCE 1 & REFERENCE 2) ---
+
+    window.toggleSelectMessage = (msgId) => {
+        if (!msgId) return;
+        if (selectedMsgIds.has(msgId)) {
+            selectedMsgIds.delete(msgId);
+        } else {
+            selectedMsgIds.add(msgId);
+        }
+        window.updateSelectionUI();
+    };
+
+    window.clearMessageSelection = () => {
+        selectedMsgIds.clear();
+        window.updateSelectionUI();
+    };
+
+    window.updateSelectionUI = () => {
+        const header = document.querySelector('.chat-header');
+        let toolbar = document.getElementById('chatSelectionToolbar');
+
+        if (selectedMsgIds.size === 0) {
+            if (toolbar) toolbar.remove();
+            document.querySelectorAll('.chat-msg-row').forEach(row => row.classList.remove('is-selected'));
+            return;
+        }
+
+        if (!toolbar && header) {
+            toolbar = document.createElement('div');
+            toolbar.id = 'chatSelectionToolbar';
+            toolbar.className = 'chat-selection-toolbar';
+            header.appendChild(toolbar);
+        }
+
+        const count = selectedMsgIds.size;
+        const singleSelected = count === 1;
+
+        if (toolbar) {
+            toolbar.innerHTML = `
+                <div class="selection-left">
+                    <button type="button" class="selection-btn" onclick="window.clearMessageSelection()" title="Cancel selection">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <span class="selection-count" id="selectionCount">${count}</span>
+                </div>
+                <div class="selection-actions">
+                    <button type="button" class="selection-action-btn ${!singleSelected ? 'disabled' : ''}" onclick="window.handleSelectionReply()" title="Reply" ${!singleSelected ? 'disabled' : ''}>
+                        <i class="fa-solid fa-reply"></i>
+                    </button>
+                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionStar()" title="Star">
+                        <i class="fa-regular fa-star"></i>
+                    </button>
+                    <button type="button" class="selection-action-btn ${!singleSelected ? 'disabled' : ''}" onclick="window.handleSelectionInfo()" title="Info" ${!singleSelected ? 'disabled' : ''}>
+                        <i class="fa-solid fa-circle-info"></i>
+                    </button>
+                    <button type="button" class="selection-action-btn selection-delete-btn" onclick="window.showDeleteConfirmationModal()" title="Delete">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionForward()" title="Forward">
+                        <i class="fa-solid fa-share"></i>
+                    </button>
+                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionMore(event)" title="More options">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        // Highlight selected message rows
+        document.querySelectorAll('.chat-msg-row').forEach(row => {
+            const mId = parseInt(row.dataset.msgId, 10);
+            if (selectedMsgIds.has(mId)) {
+                row.classList.add('is-selected');
+            } else {
+                row.classList.remove('is-selected');
+            }
+        });
+    };
+
+    window.handleSelectionReply = () => {
+        if (selectedMsgIds.size !== 1) return;
+        const msgId = Array.from(selectedMsgIds)[0];
+        window.clearMessageSelection();
+        window.replyMsgAction(msgId);
+    };
+
+    window.handleSelectionStar = () => {
+        if (selectedMsgIds.size === 0) return;
+        alert(`${selectedMsgIds.size} message(s) starred.`);
+        window.clearMessageSelection();
+    };
+
+    window.handleSelectionInfo = () => {
+        if (selectedMsgIds.size !== 1) return;
+        const msgId = Array.from(selectedMsgIds)[0];
+        const msg = activeMessages.find(m => m.id === msgId);
+        if (!msg) return;
+        alert(`Message Info:\nSender: ${msg.sender_name}\nSent: ${msg.created_at}\nStatus: Read`);
+        window.clearMessageSelection();
+    };
+
+    window.handleSelectionForward = () => {
+        if (selectedMsgIds.size === 0) return;
+        const msgId = Array.from(selectedMsgIds)[0];
+        window.forwardMsgAction(msgId);
+    };
+
+    window.handleSelectionMore = (event) => {
+        event.stopPropagation();
+        const existing = document.getElementById('selectionMoreMenu');
+        if (existing) {
+            existing.remove();
+            return;
+        }
+
+        const menu = document.createElement('div');
+        menu.id = 'selectionMoreMenu';
+        menu.className = 'chat-context-menu';
+        menu.style.right = '1.25rem';
+        menu.style.top = '60px';
+        menu.style.left = 'auto';
+
+        let html = `
+            <div class="context-item" onclick="window.selectAllMessages(); window.closeSelectionMoreMenu();">
+                <i class="fa-solid fa-check-double"></i> Select All
+            </div>
+        `;
+        if (selectedMsgIds.size === 1) {
+            const msgId = Array.from(selectedMsgIds)[0];
+            const msg = activeMessages.find(m => m.id === msgId);
+            if (msg && msg.content) {
+                html += `
+                    <div class="context-item" onclick="window.copyMsgAction(${msgId}); window.closeSelectionMoreMenu();">
+                        <i class="fa-solid fa-copy"></i> Copy Text
+                    </div>
+                `;
+            }
+        }
+        html += `
+            <div class="context-item" onclick="window.clearMessageSelection(); window.closeSelectionMoreMenu();">
+                <i class="fa-solid fa-xmark"></i> Deselect All
+            </div>
+        `;
+        menu.innerHTML = html;
+        document.body.appendChild(menu);
+        setTimeout(() => {
+            document.addEventListener('click', window.closeSelectionMoreMenu, { once: true });
+        }, 10);
+    };
+
+    window.closeSelectionMoreMenu = () => {
+        const existing = document.getElementById('selectionMoreMenu');
+        if (existing) existing.remove();
+    };
+
+    window.selectAllMessages = () => {
+        activeMessages.forEach(m => selectedMsgIds.add(m.id));
+        window.updateSelectionUI();
+    };
+
+    // --- REFERENCE 2 DELETE CONFIRMATION MODAL ---
+
+    window.showDeleteConfirmationModal = (targetMsgId = null) => {
+        if (targetMsgId) {
+            selectedMsgIds.clear();
+            selectedMsgIds.add(targetMsgId);
+            window.updateSelectionUI();
+        }
+
+        if (selectedMsgIds.size === 0) return;
+
+        window.closeDeleteModal();
+
+        const selectedList = Array.from(selectedMsgIds);
+        let canDeleteForEveryone = true;
+
+        selectedList.forEach(id => {
+            const msg = activeMessages.find(m => m.id === id);
+            const isOwn = currentUser && String(msg?.sender_id) === String(currentUser.id);
+            const isAdmin = currentUser && (currentUser.role || '').toUpperCase() === 'ADMIN';
+            if (!msg || (!isOwn && !isAdmin) || msg.is_deleted || msg.deleted_for_everyone) {
+                canDeleteForEveryone = false;
+            }
+        });
+
+        const titleText = selectedList.length === 1 ? 'Delete message?' : `Delete ${selectedList.length} messages?`;
+
+        const modal = document.createElement('div');
+        modal.id = 'deleteConfirmModal';
+        modal.className = 'smartlearn-delete-dialog-overlay';
+
+        modal.innerHTML = `
+            <div class="smartlearn-delete-dialog-card">
+                <h3>${titleText}</h3>
+                <div class="delete-dialog-options">
+                    ${canDeleteForEveryone ? `
+                        <button type="button" class="delete-dialog-opt-btn" onclick="window.executeSelectedDelete(true)">
+                            Delete for everyone
+                        </button>
+                    ` : ''}
+                    <button type="button" class="delete-dialog-opt-btn" onclick="window.executeSelectedDelete(false)">
+                        Delete for me
+                    </button>
+                    <button type="button" class="delete-dialog-opt-btn" onclick="window.closeDeleteModal()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    };
+
+    window.closeDeleteModal = () => {
+        const existing = document.getElementById('deleteConfirmModal');
+        if (existing) existing.remove();
+    };
+
+    window.confirmDeleteMsgModal = (msgId, forEveryone) => {
+        window.showDeleteConfirmationModal(msgId);
+    };
+
+    window.executeSelectedDelete = async (forEveryone) => {
+        window.closeDeleteModal();
+        const ids = Array.from(selectedMsgIds);
+        if (ids.length === 0) return;
+
+        try {
+            for (const msgId of ids) {
+                await window.api.deleteMessage(msgId, forEveryone);
+            }
+            window.clearMessageSelection();
+            await loadActiveMessages(activeConvId);
+            await loadConversations();
+            if (document.getElementById('chatSharedPanel')) {
+                window.openSharedContentPanel(activeConvId, activeSharedTab);
+            }
+        } catch (err) {
+            alert(err.message || 'Delete failed.');
+        }
+    };
+
     window.showMsgOptionsMenu = (msgId, event) => {
         event.stopPropagation();
         const msg = activeMessages.find(m => m.id === msgId);
@@ -1730,8 +2071,8 @@
         // Viewport boundary positioning
         let x = event.clientX;
         let y = event.clientY;
-        const menuWidth = 180;
-        const menuHeight = 240;
+        const menuWidth = 200;
+        const menuHeight = 260;
 
         if (x + menuWidth > window.innerWidth - 15) {
             x = window.innerWidth - menuWidth - 15;
@@ -1743,31 +2084,46 @@
         menu.style.left = `${Math.max(10, x)}px`;
         menu.style.top = `${Math.max(10, y)}px`;
 
-        const isOwnMessage = String(msg.sender_id) === String(currentUser.id);
-        const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';
+        const isOwnMessage = currentUser && String(msg.sender_id) === String(currentUser.id);
+        const isAdmin = currentUser && (currentUser.role || '').toUpperCase() === 'ADMIN';
+        const canDeleteForEveryone = (isOwnMessage || isAdmin) && !msg.is_deleted;
 
-        let menuHtml = `
-            <div class="context-item" onclick="window.replyMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-reply"></i> Reply</div>
-            <div class="context-item" onclick="window.toggleReactionMenu(${msgId}); window.closeMsgContextMenu();"><i class="fa-regular fa-face-smile"></i> React</div>
-            <div class="context-item" onclick="window.copyMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-copy"></i> Copy Text</div>
-            <div class="context-item" onclick="window.forwardMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-share"></i> Forward</div>
-        `;
+        let menuHtml = '';
 
-        if (isOwnMessage) {
-            menuHtml += `
-                <div class="context-item" onclick="window.editMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-pen"></i> Edit</div>
-                <div class="context-item text-danger" onclick="window.deleteMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-trash"></i> Delete</div>
+        if (msg.is_deleted || msg.deleted_for_everyone) {
+            menuHtml = `
+                <div class="context-item text-danger" onclick="window.showDeleteConfirmationModal(${msgId}); window.closeMsgContextMenu();">
+                    <i class="fa-solid fa-trash-can"></i> Delete for Me
+                </div>
             `;
-        } else if (isAdmin) {
-            menuHtml += `
-                <div class="context-item text-danger" onclick="window.deleteMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-trash"></i> Delete</div>
+        } else {
+            menuHtml = `
+                <div class="context-item" onclick="window.toggleSelectMessage(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-check-square"></i> Select</div>
+                <div class="context-item" onclick="window.replyMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-reply"></i> Reply</div>
+                <div class="context-item" onclick="window.toggleReactionMenu(${msgId}); window.closeMsgContextMenu();"><i class="fa-regular fa-face-smile"></i> React</div>
             `;
+
+            if (msg.content && msg.content.trim() !== '') {
+                menuHtml += `<div class="context-item" onclick="window.copyMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-copy"></i> Copy Text</div>`;
+            }
+
+            menuHtml += `<div class="context-item" onclick="window.forwardMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-share"></i> Forward</div>`;
+
+            if (isOwnMessage) {
+                menuHtml += `<div class="context-item" onclick="window.editMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-pen"></i> Edit</div>`;
+            }
+
+            menuHtml += `<div class="context-divider"></div>`;
+
+            menuHtml += `
+                <div class="context-item text-danger" onclick="window.showDeleteConfirmationModal(${msgId}); window.closeMsgContextMenu();">
+                    <i class="fa-solid fa-trash-can"></i> Delete Message
+                </div>
+            `;
+
+            menuHtml += `<div class="context-divider"></div>`;
+            menuHtml += `<div class="context-item" onclick="window.pinMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-thumbtack"></i> Pin</div>`;
         }
-
-        menuHtml += `
-            <div class="context-item" onclick="window.pinMsgAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-solid fa-thumbtack"></i> Pin</div>
-            <div class="context-item" onclick="window.markUnreadAction(${msgId}); window.closeMsgContextMenu();"><i class="fa-regular fa-envelope"></i> Mark as Unread</div>
-        `;
 
         menu.innerHTML = menuHtml;
         document.body.appendChild(menu);
@@ -1814,15 +2170,11 @@
         }
     };
 
-    window.deleteMsgAction = async (msgId) => {
-        if (confirm('Are you sure you want to delete this message for everyone?')) {
-            try {
-                await window.api.deleteMessage(msgId, true);
-                await loadActiveMessages(activeConvId);
-            } catch (err) {
-                alert(err.message || 'Delete failed.');
-            }
-        }
+    window.deleteMsgAction = (msgId) => {
+        const msg = activeMessages.find(m => m.id === msgId);
+        const isOwn = currentUser && String(msg?.sender_id) === String(currentUser.id);
+        const isAdmin = currentUser && (currentUser.role || '').toUpperCase() === 'ADMIN';
+        window.confirmDeleteMsgModal(msgId, isOwn || isAdmin);
     };
 
     window.forwardMsgAction = async (msgId) => {

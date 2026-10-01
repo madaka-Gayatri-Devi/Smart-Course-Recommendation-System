@@ -10,7 +10,7 @@ from sqlalchemy import func, or_, and_
 try:
     from app.models.chat import (
         ConversationDB, ConversationMemberDB, MessageDB,
-        MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+        MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
     )
     from app.schemas.chat import (
         MessageResponse, ConversationResponse, UserSummary,
@@ -22,7 +22,7 @@ except ImportError:
     try:
         from models.chat import (
             ConversationDB, ConversationMemberDB, MessageDB,
-            MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+            MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
         )
         from schemas.chat import (
             MessageResponse, ConversationResponse, UserSummary,
@@ -33,7 +33,7 @@ except ImportError:
     except ImportError:
         from backend.app.models.chat import (
             ConversationDB, ConversationMemberDB, MessageDB,
-            MessageReactionDB, MessageAttachmentDB, MessageForwardDB
+            MessageReactionDB, MessageAttachmentDB, MessageForwardDB, MessageUserDeletionDB
         )
         from backend.app.schemas.chat import (
             MessageResponse, ConversationResponse, UserSummary,
@@ -551,16 +551,29 @@ class ChatService:
             is_pinned = bool(mem.is_pinned) if mem else False
             last_read_id = mem.last_read_message_id if mem else 0
 
-            # Last message
-            last_msg_db = db.query(MessageDB).filter(
-                MessageDB.conversation_id == conv.id,
-                MessageDB.is_deleted == 0
-            ).order_by(MessageDB.id.desc()).first()
+            # User deletions filter
+            user_deleted_ids = set(
+                row[0] for row in db.query(MessageUserDeletionDB.message_id).filter(
+                    MessageUserDeletionDB.user_id == current_user.id
+                ).all()
+            )
+
+            # Last message query
+            last_msg_query = db.query(MessageDB).filter(
+                MessageDB.conversation_id == conv.id
+            )
+            if user_deleted_ids:
+                last_msg_query = last_msg_query.filter(~MessageDB.id.in_(user_deleted_ids))
+            last_msg_db = last_msg_query.order_by(MessageDB.id.desc()).first()
 
             last_msg_schema = None
             if last_msg_db:
                 sender = db.query(UserDB).filter(UserDB.id == last_msg_db.sender_id).first()
                 prof = db.query(ProfileDB).filter(ProfileDB.user_id == last_msg_db.sender_id).first() if sender else None
+                
+                is_del = bool(last_msg_db.is_deleted or last_msg_db.deleted_for_everyone)
+                last_msg_content = "This message was deleted" if is_del else (last_msg_db.content or "")
+                
                 last_msg_schema = MessageResponse(
                     id=last_msg_db.id,
                     conversation_id=last_msg_db.conversation_id,
@@ -569,26 +582,25 @@ class ChatService:
                     sender_role=sender.role if sender else "User",
                     sender_avatar=prof.profile_image if prof else None,
                     message_type=last_msg_db.message_type,
-                    content=last_msg_db.content or "",
-                    is_edited=bool(last_msg_db.is_edited),
+                    content=last_msg_content,
+                    is_edited=bool(last_msg_db.is_edited) if not is_del else False,
+                    is_deleted=is_del,
+                    deleted_for_everyone=bool(last_msg_db.deleted_for_everyone),
+                    deleted_at=last_msg_db.deleted_at,
+                    deleted_by=last_msg_db.deleted_by,
                     created_at=last_msg_db.created_at
                 )
 
             # Unread count
-            unread_count = 0
+            unread_query = db.query(MessageDB).filter(
+                MessageDB.conversation_id == conv.id,
+                MessageDB.sender_id != current_user.id
+            )
             if last_read_id:
-                unread_count = db.query(MessageDB).filter(
-                    MessageDB.conversation_id == conv.id,
-                    MessageDB.id > last_read_id,
-                    MessageDB.sender_id != current_user.id,
-                    MessageDB.is_deleted == 0
-                ).count()
-            else:
-                unread_count = db.query(MessageDB).filter(
-                    MessageDB.conversation_id == conv.id,
-                    MessageDB.sender_id != current_user.id,
-                    MessageDB.is_deleted == 0
-                ).count()
+                unread_query = unread_query.filter(MessageDB.id > last_read_id)
+            if user_deleted_ids:
+                unread_query = unread_query.filter(~MessageDB.id.in_(user_deleted_ids))
+            unread_count = unread_query.count()
 
             # Members
             member_records = db.query(ConversationMemberDB).filter(ConversationMemberDB.conversation_id == conv.id).all()
@@ -667,66 +679,81 @@ class ChatService:
 
         UserDB, ProfileDB, _, _ = _get_core_models()
 
+        # Fetch per-user deletions for current_user
+        deleted_msg_ids = set(
+            row[0] for row in db.query(MessageUserDeletionDB.message_id).filter(
+                MessageUserDeletionDB.user_id == current_user.id
+            ).all()
+        )
+
         query = db.query(MessageDB).filter(MessageDB.conversation_id == conversation_id)
         if before_id:
             query = query.filter(MessageDB.id < before_id)
+        if deleted_msg_ids:
+            query = query.filter(~MessageDB.id.in_(deleted_msg_ids))
 
         messages = query.order_by(MessageDB.id.desc()).limit(limit).all()
         messages.reverse()  # Chronological order
 
         res = []
         for msg in messages:
+            is_del = bool(msg.is_deleted or msg.deleted_for_everyone)
+
             # Reactions
-            reactions_db = db.query(MessageReactionDB).filter(MessageReactionDB.message_id == msg.id).all()
             reactions_schemas = []
-            for r in reactions_db:
-                u = db.query(UserDB).filter(UserDB.id == r.user_id).first()
-                reactions_schemas.append(MessageReactionSchema(
-                    id=r.id,
-                    message_id=r.message_id,
-                    user_id=r.user_id,
-                    user_name=u.full_name if u else "User",
-                    emoji=r.emoji,
-                    created_at=r.created_at
-                ))
+            if not is_del:
+                reactions_db = db.query(MessageReactionDB).filter(MessageReactionDB.message_id == msg.id).all()
+                for r in reactions_db:
+                    u = db.query(UserDB).filter(UserDB.id == r.user_id).first()
+                    reactions_schemas.append(MessageReactionSchema(
+                        id=r.id,
+                        message_id=r.message_id,
+                        user_id=r.user_id,
+                        user_name=u.full_name if u else "User",
+                        emoji=r.emoji,
+                        created_at=r.created_at
+                    ))
 
             # Attachments
-            attach_db = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id == msg.id).all()
-            attach_schemas = [
-                MessageAttachmentSchema(
-                    id=a.id,
-                    message_id=a.message_id,
-                    file_name=a.file_name,
-                    file_path=a.file_path,
-                    file_type=a.file_type,
-                    file_size=a.file_size,
-                    created_at=a.created_at,
-                    download_url=f"/chat/files/{a.id}"
-                ) for a in attach_db
-            ]
+            attach_schemas = []
+            if not is_del:
+                attach_db = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id == msg.id).all()
+                attach_schemas = [
+                    MessageAttachmentSchema(
+                        id=a.id,
+                        message_id=a.message_id,
+                        file_name=a.file_name,
+                        file_path=a.file_path,
+                        file_type=a.file_type,
+                        file_size=a.file_size,
+                        created_at=a.created_at,
+                        download_url=f"/chat/files/{a.id}"
+                    ) for a in attach_db
+                ]
 
             # Reply to preview
             reply_dict = None
-            if msg.reply_to_message_id:
+            if not is_del and msg.reply_to_message_id:
                 reply_msg = db.query(MessageDB).filter(MessageDB.id == msg.reply_to_message_id).first()
                 if reply_msg:
                     r_sender = db.query(UserDB).filter(UserDB.id == reply_msg.sender_id).first()
+                    is_r_del = bool(reply_msg.is_deleted or reply_msg.deleted_for_everyone or reply_msg.id in deleted_msg_ids)
                     reply_dict = {
                         "id": reply_msg.id,
                         "sender_name": r_sender.full_name if r_sender else "User",
-                        "content": reply_msg.content if not reply_msg.is_deleted else "Message deleted"
+                        "content": "Message deleted" if is_r_del else (reply_msg.content or "Attachment")
                     }
 
             # Forward check
-            is_forwarded = db.query(MessageForwardDB).filter(MessageForwardDB.forwarded_message_id == msg.id).count() > 0
+            is_forwarded = False
+            if not is_del:
+                is_forwarded = db.query(MessageForwardDB).filter(MessageForwardDB.forwarded_message_id == msg.id).count() > 0
 
             # Sender info
             sender = db.query(UserDB).filter(UserDB.id == msg.sender_id).first()
             prof = db.query(ProfileDB).filter(ProfileDB.user_id == msg.sender_id).first() if sender else None
 
-            content_text = msg.content
-            if msg.is_deleted:
-                content_text = "This message was deleted"
+            content_text = "This message was deleted" if is_del else (msg.content or "")
 
             res.append(MessageResponse(
                 id=msg.id,
@@ -735,16 +762,18 @@ class ChatService:
                 sender_name=sender.full_name if sender else (msg.sender_name or "User"),
                 sender_role=sender.role if sender else (msg.sender_role or "User"),
                 sender_avatar=prof.profile_image if prof else None,
-                message_type=msg.message_type,
+                message_type=msg.message_type if not is_del else "TEXT",
                 content=content_text,
-                is_edited=bool(msg.is_edited),
-                original_content=msg.original_content,
-                edited_at=msg.edited_at,
-                reply_to_message_id=msg.reply_to_message_id,
+                is_edited=bool(msg.is_edited) if not is_del else False,
+                original_content=msg.original_content if not is_del else None,
+                edited_at=msg.edited_at if not is_del else None,
+                reply_to_message_id=msg.reply_to_message_id if not is_del else None,
                 reply_to_message=reply_dict,
-                is_deleted=bool(msg.is_deleted),
+                is_deleted=is_del,
                 deleted_for_everyone=bool(msg.deleted_for_everyone),
-                is_announcement=bool(msg.is_announcement),
+                deleted_at=msg.deleted_at,
+                deleted_by=msg.deleted_by,
+                is_announcement=bool(msg.is_announcement) if not is_del else False,
                 created_at=msg.created_at,
                 reactions=reactions_schemas,
                 attachments=attach_schemas,
@@ -923,30 +952,60 @@ class ChatService:
         if not msg:
             raise ValueError("Message not found.")
 
-        my_role = (current_user.role or "").upper()
-        if msg.sender_id != current_user.id and my_role != "ADMIN":
-            raise PermissionError("You do not have permission to delete this message.")
+        if not ChatService.can_access_conversation(db, current_user, msg.conversation_id):
+            raise PermissionError("Access denied to conversation.")
 
         now_str = ChatService.now_str()
-        msg.is_deleted = 1
+        my_role = (current_user.role or "").upper()
+
         if for_everyone:
+            if msg.sender_id != current_user.id and my_role != "ADMIN":
+                raise PermissionError("You do not have permission to delete this message for everyone.")
+
+            msg.is_deleted = 1
             msg.deleted_for_everyone = 1
-        msg.deleted_at = now_str
-        db.commit()
+            msg.deleted_at = now_str
+            msg.deleted_by = current_user.id
+            msg.content = "This message was deleted"
+            db.commit()
 
-        all_members = db.query(ConversationMemberDB.user_id).filter(ConversationMemberDB.conversation_id == msg.conversation_id).all()
-        member_uids = [m[0] for m in all_members]
+            all_members = db.query(ConversationMemberDB.user_id).filter(ConversationMemberDB.conversation_id == msg.conversation_id).all()
+            member_uids = [m[0] for m in all_members]
 
-        event_payload = {
-            "type": "MESSAGE_DELETED",
-            "data": {
-                "message_id": msg.id,
-                "conversation_id": msg.conversation_id,
-                "for_everyone": for_everyone,
-                "deleted_at": now_str
+            event_payload = {
+                "type": "MESSAGE_DELETED",
+                "data": {
+                    "message_id": msg.id,
+                    "conversation_id": msg.conversation_id,
+                    "for_everyone": True,
+                    "deleted_at": now_str
+                }
             }
-        }
-        safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users(member_uids, event_payload))
+            safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users(member_uids, event_payload))
+        else:
+            existing = db.query(MessageUserDeletionDB).filter(
+                MessageUserDeletionDB.message_id == msg.id,
+                MessageUserDeletionDB.user_id == current_user.id
+            ).first()
+            if not existing:
+                db.add(MessageUserDeletionDB(
+                    message_id=msg.id,
+                    user_id=current_user.id,
+                    deleted_at=now_str
+                ))
+                db.commit()
+
+            event_payload = {
+                "type": "MESSAGE_DELETED",
+                "data": {
+                    "message_id": msg.id,
+                    "conversation_id": msg.conversation_id,
+                    "for_everyone": False,
+                    "deleted_for_user_id": current_user.id,
+                    "deleted_at": now_str
+                }
+            }
+            safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users([current_user.id], event_payload))
 
     @staticmethod
     def toggle_reaction(db: Session, current_user, message_id: int, emoji: str):
@@ -1128,10 +1187,20 @@ class ChatService:
 
         UserDB, ProfileDB, _, _ = _get_core_models()
 
+        user_deleted_ids = set(
+            row[0] for row in db.query(MessageUserDeletionDB.message_id).filter(
+                MessageUserDeletionDB.user_id == current_user.id
+            ).all()
+        )
+
         msg_query = db.query(MessageDB).filter(
             MessageDB.conversation_id == conversation_id,
-            MessageDB.is_deleted == 0
+            MessageDB.is_deleted == 0,
+            MessageDB.deleted_for_everyone == 0
         )
+        if user_deleted_ids:
+            msg_query = msg_query.filter(~MessageDB.id.in_(user_deleted_ids))
+
         messages = msg_query.all()
         msg_ids = [m.id for m in messages]
         msg_map = {m.id: m for m in messages}
@@ -1297,13 +1366,20 @@ class ChatService:
 
         now_str = ChatService.now_str()
         msgs = db.query(MessageDB).filter(
-            MessageDB.conversation_id == conversation_id,
-            MessageDB.is_deleted == 0
+            MessageDB.conversation_id == conversation_id
         ).all()
 
         for msg in msgs:
-            msg.is_deleted = 1
-            msg.deleted_at = now_str
+            existing = db.query(MessageUserDeletionDB).filter(
+                MessageUserDeletionDB.message_id == msg.id,
+                MessageUserDeletionDB.user_id == current_user.id
+            ).first()
+            if not existing:
+                db.add(MessageUserDeletionDB(
+                    message_id=msg.id,
+                    user_id=current_user.id,
+                    deleted_at=now_str
+                ))
         db.commit()
 
         return {"status": "success", "message": "Chat history cleared."}
