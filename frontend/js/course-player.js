@@ -34,6 +34,14 @@ let flatLessons = [];
 let currentLesson = null;
 let quizUserAnswers = {};
 
+/**
+ * Initializes the classroom course player (/student/course-player.html).
+ * Purpose: Verifies enrollment, fetches course curriculum, loads resume position, and sets up video player.
+ * Dependencies: window.api.getCourseDetails, renderCurriculumTree, selectLesson.
+ */
+// ==========================================
+// COURSE PLAYER INITIALIZATION & SYLLABUS
+// ==========================================
 async function initCoursePlayer(courseId, targetLessonId) {
     try {
         const data = await window.api.getCoursePlayer(courseId);
@@ -113,6 +121,12 @@ async function initCoursePlayer(courseId, targetLessonId) {
 }
 
 // --- RENDER SIDEBAR & PROGRESS ---
+/**
+ * Updates overall course completion progress percentage bar and completed lesson counter.
+ */
+// ==========================================
+// CURRICULUM ACCORDION & PROGRESS TRACKING
+// ==========================================
 function renderProgressSummary() {
     if (!playerData) return;
     const completedIds = playerData.completed_lesson_ids || [];
@@ -125,6 +139,9 @@ function renderProgressSummary() {
     if (barEl) barEl.style.width = `${percent}%`;
 }
 
+/**
+ * Renders curriculum sidebar accordion with chapters, lesson icons (video, article, quiz), and completion checkmarks.
+ */
 function renderCurriculumTree() {
     const treeContainer = document.getElementById('playerCurriculumTree');
     if (!treeContainer || !playerData) return;
@@ -166,6 +183,13 @@ function renderCurriculumTree() {
 }
 
 // --- SELECT & RENDER LESSON ---
+/**
+ * Sets active lesson, updates URL parameters, and renders the lesson player/viewer.
+ * @param {number} lessonId - Unique ID of lesson to open.
+ */
+// ==========================================
+// LESSON VIEWER & VIDEO EMBEDDING
+// ==========================================
 function selectLesson(lessonId) {
     const target = flatLessons.find(l => l.lesson_id === Number(lessonId));
     if (!target) return;
@@ -183,6 +207,11 @@ function selectLesson(lessonId) {
     updateNavButtons();
 }
 
+/**
+ * Converts YouTube, Vimeo, or direct video URLs into embeddable iframe or video tag HTML.
+ * @param {string} url - Raw video URL string.
+ * @returns {string} Sanitized HTML embed code.
+ */
 function parseVideoEmbed(url) {
     if (!url) return null;
     const cleanUrl = url.trim();
@@ -204,6 +233,10 @@ function parseVideoEmbed(url) {
     return `<video controls autoplay style="width:100%; max-height:480px; aspect-ratio:16/9; border-radius:10px; background:#000; display:block;" src="${escapeHtml(resolvedUrl)}"></video>`;
 }
 
+/**
+ * Dynamically mounts lesson content viewer based on type (video stream, formatted text article, interactive quiz).
+ * @param {Object} lesson - Active lesson data object.
+ */
 function renderLessonViewer(lesson) {
     const container = document.getElementById('lessonViewerCard');
     if (!container) return;
@@ -433,6 +466,14 @@ function renderLessonMaterialsSection(lesson) {
 }
 
 // --- QUIZ INTERACTIVITY ---
+/**
+ * Handles student option selection in interactive lesson quiz.
+ * @param {number} qIdx - Question index.
+ * @param {number} optIdx - Selected option index.
+ */
+// ==========================================
+// QUIZ EVALUATION & PROGRESS MUTATION
+// ==========================================
 window.selectQuizOption = function(qIdx, oIdx) {
     quizUserAnswers[qIdx] = oIdx;
     const questions = currentLesson.quiz_questions || [];
@@ -457,6 +498,9 @@ window.selectQuizOption = function(qIdx, oIdx) {
     });
 };
 
+/**
+ * Evaluates lesson quiz answers, calculates score, and updates lesson completion state.
+ */
 window.submitActiveQuiz = async function() {
     if (!currentLesson || !playerData) return;
     const questions = currentLesson.quiz_questions || [];
@@ -528,6 +572,10 @@ window.submitActiveQuiz = async function() {
 };
 
 // --- MARK LESSON COMPLETE ---
+/**
+ * Marks current lesson as completed, sends progress update to backend API, and advances to next lesson.
+ * Purpose: Dispatches progress event via window.api.updateProgress and refreshes curriculum checkmarks.
+ */
 async function handleMarkComplete() {
     if (!currentLesson || !playerData) return;
 
@@ -559,6 +607,9 @@ async function handleMarkComplete() {
 }
 
 // --- NAVIGATION HELPERS ---
+/**
+ * Enables or disables Previous/Next lesson navigation buttons based on current position in syllabus.
+ */
 function updateNavButtons() {
     const currentIdx = flatLessons.findIndex(l => l.lesson_id === currentLesson.lesson_id);
     const prevBtn = document.getElementById('prevLessonBtn');

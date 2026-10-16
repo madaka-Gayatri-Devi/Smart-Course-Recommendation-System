@@ -10,6 +10,9 @@ except ImportError:
         from backend.app.recommendation.skill_gap_analyzer import SkillGapAnalyzer
 
 
+# ============================================================================
+# LEARNING PATH GENERATOR & CURRICULUM SEQUENCER
+# ============================================================================
 class LearningPathGenerator:
     """Generates structured, progressive learning paths aligned with target career goals."""
 
@@ -31,7 +34,25 @@ class LearningPathGenerator:
         db_career_goals: Optional[List[Dict[str, Any]]] = None,
         secondary_career_goal: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Generates an ordered curriculum of milestones for a student's career goal."""
+        """
+        Generate structured progressive learning path milestones tailored to a student's career target.
+
+        Args:
+            career_goal: Primary target role (e.g. 'Full Stack Web Developer').
+            student_skills: List of current student skills with proficiency tiers.
+            assessment_results: Diagnostic assessment performance records.
+            enrolled_courses: Courses already taken or active.
+            courses_catalog: Master catalog of available platform courses.
+            db_career_goals: Optional database-backed benchmark definitions.
+            secondary_career_goal: Optional secondary career goal.
+
+        Returns:
+            Dict[str, Any]: Structured learning path with phases (Foundation, Core Mastery, Advanced Specialization),
+                           completion estimates, readiness percentage, and recommended courses.
+
+        Dependencies:
+            SkillGapAnalyzer.analyze, CourseScorer.score_course.
+        """
         goal = (career_goal or "Full Stack Web Developer").strip()
         goal_lower = goal.lower()
         sec_goal_lower = (secondary_career_goal or "").strip().lower()
@@ -75,6 +96,15 @@ class LearningPathGenerator:
 
         # Sort candidates within buckets by missing skill overlap desc, then rating
         def score_candidate(item_tuple):
+            """
+            Score a candidate course for suitability within a specific milestone phase.
+
+            Args:
+                item_tuple: Tuple of (course_dict, missing_skills_overlap_count).
+
+            Returns:
+                Tuple[int, float]: (overlap_count, course_rating).
+            """
             course, overlap = item_tuple
             diff = (course.get("level") or course.get("difficulty") or "Intermediate").lower()
             diff_num = cls.DIFFICULTY_ORDER.get(diff, 2)

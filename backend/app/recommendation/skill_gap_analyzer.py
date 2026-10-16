@@ -2,6 +2,9 @@
 from typing import List, Dict, Any, Optional
 
 
+# ============================================================================
+# SKILL GAP ANALYZER & READINESS BENCHMARKER
+# ============================================================================
 class SkillGapAnalyzer:
     """Analyzes student skills vs target career goals to identify gaps and bridge courses."""
 
@@ -65,7 +68,22 @@ class SkillGapAnalyzer:
         courses_catalog: List[Dict[str, Any]],
         db_career_goals: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """Performs comprehensive skill gap analysis."""
+        """
+        Analyze gaps between student's current skills and benchmark requirements for a career goal.
+
+        Args:
+            student_skills: List of skills currently acquired by the student.
+            target_career_goal: Intended profession or job role.
+            assessment_results: Diagnostic assessment scores per skill.
+            db_benchmark: Optional dynamic benchmark definition from database.
+
+        Returns:
+            Dict[str, Any]: Comprehensive gap report detailing matched skills, missing skills,
+                           readiness score percentage, and critical priority gaps to bridge.
+
+        Purpose:
+            Identifies exact skill deficits to guide course selection and learning path synthesis.
+        """
         goal_clean = (career_goal or "Full Stack Web Developer").strip()
 
         # Find target skills from DB goals or default benchmarks

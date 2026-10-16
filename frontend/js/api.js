@@ -1,4 +1,4 @@
-let API_URL = 'http://127.0.0.1:8080';
+var API_URL = 'http://127.0.0.1:8080';
 if (typeof window !== 'undefined' && window.location) {
     const host = window.location.hostname;
     const proto = window.location.protocol;
@@ -12,6 +12,13 @@ if (typeof window !== 'undefined' && window.location) {
     }
 }
 
+/**
+ * Wrapper around window.fetch providing resilient error handling and network connectivity detection.
+ * @param {string} url - API destination endpoint URL.
+ * @param {RequestInit} [options] - Standard Fetch API configuration options.
+ * @returns {Promise<Response>} Fetch response object.
+ * @throws {Error} Human-readable error if connection to backend fails.
+ */
 async function safeFetch(url, options) {
     try {
         const response = await fetch(url, options);
@@ -25,6 +32,13 @@ async function safeFetch(url, options) {
     }
 }
 
+/**
+ * Parses JSON error details returned from FastAPI endpoints into clear user-facing messages.
+ * Handles FastAPI string detail, pydantic validation arrays, generic messages, and HTTP status codes.
+ * @param {Response} res - HTTP response object.
+ * @param {string} fallbackMessage - Default fallback message if no specific detail is found.
+ * @returns {Promise<string>} Human-friendly error message string.
+ */
 async function parseErrorResponse(res, fallbackMessage = 'Request failed') {
     try {
         const err = await res.json();
@@ -49,6 +63,28 @@ async function parseErrorResponse(res, fallbackMessage = 'Request failed') {
 const api = {
     API_URL,
 
+    /**
+     * Retrieves the currently authenticated user's cached identity from localStorage.
+     *
+     * @returns {Object|null} Deserialized user object {id, email, full_name, role, ...} or null if unauthenticated.
+     *
+     * Purpose:
+     * Provides instantaneous synchronous access to active user identity across all UI views and guards.
+     *
+     * Input:
+     * Reads 'smartlearn_user' string from localStorage.
+     *
+     * Processing:
+     * 1. Reads string from localStorage.
+     * 2. Safely executes JSON.parse.
+     * 3. Returns parsed object or null if absent or malformed.
+     *
+     * Dependencies:
+     * Browser localStorage ('smartlearn_user').
+     *
+     * Error handling:
+     * Corrupted JSON values in storage fail gracefully to null.
+     */
     getCurrentUser() {
         const userStr = localStorage.getItem('smartlearn_user');
         if (!userStr) return null;
@@ -59,18 +95,49 @@ const api = {
         }
     },
 
+    /**
+     * Retrieves the stored JWT authentication token from localStorage.
+     *
+     * @returns {string|null} JWT bearer token string or null if unauthenticated.
+     *
+     * Purpose:
+     * Used by API calls and WebSocket connections to authenticate requests.
+     */
     getToken() {
         return localStorage.getItem('smartlearn_token');
     },
     
+    /**
+     * Stores the JWT authentication token in localStorage.
+     *
+     * @param {string} token - JWT bearer token string from backend authentication.
+     *
+     * Purpose:
+     * Persists authentication credentials across browser reloads.
+     */
     setToken(token) {
         localStorage.setItem('smartlearn_token', token);
     },
     
+    /**
+     * Removes the JWT authentication token from localStorage.
+     *
+     * Purpose:
+     * Clears credentials during logout or session expiration.
+     */
     clearToken() {
         localStorage.removeItem('smartlearn_token');
     },
 
+    /**
+     * Resolves a media file path into a fully qualified URL.
+     *
+     * @param {string} path - Relative file path or absolute URL.
+     * @returns {string} Fully qualified media URL pointing to the backend media server.
+     *
+     * Purpose:
+     * Ensures avatar images, course thumbnails, and chat attachments render correctly in <img> elements.
+     */
     getImageUrl(path) {
         if (!path) return '';
         if (path.startsWith('http://') || path.startsWith('https://')) return path;
@@ -79,6 +146,24 @@ const api = {
 
     // --- AUTHENTICATION ---
 
+    /**
+     * Registers a new student or instructor user account with the SmartLearn platform.
+     *
+     * @param {Object} userData - Account payload { full_name, email, password, role }.
+     * @returns {Promise<Object>} Backend response containing access token, user profile, and session details.
+     *
+     * Purpose:
+     * Creates new user accounts and boots initial sessions.
+     *
+     * Endpoint:
+     * POST /auth/register
+     *
+     * Dependencies:
+     * safeFetch, parseErrorResponse
+     *
+     * Error handling / Debugging:
+     * Throws an Error with backend validation detail (e.g. duplicate email, invalid password requirements).
+     */
     async register(userData) {
         const res = await safeFetch(`${API_URL}/auth/register`, {
             method: 'POST',
@@ -92,6 +177,24 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Authenticates an existing user using email credentials.
+     *
+     * @param {Object} credentials - Payload containing { email, password }.
+     * @returns {Promise<Object>} Either { access_token, user, ... } or { two_factor_required: true, pre_auth_token: ... }.
+     *
+     * Purpose:
+     * Primary entrypoint for platform authentication. Handles both standard and 2FA authentication challenges.
+     *
+     * Endpoint:
+     * POST /auth/login
+     *
+     * Dependencies:
+     * safeFetch, parseErrorResponse
+     *
+     * Error handling / Debugging:
+     * Throws an Error if credentials are invalid or account is suspended. Check backend terminal for auth logs.
+     */
     async login(credentials) {
         const res = await safeFetch(`${API_URL}/auth/login`, {
             method: 'POST',
@@ -105,6 +208,25 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Verifies a 6-digit one-time password (OTP) during two-factor authentication.
+     *
+     * @param {string} preAuthToken - Temporary pre-authentication token issued during login step 1.
+     * @param {string} otpCode - 6-digit numeric verification code entered by the user.
+     * @returns {Promise<Object>} Full authenticated session response { access_token, token_type, user }.
+     *
+     * Purpose:
+     * Completes multi-factor authentication handshake.
+     *
+     * Endpoint:
+     * POST /auth/verify-2fa
+     *
+     * Dependencies:
+     * safeFetch, parseErrorResponse
+     *
+     * Error handling / Debugging:
+     * Throws an Error if OTP has expired (5-minute TTL) or does not match server cache.
+     */
     async verify2FA(preAuthToken, otpCode) {
         const res = await safeFetch(`${API_URL}/auth/verify-2fa`, {
             method: 'POST',
@@ -118,6 +240,18 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Requests a fresh 6-digit OTP email during an active 2FA verification session.
+     *
+     * @param {string} preAuthToken - Active pre-auth token.
+     * @returns {Promise<Object>} Confirmation response { message: string }.
+     *
+     * Purpose:
+     * Allows users to request a new code if email was delayed or expired.
+     *
+     * Endpoint:
+     * POST /auth/resend-2fa
+     */
     async resend2FA(preAuthToken) {
         const res = await safeFetch(`${API_URL}/auth/resend-2fa`, {
             method: 'POST',
@@ -150,6 +284,22 @@ const api = {
     },
 
 
+    /**
+     * Exchanges a Firebase Google OAuth id_token for a SmartLearn platform JWT access token.
+     *
+     * @param {string} idToken - Google OAuth ID token issued by Firebase SDK.
+     * @param {string} [role='Student'] - Desired account role ('Student' or 'Instructor').
+     * @returns {Promise<Object>} Backend authentication response { access_token, user, role }.
+     *
+     * Purpose:
+     * Enables passwordless social authentication.
+     *
+     * Endpoint:
+     * POST /auth/google-login
+     *
+     * Dependencies:
+     * Firebase Auth SDK, safeFetch, parseErrorResponse
+     */
     async googleLogin(idToken, role = 'Student') {
         const res = await safeFetch(`${API_URL}/auth/google-login`, {
             method: 'POST',
@@ -163,6 +313,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Resets a forgotten password using a secure reset token received via email.
+     *
+     * @param {Object} data - Payload containing { token, new_password }.
+     * @returns {Promise<Object>} Confirmation message.
+     *
+     * Endpoint:
+     * POST /auth/reset-password
+     */
     async resetPassword(data) {
         const res = await safeFetch(`${API_URL}/auth/reset-password`, {
             method: 'POST',
@@ -176,6 +335,20 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Fetches the current authenticated user's profile and active role from the database.
+     *
+     * @returns {Promise<Object>} Fresh user record { id, email, full_name, role, is_active, ... }.
+     *
+     * Purpose:
+     * Validates stored JWT against the backend and updates client state.
+     *
+     * Endpoint:
+     * GET /users/me
+     *
+     * Error handling / Debugging:
+     * Throws 401 if JWT has expired or been revoked.
+     */
     async getMe() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -194,6 +367,14 @@ const api = {
 
     // --- PROFILE ---
 
+    /**
+     * Retrieves the detailed student or instructor profile, including bio, skills, and interests.
+     *
+     * @returns {Promise<Object>} User profile object.
+     *
+     * Endpoint:
+     * GET /profile
+     */
     async getProfile() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -210,10 +391,28 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Alias for updateProfile to save user profile changes.
+     *
+     * @param {Object} profileData - Updated profile attributes.
+     * @returns {Promise<Object>} Saved profile response.
+     */
     async saveProfile(profileData) {
         return this.updateProfile(profileData);
     },
 
+    /**
+     * Updates profile fields (full name, bio, phone, social links, headline).
+     *
+     * @param {Object} profileData - Profile updates.
+     * @returns {Promise<Object>} Updated profile data.
+     *
+     * Purpose:
+     * Syncs profile modifications to backend and updates localStorage cached name.
+     *
+     * Endpoint:
+     * POST /profile
+     */
     async updateProfile(profileData) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -243,6 +442,18 @@ const api = {
         return data;
     },
 
+    /**
+     * Uploads a new profile avatar image file (JPG, PNG, WEBP).
+     *
+     * @param {File} file - Browser File object selected from file input.
+     * @returns {Promise<Object>} Upload response { message, avatar_url }.
+     *
+     * Endpoint:
+     * POST /profile/avatar
+     *
+     * Dependencies:
+     * FormData, safeFetch
+     */
     async uploadAvatar(file) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -266,6 +477,15 @@ const api = {
 
     // --- COURSES ---
 
+    /**
+     * Queries the public course catalog with optional search, category, and level filters.
+     *
+     * @param {Object} [params={}] - Query parameters { search, category, level, sort, page, limit }.
+     * @returns {Promise<Array<Object>|Object>} List of courses matching the query.
+     *
+     * Endpoint:
+     * GET /courses
+     */
     async getCourses(params = {}) {
         const url = new URL(`${API_URL}/courses`);
         Object.keys(params).forEach(key => {
@@ -290,6 +510,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves detailed metadata, syllabus, and instructor details for a specific course.
+     *
+     * @param {number|string} courseId - Course primary key.
+     * @returns {Promise<Object>} Course details object including modules, reviews, and enrollment state.
+     *
+     * Endpoint:
+     * GET /courses/{course_id}
+     */
     async getCourseDetails(courseId) {
         const token = this.getToken();
         const url = new URL(`${API_URL}/courses/${courseId}`);
@@ -307,6 +536,18 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Creates a new draft course in the instructor portal.
+     *
+     * @param {Object} courseData - Course creation payload { title, description, category_id, level, price, ... }.
+     * @returns {Promise<Object>} Created course record.
+     *
+     * Endpoint:
+     * POST /courses
+     *
+     * Authorization:
+     * Requires Instructor or Admin role.
+     */
     async createCourse(courseData) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -326,6 +567,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Updates an existing course's metadata, pricing, or description.
+     *
+     * @param {number|string} courseId - Course primary key.
+     * @param {Object} courseData - Modified course fields.
+     * @returns {Promise<Object>} Updated course object.
+     *
+     * Endpoint:
+     * PUT /courses/{course_id}
+     */
     async updateCourse(courseId, courseData) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -345,6 +596,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Changes the publication status of a course (e.g. 'draft', 'published', 'archived').
+     *
+     * @param {number|string} courseId - Target course ID.
+     * @param {string} status - New status string.
+     * @returns {Promise<Object>} Updated status confirmation.
+     *
+     * Endpoint:
+     * PATCH /courses/{course_id}/status
+     */
     async updateCourseStatus(courseId, status) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -364,6 +625,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Deletes or unpublishes a course from the platform catalog.
+     *
+     * @param {number|string} courseId - Target course ID.
+     * @returns {Promise<Object>} Deletion result confirmation.
+     *
+     * Endpoint:
+     * DELETE /courses/{course_id}
+     */
     async deleteCourse(courseId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -381,6 +651,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves all courses authored by the currently logged-in instructor.
+     *
+     * @param {Object} [params={}] - Optional filters.
+     * @returns {Promise<Array<Object>>} Instructor's authored courses list.
+     *
+     * Endpoint:
+     * GET /instructor/courses
+     */
     async getInstructorCourses(params = {}) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -421,6 +700,14 @@ const api = {
 
     // --- REFERENCE DATA ---
 
+    /**
+     * Retrieves all available academic categories and subject domains.
+     *
+     * @returns {Promise<Array<Object>>} List of categories { id, name, description, icon }.
+     *
+     * Endpoint:
+     * GET /categories
+     */
     async getCategories() {
         const res = await safeFetch(`${API_URL}/categories`);
         if (!res.ok) {
@@ -432,6 +719,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves standardized skills, optionally filtered by category.
+     *
+     * @param {string|null} [category=null] - Category name filter.
+     * @returns {Promise<Array<Object>>} List of skill records.
+     *
+     * Endpoint:
+     * GET /skills
+     */
     async getSkills(category = null) {
         const url = new URL(`${API_URL}/skills`);
         if (category && category !== 'all') {
@@ -447,6 +743,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves standard career goal definitions available for students.
+     *
+     * @returns {Promise<Array<Object>>} List of career goals { id, title, description, skills }.
+     *
+     * Endpoint:
+     * GET /career-goals
+     */
     async getCareerGoals() {
         const res = await safeFetch(`${API_URL}/career-goals`);
         if (!res.ok) {
@@ -460,6 +764,16 @@ const api = {
 
     // --- LMS COURSE CONTENT, UPLOADS & CURRICULUM ---
 
+    /**
+     * Uploads a video lecture file (MP4, WEBM) for course curriculum lessons.
+     *
+     * @param {File} file - Video file from browser input.
+     * @param {number|string|null} [courseId=null] - Associated course ID.
+     * @returns {Promise<Object>} Upload response { video_url, duration, filename }.
+     *
+     * Endpoint:
+     * POST /courses/upload-video
+     */
     async uploadCourseVideo(file, courseId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -486,6 +800,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Uploads downloadable study materials (PDF, slides, source files) for a lesson.
+     *
+     * @param {File} file - Material document file.
+     * @param {number|string|null} [courseId=null] - Course ID.
+     * @returns {Promise<Object>} Upload response { material_url, filename, size }.
+     *
+     * Endpoint:
+     * POST /courses/upload-material
+     */
     async uploadCourseMaterial(file, courseId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -511,6 +835,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Uploads a promotional thumbnail banner image for a course card.
+     *
+     * @param {File} file - Image file (JPG, PNG, WEBP).
+     * @param {number|string|null} [courseId=null] - Course ID.
+     * @returns {Promise<Object>} Upload response { thumbnail_url }.
+     *
+     * Endpoint:
+     * POST /courses/upload-thumbnail
+     */
     async uploadCourseThumbnail(file, courseId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -536,6 +870,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves complete curriculum tree (modules, lessons, quizzes, resources) for a course.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @returns {Promise<Object>} Curriculum hierarchy.
+     *
+     * Endpoint:
+     * GET /courses/{course_id}/content
+     */
     async getCourseContent(courseId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -552,6 +895,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Saves or replaces the complete curriculum structure for a course.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {Object} contentPayload - Modules and lessons payload.
+     * @returns {Promise<Object>} Update confirmation.
+     *
+     * Endpoint:
+     * POST /courses/{course_id}/content
+     */
     async updateCourseContent(courseId, contentPayload) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -571,6 +924,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves full curriculum playback data for an enrolled student in the course player.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @returns {Promise<Object>} Playback payload including video URLs and progress marks.
+     *
+     * Endpoint:
+     * GET /courses/{course_id}/player
+     */
     async getCoursePlayer(courseId) {
         const token = this.getToken();
         const url = new URL(`${API_URL}/courses/${courseId}/player`);
@@ -588,6 +950,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Marks a specific lesson as completed for the current enrolled student.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {number|string} lessonId - Lesson ID.
+     * @returns {Promise<Object>} Updated progress statistics { progress_percentage, is_completed }.
+     *
+     * Endpoint:
+     * POST /courses/{course_id}/lessons/{lesson_id}/complete
+     */
     async completeCourseLesson(courseId, lessonId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -607,6 +979,17 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Submits student answers for an end-of-lesson quiz assessment.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {number|string} lessonId - Lesson ID.
+     * @param {Object} answers - Student answer key { questionId: selectedOption }.
+     * @returns {Promise<Object>} Quiz grading results { score, passed, feedback }.
+     *
+     * Endpoint:
+     * POST /courses/{course_id}/lessons/{lesson_id}/quiz
+     */
     async submitCourseLessonQuiz(courseId, lessonId, answers) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -626,6 +1009,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves student ratings and reviews for a specific course.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @returns {Promise<Array<Object>>} List of reviews with ratings, text, and student names.
+     *
+     * Endpoint:
+     * GET /courses/{course_id}/reviews
+     */
     async getCourseReviews(courseId) {
         const res = await safeFetch(`${API_URL}/courses/${courseId}/reviews`);
         if (!res.ok) {
@@ -635,6 +1027,17 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Submits a student star rating and written review for a course.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {number} rating - Star rating (1 to 5).
+     * @param {string} comment - Student review commentary.
+     * @returns {Promise<Object>} Submitted review record.
+     *
+     * Endpoint:
+     * POST /courses/{course_id}/reviews
+     */
     async submitCourseReview(courseId, rating, comment) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -654,6 +1057,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves a publicly previewable sample lesson before enrollment.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {number|string} lessonId - Lesson ID.
+     * @returns {Promise<Object>} Free preview lesson data and video stream.
+     *
+     * Endpoint:
+     * GET /courses/{course_id}/lessons/{lesson_id}/preview
+     */
     async getPreviewLesson(courseId, lessonId) {
         const res = await safeFetch(`${API_URL}/courses/${courseId}/preview/${lessonId}`);
         if (!res.ok) {
@@ -663,6 +1076,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves courses for administrative moderation and review.
+     *
+     * @param {Object} [params={}] - Filter parameters.
+     * @returns {Promise<Array<Object>>} Courses list.
+     *
+     * Endpoint:
+     * GET /admin/courses
+     */
     async getAdminCourses(params = {}) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -687,6 +1109,15 @@ const api = {
 
     // --- ENROLLMENT & PROGRESS ---
 
+    /**
+     * Enrolls the current student into a free or purchased course.
+     *
+     * @param {number|string} courseId - Target course ID.
+     * @returns {Promise<Object>} Enrollment confirmation { enrollment_id, status }.
+     *
+     * Endpoint:
+     * POST /enrollments/{course_id}
+     */
     async enrollCourse(courseId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -704,6 +1135,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves all courses currently enrolled by the logged-in student.
+     *
+     * @returns {Promise<Array<Object>>} List of enrolled courses with progress percentages.
+     *
+     * Endpoint:
+     * GET /my-courses
+     */
     async getMyCourses() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -720,6 +1159,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Updates student progress timestamps and percentages for a course.
+     *
+     * @param {number|string} courseId - Course ID.
+     * @param {Object} progressData - Progress data { last_lesson_id, current_time }.
+     * @returns {Promise<Object>} Updated progress record.
+     *
+     * Endpoint:
+     * POST /progress/{course_id}
+     */
     async updateCourseProgress(courseId, progressData) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -741,6 +1190,15 @@ const api = {
 
     // --- WISHLIST ---
 
+    /**
+     * Toggles a course in or out of the student's wishlist.
+     *
+     * @param {number|string} courseId - Course ID to add or remove.
+     * @returns {Promise<Object>} Updated wishlist state { in_wishlist: boolean }.
+     *
+     * Endpoint:
+     * POST /wishlist/{course_id}/toggle
+     */
     async toggleWishlist(courseId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -758,6 +1216,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves all courses saved in the student's wishlist.
+     *
+     * @returns {Promise<Array<Object>>} List of bookmarked courses.
+     *
+     * Endpoint:
+     * GET /wishlist
+     */
     async getWishlist() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -776,6 +1242,15 @@ const api = {
 
     // --- RECOMMENDATIONS & LEARNING PATH ---
 
+    /**
+     * Generates personalized AI course recommendations tailored to user skills, career goals, and gaps.
+     *
+     * @param {Object|string|null} [categoryOrParams=null] - Optional category filter or query parameters.
+     * @returns {Promise<Array<Object>>} Ranked course recommendations with match scores and rationales.
+     *
+     * Endpoint:
+     * GET /recommendations
+     */
     async getRecommendations(categoryOrParams = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -806,6 +1281,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Performs skill-gap analysis comparing current student skills against target career goals.
+     *
+     * @returns {Promise<Object>} Analysis results { target_role, acquired_skills, missing_skills, recommended_actions }.
+     *
+     * Endpoint:
+     * GET /skill-gaps
+     */
     async getSkillGaps() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -822,6 +1305,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Generates a step-by-step sequential learning path of courses to bridge identified skill gaps.
+     *
+     * @returns {Promise<Object>} Learning roadmap with sequential course milestones.
+     *
+     * Endpoint:
+     * GET /learning-path
+     */
     async getLearningPath() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -838,6 +1329,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves available skill diagnostic assessments and diagnostic quizzes.
+     *
+     * @returns {Promise<Array<Object>>} Assessment catalog with question counts and durations.
+     *
+     * Endpoint:
+     * GET /assessments
+     */
     async getAssessments() {
         const token = this.getToken();
         const headers = {};
@@ -851,6 +1350,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves metadata for a specific skill assessment.
+     *
+     * @param {number|string} assessmentId - Assessment ID.
+     * @returns {Promise<Object>} Assessment metadata and instructions.
+     *
+     * Endpoint:
+     * GET /assessments/{assessment_id}
+     */
     async getAssessmentDetails(assessmentId) {
         const token = this.getToken();
         const headers = {};
@@ -864,10 +1372,29 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves full assessment questions and choices for an active test session.
+     *
+     * @param {number|string} assessmentId - Assessment ID.
+     * @returns {Promise<Object>} Test paper with questions and multiple-choice options.
+     *
+     * Endpoint:
+     * GET /assessments/{assessment_id}
+     */
     async getAssessment(assessmentId) {
         return this.getAssessmentDetails(assessmentId);
     },
 
+    /**
+     * Submits student answers for a skill assessment and computes diagnostic score.
+     *
+     * @param {number|string} assessmentId - Assessment ID.
+     * @param {Object} answers - User answers payload.
+     * @returns {Promise<Object>} Score, proficiency level (Beginner/Intermediate/Advanced), and recommendations.
+     *
+     * Endpoint:
+     * POST /assessments/{assessment_id}/submit
+     */
     async submitAssessment(assessmentId, answers) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -887,6 +1414,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves the student's historical assessment scores and skill badges.
+     *
+     * @returns {Promise<Array<Object>>} Assessment results history.
+     *
+     * Endpoint:
+     * GET /assessments/my-results
+     */
     async getMyAssessmentResults() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -905,6 +1440,14 @@ const api = {
 
     // --- DASHBOARD SUMMARIES ---
 
+    /**
+     * Aggregates student dashboard summary stats: enrolled courses, hours learned, completed certificates, recommendations.
+     *
+     * @returns {Promise<Object>} Summary statistics object.
+     *
+     * Endpoint:
+     * GET /student/dashboard-summary
+     */
     async getStudentDashboardSummary() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -921,6 +1464,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Aggregates instructor dashboard metrics: total students, active courses, total revenue, rating average.
+     *
+     * @returns {Promise<Object>} Instructor summary metrics.
+     *
+     * Endpoint:
+     * GET /instructor/dashboard-summary
+     */
     async getInstructorDashboardSummary() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -944,6 +1495,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves list of students enrolled in the instructor's courses.
+     *
+     * @param {number|string|null} [courseId=null] - Optional course ID filter.
+     * @returns {Promise<Array<Object>>} Enrolled student roster with progress info.
+     *
+     * Endpoint:
+     * GET /instructor/students
+     */
     async getInstructorStudents(courseId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -972,6 +1532,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves all student feedback and ratings across the instructor's courses.
+     *
+     * @returns {Promise<Array<Object>>} Reviews list.
+     *
+     * Endpoint:
+     * GET /instructor/reviews
+     */
     async getInstructorReviews() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -995,6 +1563,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves enrollment trends, revenue analytics, and performance charts for the instructor.
+     *
+     * @returns {Promise<Object>} Analytics charts data.
+     *
+     * Endpoint:
+     * GET /instructor/analytics
+     */
     async getInstructorAnalytics() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1020,6 +1596,14 @@ const api = {
 
 
 
+    /**
+     * Aggregates platform-wide administrator KPIs: total users, active courses, system enrollments, gross volume.
+     *
+     * @returns {Promise<Object>} System overview metrics.
+     *
+     * Endpoint:
+     * GET /admin/dashboard-summary
+     */
     async getAdminDashboardSummary() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1038,6 +1622,15 @@ const api = {
 
     // --- ADMIN SPECIFIC APIS ---
 
+    /**
+     * Retrieves courses for administrative moderation and review.
+     *
+     * @param {Object} [params={}] - Filter parameters.
+     * @returns {Promise<Array<Object>>} Courses list.
+     *
+     * Endpoint:
+     * GET /admin/courses
+     */
     async getAdminCourses(params = {}) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1060,6 +1653,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Queries all system user accounts across all roles (Student, Instructor, Admin).
+     *
+     * @param {Object} [params={}] - Filter query parameters { search, role, status, page }.
+     * @returns {Promise<Object>} Paginated users list.
+     *
+     * Endpoint:
+     * GET /admin/users
+     */
     async getAdminUsers(params = {}) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1088,6 +1690,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Activates or suspends a platform user account.
+     *
+     * @param {number|string} userId - Target user ID.
+     * @param {boolean} isActive - New active status.
+     * @returns {Promise<Object>} Status update response.
+     *
+     * Endpoint:
+     * PATCH /admin/users/{user_id}/status
+     */
     async updateAdminUserStatus(userId, isActive) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1411,6 +2023,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Initiates a payment transaction order (Razorpay / Stripe) for course enrollment.
+     *
+     * @param {number|string} courseId - Course ID to purchase.
+     * @param {string} [paymentMethod='Card'] - Selected payment method.
+     * @returns {Promise<Object>} Order payload { order_id, amount, currency, key_id }.
+     *
+     * Endpoint:
+     * POST /payments/order
+     */
     async createPaymentOrder(courseId, paymentMethod = 'Card') {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1433,6 +2055,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Verifies payment gateway signature and unlocks course access.
+     *
+     * @param {Object} payload - Gateway verification payload { razorpay_order_id, razorpay_payment_id, razorpay_signature, course_id }.
+     * @returns {Promise<Object>} Payment confirmation and enrollment activation.
+     *
+     * Endpoint:
+     * POST /payments/verify
+     */
     async verifyPayment(payload) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1484,6 +2115,14 @@ const api = {
         } catch (_) {}
     },
 
+    /**
+     * Retrieves the current student's payment receipts and transaction history.
+     *
+     * @returns {Promise<Array<Object>>} Transaction receipts history.
+     *
+     * Endpoint:
+     * GET /payments/history
+     */
     async getMyPaymentHistory() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1542,6 +2181,15 @@ const api = {
 
     // --- NOTIFICATIONS API ---
 
+    /**
+     * Retrieves recent user notifications with pagination support.
+     *
+     * @param {number} [limit=20] - Maximum number of notifications to return.
+     * @returns {Promise<Array<Object>>} List of notifications.
+     *
+     * Endpoint:
+     * GET /notifications
+     */
     async getNotifications(limit = 20) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1556,6 +2204,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves the count of unread notifications for badge rendering.
+     *
+     * @returns {Promise<Object>} Object { unread_count: number }.
+     *
+     * Endpoint:
+     * GET /notifications/unread-count
+     */
     async getUnreadNotificationCount() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1570,6 +2226,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Marks a specific notification as read.
+     *
+     * @param {number|string} notificationId - Notification ID.
+     * @returns {Promise<Object>} Update confirmation.
+     *
+     * Endpoint:
+     * PATCH /notifications/{notification_id}/read
+     */
     async markNotificationAsRead(notificationId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1585,6 +2250,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Marks all active notifications as read for the current user.
+     *
+     * @returns {Promise<Object>} Confirmation.
+     *
+     * Endpoint:
+     * POST /notifications/mark-all-read
+     */
     async markAllNotificationsAsRead() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1738,6 +2411,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves all available academic categories and subject domains.
+     *
+     * @returns {Promise<Array<Object>>} List of categories { id, name, description, icon }.
+     *
+     * Endpoint:
+     * GET /categories
+     */
     async getCategories() {
         const res = await safeFetch(`${API_URL}/categories`);
         if (!res.ok) {
@@ -1747,6 +2428,14 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves standard career goal definitions available for students.
+     *
+     * @returns {Promise<Array<Object>>} List of career goals { id, title, description, skills }.
+     *
+     * Endpoint:
+     * GET /career-goals
+     */
     async getCareerGoals() {
         const res = await safeFetch(`${API_URL}/career-goals`);
         if (!res.ok) {
@@ -1770,6 +2459,14 @@ const api = {
 
     // --- REAL-TIME CHAT & COMMUNICATION ---
 
+    /**
+     * Retrieves active direct and group chat conversations for the current user.
+     *
+     * @returns {Promise<Array<Object>>} Conversations list with last message and unread counters.
+     *
+     * Endpoint:
+     * GET /chat/conversations
+     */
     async getConversations() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1783,6 +2480,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Creates a new direct or group chat conversation.
+     *
+     * @param {Object} payload - Conversation parameters { type, title, participant_ids }.
+     * @returns {Promise<Object>} Created conversation record.
+     *
+     * Endpoint:
+     * POST /chat/conversations
+     */
     async createConversation(payload) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1828,6 +2534,17 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves paginated messages for a conversation.
+     *
+     * @param {number|string} convId - Conversation ID.
+     * @param {number} [limit=50] - Message batch limit.
+     * @param {number|string|null} [beforeId=null] - Cursor for earlier message history.
+     * @returns {Promise<Array<Object>>} List of message records.
+     *
+     * Endpoint:
+     * GET /chat/conversations/{conv_id}/messages
+     */
     async getMessages(convId, limit = 50, beforeId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1844,6 +2561,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Dispatches a text or attachment message to an active conversation.
+     *
+     * @param {Object} payload - Message data { conversation_id, content, reply_to_id, attachment_id }.
+     * @returns {Promise<Object>} Created message object.
+     *
+     * Endpoint:
+     * POST /chat/messages
+     */
     async sendMessage(payload) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1862,6 +2588,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Edits the text content of a previously sent message.
+     *
+     * @param {number|string} messageId - Message ID.
+     * @param {string} content - New message text.
+     * @returns {Promise<Object>} Updated message record.
+     *
+     * Endpoint:
+     * PUT /chat/messages/{message_id}
+     */
     async editMessage(messageId, content) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1880,6 +2616,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Deletes a chat message for the user or everyone.
+     *
+     * @param {number|string} messageId - Message ID.
+     * @param {boolean} [forEveryone=true] - Whether to delete for all participants.
+     * @returns {Promise<Object>} Deletion result.
+     *
+     * Endpoint:
+     * DELETE /chat/messages/{message_id}
+     */
     async deleteMessage(messageId, forEveryone = true) {
         if (forEveryone) {
             return this.deleteMessageForEveryone(messageId);
@@ -1916,6 +2662,16 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Adds or removes an emoji reaction on a chat message.
+     *
+     * @param {number|string} messageId - Target message ID.
+     * @param {string} emoji - Unicode emoji symbol.
+     * @returns {Promise<Object>} Updated reactions list.
+     *
+     * Endpoint:
+     * POST /chat/messages/{message_id}/reactions
+     */
     async toggleReaction(messageId, emoji) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -1934,16 +2690,54 @@ const api = {
         return res.json();
     },
 
-    async forwardMessage(messageId, targetConversationIds) {
+    async getForwardTargets() {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
-        const res = await safeFetch(`${API_URL}/chat/messages/${messageId}/forward?token=${encodeURIComponent(token)}`, {
+        const res = await safeFetch(`${API_URL}/chat/forward-targets?token=${encodeURIComponent(token)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch forward targets');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Forwards one or more messages to other conversations or direct contacts.
+     *
+     * @param {number|string|Array} messageIdOrIds - Target message ID(s).
+     * @param {Array<string|number>} [targetConversationIds=[]] - Target conversations.
+     * @param {Array<string|number>} [targetUserIds=[]] - Target user IDs.
+     * @returns {Promise<Object>} Forwarding result.
+     *
+     * Endpoint:
+     * POST /chat/messages/forward
+     */
+    async forwardMessage(messageIdOrIds, targetConversationIds = [], targetUserIds = []) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const messageIds = Array.isArray(messageIdOrIds) ? messageIdOrIds : [messageIdOrIds];
+        const singleMsgId = Array.isArray(messageIdOrIds) ? messageIdOrIds[0] : messageIdOrIds;
+
+        const payload = {
+            target_conversation_ids: targetConversationIds || [],
+            target_user_ids: targetUserIds || [],
+            message_ids: messageIds
+        };
+
+        const endpoint = messageIds.length > 1
+            ? `${API_URL}/chat/messages/forward?token=${encodeURIComponent(token)}`
+            : `${API_URL}/chat/messages/${singleMsgId}/forward?token=${encodeURIComponent(token)}`;
+
+        const res = await safeFetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ target_conversation_ids: targetConversationIds })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             const msg = await parseErrorResponse(res, 'Failed to forward message');
@@ -1966,6 +2760,15 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Uploads an attachment file (image, PDF, archive, document) to the chat server.
+     *
+     * @param {File} file - File selected by user.
+     * @returns {Promise<Object>} File metadata { file_id, file_name, file_url, file_size }.
+     *
+     * Endpoint:
+     * POST /chat/upload
+     */
     async uploadChatFile(file) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
@@ -2041,18 +2844,33 @@ const api = {
         return res.json();
     },
 
+    /**
+     * Retrieves member roster for a specific chat group.
+     *
+     * @param {number|string} groupId - Group conversation ID.
+     * @returns {Promise<Object>} Group members list with roles and online statuses.
+     *
+     * Endpoint:
+     * GET /chat/groups/{group_id}/members
+     */
     async getGroupMembers(groupId) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
-        const res = await safeFetch(`${API_URL}/chat/conversations/${groupId}/members?token=${encodeURIComponent(token)}`, {
+        let res = await safeFetch(`${API_URL}/groups/${groupId}/members?token=${encodeURIComponent(token)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) {
+            res = await safeFetch(`${API_URL}/chat/conversations/${groupId}/members?token=${encodeURIComponent(token)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
         if (!res.ok) {
             const msg = await parseErrorResponse(res, 'Failed to fetch group members');
             throw new Error(msg);
         }
         return res.json();
     },
+
 
     async getSharedContent(convId, q = null) {
         const token = this.getToken();
@@ -2189,6 +3007,12 @@ const api = {
 
     // --- UNIVERSAL LOGOUT ---
 
+    /**
+     * Terminates the active user session, clears stored credentials, and redirects to login gateway.
+     *
+     * Endpoint:
+     * POST /auth/logout
+     */
     async logout() {
         const token = this.getToken();
         if (token) {
@@ -2211,6 +3035,159 @@ const api = {
         } else {
             window.location.replace('login.html');
         }
+    },
+
+    // --- AI CHATBOT ASSISTANT ---
+
+    /**
+     * Submits a user message (typed text or speech-to-text recognized prompt)
+     * to the authenticated backend AI chatbot endpoint.
+     * @param {string} message - User query or instructional prompt.
+     * @param {number|null} [conversationId=null] - Optional conversation session ID to continue.
+     * @returns {Promise<Object>} Object containing conversation_id, title, user_message, ai_response, created_at.
+     * @throws {Error} If user is unauthenticated or if the backend/AI provider fails.
+     */
+    async sendChatbotMessage(message, conversationId = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const payload = { message: message };
+        if (conversationId) payload.conversation_id = Number(conversationId);
+
+        const res = await safeFetch(`${API_URL}/chatbot/message?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to send message to AI Assistant');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Retrieves all saved conversation history sessions belonging to the authenticated user.
+     * @returns {Promise<Array<Object>>} List of conversation session summaries.
+     * @throws {Error} If user is unauthenticated or request fails.
+     */
+    async getChatbotConversations() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/chatbot/conversations?token=${encodeURIComponent(token)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch chatbot conversations');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Explicitly initializes a new conversation session for the current authenticated user.
+     * @returns {Promise<Object>} Newly created conversation metadata.
+     * @throws {Error} If request fails.
+     */
+    async createChatbotConversation() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/chatbot/conversations?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create new chatbot conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Fetches the detailed transcript including all messages for a specific conversation session.
+     * @param {number|string} conversationId - The ID of the conversation session.
+     * @returns {Promise<Object>} Conversation details with array of chronological messages.
+     * @throws {Error} If session does not exist or user is unauthorized (403).
+     */
+    async getChatbotConversation(conversationId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/chatbot/conversations/${conversationId}?token=${encodeURIComponent(token)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch conversation details');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Deletes a conversation session and its associated messages.
+     * @param {number|string} conversationId - The ID of the conversation to delete.
+     * @returns {Promise<Object>} Confirmation message object.
+     * @throws {Error} If user is unauthorized or deletion fails.
+     */
+    async deleteChatbotConversation(conversationId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/chatbot/conversations/${conversationId}?token=${encodeURIComponent(token)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete chatbot conversation');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    /**
+     * Transcribes speech audio recording using server-side AI Whisper model.
+     * @param {Blob} audioBlob - Audio binary data recorded from the user's microphone.
+     * @param {string} [filename='recording.webm'] - Filename for uploaded audio.
+     * @returns {Promise<Object>} { success: true, transcript: string, provider: string }
+     */
+    async transcribeChatbotVoice(audioBlob, filename = 'recording.webm') {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const formData = new FormData();
+        formData.append('file', audioBlob, filename);
+
+        const res = await safeFetch(`${API_URL}/chatbot/transcribe?token=${encodeURIComponent(token)}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Voice transcription failed');
+            throw new Error(msg);
+        }
+        return res.json();
     }
 };
 

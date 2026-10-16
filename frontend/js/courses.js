@@ -83,6 +83,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 /**
  * Setup Course Catalog Search, Filter, Sort, URL Sync & Pagination
  */
+/**
+ * Initializes the public course catalog page (/student/courses.html).
+ * Purpose: Binds search bar, category chips, level filters, price switches, and sorting controls.
+ * Dependencies: window.api.getCourses, loadCatalog, populateFilterOptions.
+ */
+// ==========================================
+// COURSE CATALOG INITIALIZATION & SEARCH
+// ==========================================
 async function setupCatalogPage() {
     const catalogGrid = document.getElementById('catalogCoursesGrid');
     const searchInput = document.getElementById('courseSearchInput');
@@ -135,7 +143,11 @@ async function setupCatalogPage() {
     updateSearchClearVisibility();
 
     // Main fetch & render function
-    async function loadCatalog() {
+    /**
+ * Fetches courses matching active search, category, and difficulty filters, and renders the catalog grid.
+ * Purpose: Queries backend GET /courses endpoint with URL query params and updates DOM state.
+ */
+async function loadCatalog() {
         catalogGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem;">
                 <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.2rem; color: var(--primary-purple);"></i>
@@ -202,7 +214,14 @@ async function setupCatalogPage() {
         }
     }
 
-    function renderPaginatedGrid() {
+    /**
+ * Generates interactive course cards with thumbnails, ratings, instructor names, pricing, and enroll buttons.
+ * @param {Array<Object>} courses - Filtered course records to display.
+ */
+// ==========================================
+// CATALOG GRID & PAGINATION RENDERING
+// ==========================================
+function renderPaginatedGrid() {
         const totalItems = allLoadedCourses.length;
         const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
@@ -231,7 +250,7 @@ async function setupCatalogPage() {
 
             const thumbStyle = c.thumbnail_url 
                 ? `background-image: url('${escapeHtml(c.thumbnail_url)}'); background-size: cover; background-position: center;` 
-                : `background: ${c.color_theme || 'linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 60%, #E83FA5 100%)'};`;
+                : `background: var(--color-gradient-primary, linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%));`;
 
             return `
                 <div class="smart-course-card">
@@ -284,7 +303,12 @@ async function setupCatalogPage() {
         renderPaginationControls(totalPages);
     }
 
-    function renderPaginationControls(totalPages) {
+    /**
+ * Renders numbered pagination buttons and Next/Previous navigation bar.
+ * @param {number} totalPages - Total available pages count.
+ * @param {number} currentPage - Active page index (1-based).
+ */
+function renderPaginationControls(totalPages) {
         if (!paginationContainer) return;
         if (totalPages <= 1) {
             paginationContainer.style.display = 'none';
@@ -319,7 +343,11 @@ async function setupCatalogPage() {
         paginationContainer.innerHTML = html;
     }
 
-    window.goToCatalogPage = function(page) {
+    /**
+ * Navigates to a specific catalog page and re-renders the course grid.
+ * @param {number} page - Target page index.
+ */
+window.goToCatalogPage = function(page) {
         currentPage = page;
         renderPaginatedGrid();
         window.scrollTo({ top: 180, behavior: 'smooth' });
@@ -327,7 +355,13 @@ async function setupCatalogPage() {
 
     window.reloadCatalog = loadCatalog;
 
-    function renderActiveFilterChips(params) {
+    /**
+ * Renders removable filter chip badges above the catalog grid for each active search keyword or category.
+ */
+// ==========================================
+// FILTER CHIPS & ACTIVE CONTROLS
+// ==========================================
+function renderActiveFilterChips(params) {
         if (!chipsContainer) return;
         const chips = [];
 
@@ -386,7 +420,12 @@ async function setupCatalogPage() {
         `;
     }
 
-    window.removeActiveFilter = function(key) {
+    /**
+ * Removes a specific active filter chip and refreshes the course catalog.
+ * @param {string} filterType - Type of filter to remove ('category', 'level', 'price', 'search').
+ * @param {string} filterValue - Specific value to deselect.
+ */
+window.removeActiveFilter = function(key) {
         if (key === 'search') searchInput.value = '';
         if (key === 'category') catFilter.value = 'all';
         if (key === 'level') diffFilter.value = 'all';
@@ -400,7 +439,10 @@ async function setupCatalogPage() {
         loadCatalog();
     };
 
-    window.clearAllCatalogFilters = function() {
+    /**
+ * Clears all active catalog search terms, category filters, and checkboxes, resetting to default view.
+ */
+window.clearAllCatalogFilters = function() {
         if (searchInput) searchInput.value = '';
         if (catFilter) catFilter.value = 'all';
         if (diffFilter) diffFilter.value = 'all';
@@ -462,7 +504,8 @@ async function setupCatalogPage() {
 }
 
 /**
- * Populate Category, Skill, and Career Goal Dropdowns from DB
+ * Populates category and skill checkboxes dynamically based on courses present in the database.
+ * @param {Array<Object>} courses - All available courses catalog.
  */
 async function populateFilterOptions(catFilter, skillFilter, careerGoalFilter) {
     try {
@@ -520,6 +563,14 @@ function syncUrlParams(params, page) {
 /**
  * Setup Structured Course Details View
  */
+/**
+ * Initializes the comprehensive course detail page (/student/course-details.html).
+ * Purpose: Loads course metadata, syllabus accordion, instructor biography, reviews, and enrollment button.
+ * Dependencies: window.api.getCourseDetails, enrollInCourse, toggleCourseWishlist.
+ */
+// ==========================================
+// COURSE DETAILS VIEW & SYLLABUS
+// ==========================================
 async function setupCourseDetailsPage(detailsContainer) {
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get('id');
@@ -815,6 +866,9 @@ async function setupCourseDetailsPage(detailsContainer) {
 }
 
 let selectedReviewRating = 5;
+/**
+ * Binds interactive 1-5 star hover and click ratings selector in the review submission form.
+ */
 function setupStarPicker() {
     const starPicker = document.getElementById('starPicker');
     if (!starPicker) return;
@@ -835,6 +889,10 @@ function setupStarPicker() {
     });
 }
 
+/**
+ * Submits student star rating and written review comment to backend API.
+ * Purpose: Calls window.api.submitReview and refreshes the course reviews list on success.
+ */
 window.submitCourseReviewAction = async function(courseId) {
     const commentInput = document.getElementById('reviewCommentInput');
     const comment = commentInput ? commentInput.value.trim() : '';
@@ -854,6 +912,13 @@ window.submitCourseReviewAction = async function(courseId) {
 /**
  * Setup Student My Courses View
  */
+/**
+ * Initializes the enrolled courses view (/student/my-courses.html).
+ * Purpose: Renders student's enrolled courses grouped by status (In Progress vs Completed) with progress bars.
+ */
+// ==========================================
+// ENROLLED COURSES & WISHLIST ACTIONS
+// ==========================================
 async function setupMyCoursesPage(myCoursesGrid) {
     try {
         const enrolled = await window.api.getMyCourses();
@@ -910,7 +975,7 @@ async function setupMyCoursesPage(myCoursesGrid) {
 
                 const thumbStyle = c.thumbnail_url 
                     ? `background-image: url('${escapeHtml(c.thumbnail_url)}'); background-size: cover; background-position: center;`
-                    : `background: ${c.color_theme || 'linear-gradient(135deg, #24104F 0%, #3B176F 50%, #5B21B6 100%)'};`;
+                    : `background: var(--color-gradient-primary, linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%));`;
 
                 return `
                     <div class="my-course-card">
@@ -1079,6 +1144,9 @@ window.openLessonPreviewModal = async function(courseId, lessonId) {
     }
 };
 
+/**
+ * Closes demo video preview modal and pauses media playback.
+ */
 window.closeLessonPreviewModal = function() {
     const modal = document.getElementById('lessonPreviewModal');
     if (modal) {

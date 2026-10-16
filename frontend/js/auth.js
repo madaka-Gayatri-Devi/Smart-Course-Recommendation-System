@@ -1,9 +1,38 @@
 /**
  * SmartLearn Centralized Authentication, Form Handlers & Strict Route Guard
+ * =========================================================================
+ * Provides comprehensive client-side authentication and session security:
+ * 1. Synchronous Instant Route Guard: blocks unauthorized portal views before page render.
+ * 2. Asynchronous Token Verification: re-validates JWT credentials against /users/me.
+ * 3. Role-Based Access Control (RBAC): enforces distinct Student, Instructor, and Admin portals.
+ * 4. Two-Factor Authentication (2FA/OTP): handles pre-auth tokens, 6-digit verification & resend timer.
+ * 5. Google OAuth Integration: coordinates Firebase popup and backend token exchange.
+ * 6. Password Management: toggle visibility and forgot-password reset requests.
+ * 7. Registration & Account Creation: role validation, password policies, and instant session bootstrapping.
+ * 8. Universal Logout: clears local/session storage and signs out of Firebase.
  */
 
-// Immediate execution of guard if on a protected portal page
-// Immediate execution of guard if on a protected portal page
+// ==========================================
+// SYNCHRONOUS ROUTE GUARDS & ACCESS CONTROL
+// Blocks unauthorized portal viewing before DOM layout renders to prevent unauthorized data exposure.
+// ==========================================
+
+/**
+ * Self-invoking synchronous route guard executed immediately during script parsing.
+ *
+ * Purpose:
+ * Prevents unauthorized visual flash by checking localStorage credentials before rendering portal HTML.
+ *
+ * Processing:
+ * 1. Inspects window.location.pathname for protected portal paths (/student/, /instructor/, /admin/).
+ * 2. If unauthenticated (missing token or user object), redirects immediately to ../login.html.
+ * 3. Validates user role against the active directory path.
+ * 4. If role mismatch is detected, sets a friendly security notice in sessionStorage and
+ *    redirects the user to their designated dashboard without terminating their login session.
+ *
+ * Error handling / Debugging:
+ * JSON parse failures on stored user object trigger safe fallback to login.html.
+ */
 (function instantRouteGuard() {
     const currentPath = window.location.pathname.toLowerCase();
     const token = localStorage.getItem('smartlearn_token');
@@ -61,7 +90,23 @@
     }
 })();
 
-// Helper function to guard pages inside JS modules
+/**
+ * Programmatic route guard callable inside JavaScript modules and feature controllers.
+ *
+ * @param {string} requiredRole - Expected role string ('STUDENT', 'INSTRUCTOR', or 'ADMIN').
+ * @returns {Object|null} Validated user object {id, email, full_name, role} or null if redirected.
+ *
+ * Purpose:
+ * Guards asynchronous module execution and ensures caller has the exact authorized privileges.
+ *
+ * Processing:
+ * 1. Checks presence of 'smartlearn_token' and 'smartlearn_user' in localStorage.
+ * 2. Compares active user role against requiredRole (case-insensitive).
+ * 3. Redirects to unauthorized destination with friendly message if roles clash.
+ *
+ * Error handling / Debugging:
+ * Check browser console warnings and URL query param '?access_denied=' if unexpected redirection occurs.
+ */
 window.guardPage = function(requiredRole) {
     const token = localStorage.getItem('smartlearn_token');
     const userStr = localStorage.getItem('smartlearn_user');
@@ -114,7 +159,7 @@ window.guardPage = function(requiredRole) {
     return user;
 };
 
-// Handle Back Button cache restore
+// Handle Browser Back Button cache restore (BFCache protection)
 window.addEventListener('pageshow', (event) => {
     const currentPath = window.location.pathname.toLowerCase();
     const isProtected = currentPath.includes('/student/') || currentPath.includes('/instructor/') || currentPath.includes('/admin/');
@@ -126,7 +171,28 @@ window.addEventListener('pageshow', (event) => {
     }
 });
 
-// Asynchronous Backend Token & Role Verification
+/**
+ * Asynchronously verifies the active session against the backend /users/me endpoint.
+ *
+ * @returns {Promise<void>}
+ *
+ * Purpose:
+ * Confirms that the JWT token stored in localStorage has not expired, been revoked,
+ * or altered on the backend database.
+ *
+ * Dependencies:
+ * Endpoint: GET /users/me (via window.api.getMe()).
+ *
+ * Processing:
+ * 1. Checks if current URL is a protected portal route; returns early if public page.
+ * 2. Issues authenticated GET /users/me request with Bearer token.
+ * 3. Refreshes 'smartlearn_user' cache with latest database profile.
+ * 4. Confirms active database role matches portal path; safely redirects if privileges changed.
+ *
+ * Error handling / Debugging:
+ * Only purges session and redirects to login if backend explicitly rejects credentials with 401.
+ * Transient network failures do not log out the user.
+ */
 async function verifyBackendSession() {
     const currentPath = window.location.pathname.toLowerCase();
     const isProtected = currentPath.includes('/student/') || currentPath.includes('/instructor/') || currentPath.includes('/admin/');
@@ -182,6 +248,17 @@ async function verifyBackendSession() {
     }
 }
 
+// ==========================================
+// ACCESS DENIED & NOTIFICATION BANNERS
+// Friendly security warning rendering when unauthorized portal access is attempted.
+// ==========================================
+
+/**
+ * Escapes unsafe HTML characters to prevent XSS vulnerability in security alerts.
+ *
+ * @param {string} text - Raw input message.
+ * @returns {string} Sanitized string safe for DOM interpolation.
+ */
 function safeEscapeHtml(text) {
     if (!text) return '';
     return String(text)
@@ -192,6 +269,18 @@ function safeEscapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+/**
+ * Detects access denied redirect messages and renders a dismissible alert banner.
+ *
+ * Purpose:
+ * Informs the user why they were redirected (e.g. attempting to view an admin page from a student account)
+ * without abrupt logout or broken navigation experience.
+ *
+ * Processing:
+ * 1. Checks sessionStorage ('smartlearn_access_denied_msg') and URL query string ('access_denied').
+ * 2. Strips 'access_denied' parameter from URL history to prevent persistent alert on refresh.
+ * 3. Mounts a styled banner containing a security shield icon and dismiss button below the topbar.
+ */
 function checkAccessDeniedNotice() {
     let deniedMsg = sessionStorage.getItem('smartlearn_access_denied_msg');
     
@@ -273,6 +362,14 @@ function checkAccessDeniedNotice() {
 // Immediate execution check
 checkAccessDeniedNotice();
 
+// ==========================================
+// CENTRAL INITIALIZATION & EVENT DELEGATION
+// Wires authentication handlers, form submissions, and global click handlers.
+// ==========================================
+
+/**
+ * Initializes all auth-related forms, listeners, and session guards.
+ */
 function initAuthHandlers() {
     verifyBackendSession();
     checkAccessDeniedNotice();
@@ -285,81 +382,179 @@ function initAuthHandlers() {
     setupMobileSidebarToggle();
 }
 
+// Global Delegated Event Listeners for Login & Google Auth
+document.addEventListener('click', function(e) {
+    const loginBtn = e.target.closest('#loginSubmitBtn');
+    if (loginBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleLoginSubmit(e);
+        return;
+    }
+
+    const googleBtn = e.target.closest('#googleLoginBtn') || e.target.closest('.google-btn');
+    if (googleBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleGoogleLogin(e);
+        return;
+    }
+}, true);
+
+document.addEventListener('submit', function(e) {
+    const form = e.target.closest('#loginForm');
+    if (form) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleLoginSubmit(e);
+    }
+}, true);
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAuthHandlers);
 } else {
     initAuthHandlers();
 }
 
-// --- GOOGLE LOGIN HANDLER ---
+// ==========================================
+// DASHBOARD NAVIGATION & ROLE ROUTING
+// Maps user roles to portal entrypoints (student, instructor, admin).
+// ==========================================
+
+/**
+ * Navigates authenticated user to their role-specific dashboard.
+ *
+ * @param {string} role - User role identifier ('STUDENT', 'INSTRUCTOR', or 'ADMIN').
+ *
+ * Purpose:
+ * Directs users to their correct portal (student/dashboard.html, instructor/dashboard.html, admin/dashboard.html).
+ */
+function redirectUserToDashboard(role) {
+    const roleUpper = (role || 'STUDENT').toUpperCase();
+    let targetPage = 'student/dashboard.html';
+    if (roleUpper === 'ADMIN') {
+        targetPage = 'admin/dashboard.html';
+    } else if (roleUpper === 'INSTRUCTOR') {
+        targetPage = 'instructor/dashboard.html';
+    }
+
+    const currentPath = window.location.pathname;
+    let redirectUrl = targetPage;
+    if (currentPath.includes('/frontend/')) {
+        const basePath = currentPath.substring(0, currentPath.indexOf('/frontend/') + 10);
+        redirectUrl = basePath + targetPage;
+    }
+
+    setTimeout(() => {
+        window.location.href = redirectUrl;
+    }, 400);
+}
+
+// ==========================================
+// GOOGLE OAUTH & THIRD-PARTY AUTHENTICATION
+// Firebase OAuth popup handler and backend token exchange.
+// ==========================================
+
+/**
+ * Handles Google OAuth Sign-In via Firebase popup and backend token verification.
+ *
+ * @param {Event} [e] - Click event object.
+ *
+ * Purpose:
+ * Allows 1-click Google authentication, automatically creating or signing in accounts.
+ *
+ * Dependencies:
+ * window.signInWithGooglePopup (from firebase-config.js)
+ * Endpoint: POST /auth/google-login
+ *
+ * Error handling / Debugging:
+ * Firebase network errors or missing popup permissions display user-friendly error banners.
+ */
+async function handleGoogleLogin(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    const googleBtn = document.getElementById('googleLoginBtn') || document.querySelector('.google-btn');
+    const originalText = googleBtn ? googleBtn.innerHTML : 'Continue with Google';
+    
+    if (googleBtn) {
+        googleBtn.disabled = true;
+        googleBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Connecting to Google...</span>`;
+    }
+
+    try {
+        if (typeof window.signInWithGooglePopup !== 'function') {
+            throw new Error("Google authentication service is initializing. Please check your network and refresh.");
+        }
+
+        const fbAuthResult = await window.signInWithGooglePopup();
+        if (!fbAuthResult || !fbAuthResult.idToken) {
+            throw new Error("No authorization token received from Google.");
+        }
+
+        const roleSelect = document.getElementById('regRole');
+        const selectedRole = roleSelect ? roleSelect.value.trim() : 'Student';
+
+        if (!window.api || !window.api.googleLogin) {
+            throw new Error("API service is initializing. Please try again.");
+        }
+
+        const res = await window.api.googleLogin(fbAuthResult.idToken, selectedRole);
+
+        if (!res || !res.access_token) {
+            throw new Error("Invalid backend authentication response.");
+        }
+
+        const userObj = {
+            id: res.id,
+            full_name: res.full_name || fbAuthResult.displayName || 'User',
+            name: res.full_name || fbAuthResult.displayName || 'User',
+            email: res.email || fbAuthResult.email,
+            role: res.role || 'Student'
+        };
+
+        localStorage.setItem('smartlearn_token', res.access_token);
+        localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
+        localStorage.setItem('smartlearn_role', res.role || 'Student');
+
+        showAuthAlert("Google authentication successful! Redirecting...", "success");
+        redirectUserToDashboard(res.role || 'Student');
+    } catch (err) {
+        console.error("Google authentication error:", err);
+        showAuthAlert(err.message || "Google Login failed. Please try again.", "error");
+        if (googleBtn) {
+            googleBtn.disabled = false;
+            googleBtn.innerHTML = originalText;
+        }
+    }
+}
+
+/**
+ * Attaches click event listeners to Google Login buttons.
+ */
 function setupGoogleLogin() {
     const googleBtns = document.querySelectorAll('.google-btn, #googleLoginBtn');
     googleBtns.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+        btn.onclick = function(e) {
             e.preventDefault();
-            
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Connecting to Google...</span>`;
-
-            try {
-                if (typeof window.signInWithGooglePopup !== 'function') {
-                    throw new Error("Google authentication service is initializing. Please try again.");
-                }
-
-                const fbAuthResult = await window.signInWithGooglePopup();
-                if (!fbAuthResult || !fbAuthResult.idToken) {
-                    throw new Error("No authorization token received from Google.");
-                }
-
-                const roleSelect = document.getElementById('regRole');
-                const selectedRole = roleSelect ? roleSelect.value.trim() : 'Student';
-
-                if (!window.api || !window.api.googleLogin) {
-                    throw new Error("API service is initializing. Please try again.");
-                }
-
-                const res = await window.api.googleLogin(fbAuthResult.idToken, selectedRole);
-
-                if (!res || !res.access_token) {
-                    throw new Error("Invalid backend authentication response.");
-                }
-
-                const userObj = {
-                    id: res.id,
-                    full_name: res.full_name || fbAuthResult.displayName || 'User',
-                    name: res.full_name || fbAuthResult.displayName || 'User',
-                    email: res.email || fbAuthResult.email,
-                    role: res.role || 'Student'
-                };
-
-                localStorage.setItem('smartlearn_token', res.access_token);
-                localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
-                localStorage.setItem('smartlearn_role', res.role || 'Student');
-
-                showAuthAlert("Google authentication successful! Redirecting...", "success");
-
-                const roleUpper = (res.role || 'STUDENT').toUpperCase();
-                setTimeout(() => {
-                    if (roleUpper === 'ADMIN') {
-                        window.location.replace('admin/dashboard.html');
-                    } else if (roleUpper === 'INSTRUCTOR') {
-                        window.location.replace('instructor/dashboard.html');
-                    } else {
-                        window.location.replace('student/dashboard.html');
-                    }
-                }, 800);
-            } catch (err) {
-                console.error("Google authentication error:", err);
-                showAuthAlert(err.message || "Google Login failed. Please try again.", "error");
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        });
+            e.stopPropagation();
+            handleGoogleLogin(e);
+            return false;
+        };
+        btn.addEventListener('click', (e) => handleGoogleLogin(e));
     });
 }
 
-// --- PASSWORD VISIBILITY TOGGLE ---
+// ==========================================
+// PASSWORD MANAGEMENT & VISIBILITY TOGGLES
+// Password show/hide toggle and forgot-password reset flow.
+// ==========================================
+
+/**
+ * Wires eye-icon toggles to switch password input field types between 'password' and 'text'.
+ */
 function setupPasswordToggles() {
     document.querySelectorAll('.toggle-password').forEach(icon => {
         icon.addEventListener('click', () => {
@@ -379,7 +574,12 @@ function setupPasswordToggles() {
     });
 }
 
-// --- FORGOT PASSWORD HANDLER ---
+/**
+ * Sets up Forgot Password modal triggers, form validation, and email dispatch.
+ *
+ * Dependencies:
+ * Endpoint: POST /auth/forgot-password (via window.api.forgotPassword(email)).
+ */
 function setupForgotPassword() {
     const forgotLinks = document.querySelectorAll('.forgot-link, #forgotPasswordLink');
     const modal = document.getElementById('forgotPasswordModal');
@@ -394,12 +594,15 @@ function setupForgotPassword() {
     forgotLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const loginEmailInput = document.getElementById('loginEmail');
-            if (emailInput && loginEmailInput && loginEmailInput.value) {
-                emailInput.value = loginEmailInput.value.trim();
+            modal.style.display = 'flex';
+            if (emailInput) {
+                const loginEmail = document.getElementById('loginEmail');
+                if (loginEmail && loginEmail.value) {
+                    emailInput.value = loginEmail.value.trim();
+                }
+                emailInput.focus();
             }
             if (alertBox) alertBox.style.display = 'none';
-            modal.style.display = 'flex';
         });
     });
 
@@ -410,16 +613,13 @@ function setupForgotPassword() {
     }
 
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
+        if (e.target === modal) modal.style.display = 'none';
     });
 
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = emailInput ? emailInput.value.trim() : '';
-
             const errSpan = document.getElementById('forgotModalEmailError');
             if (errSpan) errSpan.textContent = '';
             if (alertBox) alertBox.style.display = 'none';
@@ -482,95 +682,148 @@ function setupForgotPassword() {
     }
 }
 
+// Active Pre-Authentication token for Two-Factor Verification
+var activePreAuthToken = null;
 
-let activePreAuthToken = null;
+// ==========================================
+// LOGIN & TWO-FACTOR AUTHENTICATION (2FA)
+// Credentials validation, 2FA OTP verification, resend timers, and session establishment.
+// ==========================================
 
-// --- LOGIN FORM HANDLER ---
-function setupLoginForm() {
-    const loginForm = document.getElementById('loginForm');
-    const twoFactorForm = document.getElementById('twoFactorForm');
-    if (!loginForm) return;
-
-    loginForm.addEventListener('submit', async (e) => {
+/**
+ * Handles standard login form submission, managing 2FA challenges and standard JWT authentication.
+ *
+ * @param {Event} [e] - Form submission event.
+ * @returns {Promise<boolean>} False to prevent browser form navigation.
+ *
+ * Processing:
+ * 1. Validates presence and email regex format for email and password.
+ * 2. Calls window.api.login({ email, password }).
+ * 3. If response indicates two_factor_required:
+ *    - Stores pre_auth_token.
+ *    - Switches UI from Step 1 (credentials) to Step 2 (6-digit OTP).
+ * 4. If standard login succeeds:
+ *    - Calls completeLoginSession(res, email) and routes to dashboard.
+ *
+ * Dependencies:
+ * Endpoint: POST /auth/login
+ *
+ * Error handling / Debugging:
+ * Backend 400/401 messages are displayed via showAuthAlert.
+ */
+async function handleLoginSubmit(e) {
+    if (e) {
         e.preventDefault();
         e.stopPropagation();
+    }
 
-        clearAuthErrors();
-        const emailInput = document.getElementById('loginEmail');
-        const passwordInput = document.getElementById('loginPassword');
-        const submitBtn = document.getElementById('loginSubmitBtn');
+    clearAuthErrors();
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const submitBtn = document.getElementById('loginSubmitBtn');
 
-        const email = (emailInput ? emailInput.value : '').trim();
-        const password = passwordInput ? passwordInput.value : '';
+    const email = (emailInput ? emailInput.value : '').trim();
+    const password = passwordInput ? passwordInput.value : '';
 
-        let isValid = true;
-        if (!email) {
-            showError('loginEmailError', 'Email address is required.');
-            isValid = false;
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            showError('loginEmailError', 'Please enter a valid email address.');
-            isValid = false;
+    let isValid = true;
+    if (!email) {
+        showError('loginEmailError', 'Email address is required.');
+        isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+        showError('loginEmailError', 'Please enter a valid email address.');
+        isValid = false;
+    }
+
+    if (!password) {
+        showError('loginPasswordError', 'Password is required.');
+        isValid = false;
+    }
+
+    if (!isValid) return false;
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Logging in...</span>`;
+    }
+
+    try {
+        if (!window.api || typeof window.api.login !== 'function') {
+            throw new Error("Authentication service is initializing. Please try again.");
         }
 
-        if (!password) {
-            showError('loginPasswordError', 'Password is required.');
-            isValid = false;
-        }
+        const res = await window.api.login({ email, password });
 
-        if (!isValid) return;
+        if (res && res.two_factor_required) {
+            activePreAuthToken = res.pre_auth_token;
+            
+            const loginStep1 = document.getElementById('loginStep1');
+            const loginStep2 = document.getElementById('loginStep2');
+            const twoFactorForm = document.getElementById('twoFactorForm');
 
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Logging in...';
-        }
+            if (loginStep1) loginStep1.style.display = 'none';
+            if (loginStep2) loginStep2.style.display = 'block';
+            if (twoFactorForm) twoFactorForm.style.display = 'block';
 
-        try {
-            if (!window.api || !window.api.login) {
-                throw new Error("Authentication service is initializing. Please try again.");
+            const maskedDisplay = document.getElementById('maskedEmailDisplay');
+            if (maskedDisplay) {
+                maskedDisplay.textContent = maskEmail(res.email || email);
             }
 
-            const res = await window.api.login({ email, password });
+            showAuthAlert(`Verification code sent to ${maskEmail(res.email || email)}.`, "success");
+            
+            startResendTimer(30);
 
-            if (res && res.two_factor_required) {
-                activePreAuthToken = res.pre_auth_token;
-                
-                const loginStep1 = document.getElementById('loginStep1');
-                const loginStep2 = document.getElementById('loginStep2');
-
-                if (loginStep1) loginStep1.style.display = 'none';
-                if (loginStep2) loginStep2.style.display = 'block';
-                if (twoFactorForm) twoFactorForm.style.display = 'block';
-
-                const maskedDisplay = document.getElementById('maskedEmailDisplay');
-                if (maskedDisplay) {
-                    maskedDisplay.textContent = maskEmail(res.email || email);
-                }
-
-                showAuthAlert(`Verification code sent to ${maskEmail(res.email || email)}.`, "success");
-                
-                startResendTimer(30);
-
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Log In';
-                }
-                return;
-            }
-
-            if (!res || !res.access_token) {
-                throw new Error("Invalid response from server. Missing access token.");
-            }
-
-            completeLoginSession(res, email);
-        } catch (err) {
-            console.error("Login failed:", err);
-            showAuthAlert(err.message || "Invalid email or password. Please try again.", "error");
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Log In';
             }
+            return false;
         }
-    });
+
+        if (!res || !res.access_token) {
+            throw new Error("Invalid response from server. Missing access token.");
+        }
+
+        showAuthAlert("Login successful! Redirecting to portal...", "success");
+        completeLoginSession(res, email);
+    } catch (err) {
+        console.error("Login failed:", err);
+        showAuthAlert(err.message || "Invalid email or password. Please try again.", "error");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Log In';
+        }
+    }
+    return false;
+}
+
+/**
+ * Binds submit and click events to login form, OTP verification, and resend buttons.
+ */
+function setupLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    const twoFactorForm = document.getElementById('twoFactorForm');
+
+    if (loginForm) {
+        loginForm.onsubmit = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLoginSubmit(e);
+            return false;
+        };
+        loginForm.addEventListener('submit', (e) => handleLoginSubmit(e));
+    }
+
+    if (submitBtn) {
+        submitBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLoginSubmit(e);
+            return false;
+        };
+        submitBtn.addEventListener('click', (e) => handleLoginSubmit(e));
+    }
 
     if (twoFactorForm) {
         twoFactorForm.addEventListener('submit', async (e) => {
@@ -667,6 +920,12 @@ function setupLoginForm() {
     }
 }
 
+/**
+ * Finalizes successful login or 2FA verification by saving tokens and routing to portal.
+ *
+ * @param {Object} res - Response from /auth/login or /auth/verify-2fa.
+ * @param {string} email - Fallback email address string.
+ */
 function completeLoginSession(res, email) {
     const userObj = {
         id: res.id,
@@ -680,20 +939,32 @@ function completeLoginSession(res, email) {
     localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
     localStorage.setItem('smartlearn_role', res.role || 'Student');
 
-    const roleUpper = (res.role || 'STUDENT').toUpperCase();
-    setTimeout(() => {
-        if (roleUpper === 'ADMIN') {
-            window.location.replace('admin/dashboard.html');
-        } else if (roleUpper === 'INSTRUCTOR') {
-            window.location.replace('instructor/dashboard.html');
-        } else {
-            window.location.replace('student/dashboard.html');
-        }
-    }, 400);
+    redirectUserToDashboard(res.role || 'Student');
 }
 
+window.SmartLearnAuth = {
+    handleLoginSubmit,
+    handleGoogleLogin,
+    redirectUserToDashboard,
+    clearAuthErrors,
+    showAuthAlert
+};
 
-// --- REGISTER FORM HANDLER ---
+// ==========================================
+// REGISTRATION & ACCOUNT ONBOARDING
+// New user registration, role selection, input validation, and auto-login.
+// ==========================================
+
+/**
+ * Configures the registration form submission and validation handlers on register.html.
+ *
+ * Purpose:
+ * Enforces strong password rules (>=8 characters), checks password match, blocks
+ * direct public admin registrations, and automatically logs in new users upon account creation.
+ *
+ * Dependencies:
+ * Endpoint: POST /auth/register (via window.api.register(userData)).
+ */
 function setupRegisterForm() {
     const registerForm = document.getElementById('registerForm');
     if (!registerForm) return;
@@ -809,6 +1080,14 @@ function setupRegisterForm() {
     });
 }
 
+// ==========================================
+// UI FEEDBACK & ERROR HANDLING UTILITIES
+// Inline error banners, input validation feedback, and alerts.
+// ==========================================
+
+/**
+ * Resets all visible error text fields and hides top-level alert banners.
+ */
 function clearAuthErrors() {
     document.querySelectorAll('.error-text').forEach(el => el.textContent = '');
     const alertBox = document.getElementById('authAlert');
@@ -819,6 +1098,12 @@ function clearAuthErrors() {
     }
 }
 
+/**
+ * Sets validation error message text on a designated form field error span.
+ *
+ * @param {string} elementId - DOM ID of target error element.
+ * @param {string} message - Validation message to display.
+ */
 function showError(elementId, message) {
     const el = document.getElementById(elementId);
     if (el) {
@@ -827,6 +1112,12 @@ function showError(elementId, message) {
     }
 }
 
+/**
+ * Displays a styled alert message banner at the top of authentication forms.
+ *
+ * @param {string} message - Alert text.
+ * @param {'error'|'success'} [type='error'] - Type of alert styling.
+ */
 function showAuthAlert(message, type = 'error') {
     const alertBox = document.getElementById('authAlertBanner') || document.getElementById('authAlert');
     if (alertBox) {
@@ -841,6 +1132,18 @@ function showAuthAlert(message, type = 'error') {
     }
 }
 
+// ==========================================
+// SESSION TERMINATION & NAVIGATION CONTROLS
+// Universal logout handler and responsive sidebar toggle for mobile layouts.
+// ==========================================
+
+/**
+ * Binds universal logout listeners to all logout buttons and links across the application.
+ *
+ * Processing:
+ * 1. Signs out of Firebase if initialized.
+ * 2. Invokes window.api.logout() to clear localStorage and redirect to login.html.
+ */
 function setupUniversalLogout() {
     document.querySelectorAll('.logout-btn, #logoutBtn, [data-action="logout"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -861,6 +1164,14 @@ function setupUniversalLogout() {
     });
 }
 
+/**
+ * Manages responsive sidebar toggle for tablet and mobile viewport layouts.
+ *
+ * Processing:
+ * 1. Attaches click handlers to hamburger toggle buttons (.mobile-toggle, #menuToggle).
+ * 2. Toggles 'active' class on sidebar and dark backdrop overlay.
+ * 3. Automatically closes sidebar when any navigation link is clicked on mobile (<= 1024px).
+ */
 function setupMobileSidebarToggle() {
     const toggleBtns = document.querySelectorAll('.mobile-toggle, #menuToggle, #sidebarToggle');
     const sidebar = document.querySelector('.dashboard-sidebar, .app-sidebar');

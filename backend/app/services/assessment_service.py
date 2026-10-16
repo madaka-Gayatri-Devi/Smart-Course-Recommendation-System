@@ -3,7 +3,19 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException, status
 
+# ============================================================================
+# PERFORMANCE TIER CALCULATION & RECOMMENDATION HELPERS
+# ============================================================================
 def calculate_performance_level(percentage: int) -> str:
+    """
+    Determine qualitative performance tier based on assessment percentage score.
+
+    Args:
+        percentage: Calculated integer percentage (0-100).
+
+    Returns:
+        str: Performance category ('Mastery', 'Advanced', 'Intermediate', 'Needs Improvement').
+    """
     if percentage >= 90:
         return "Mastery"
     elif percentage >= 75:
@@ -14,6 +26,16 @@ def calculate_performance_level(percentage: int) -> str:
         return "Needs Improvement"
 
 def get_recommendation_note(performance_level: str, category: str) -> str:
+    """
+    Generate tailored learning advice and next steps based on performance tier and category.
+
+    Args:
+        performance_level: Qualitative performance tier string.
+        category: Subject or skill domain of the assessment.
+
+    Returns:
+        str: Actionable study advice or next learning step recommendation.
+    """
     if performance_level == "Mastery":
         return f"Outstanding mastery in {category}! You are ready for advanced and specialization projects."
     elif performance_level == "Advanced":
@@ -23,13 +45,41 @@ def get_recommendation_note(performance_level: str, category: str) -> str:
     else:
         return f"Foundational review recommended in {category}. Follow the personalized learning path."
 
+# ============================================================================
+# ASSESSMENT SERVICE & SUBMISSION GRADING ENGINE
+# ============================================================================
 class AssessmentService:
     @staticmethod
     def get_all(db: Session, AssessmentModel):
+        """
+        Retrieve all available assessments from the database.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            AssessmentModel: Assessment database model class.
+
+        Returns:
+            List[AssessmentModel]: List of all assessment records.
+        """
         return db.query(AssessmentModel).all()
 
     @staticmethod
     def get_by_id(db: Session, AssessmentModel, QuestionModel, assessment_id: int):
+        """
+        Retrieve a specific assessment and its associated questions.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            AssessmentModel: Assessment ORM model.
+            QuestionModel: Question ORM model.
+            assessment_id: Target assessment ID.
+
+        Returns:
+            Tuple[AssessmentModel, List[QuestionModel]]: Assessment metadata and question set.
+
+        Error handling:
+            Raises HTTPException(404) if assessment is not found.
+        """
         assessment = db.query(AssessmentModel).filter(AssessmentModel.id == assessment_id).first()
         if not assessment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
@@ -39,6 +89,27 @@ class AssessmentService:
 
     @staticmethod
     def submit(db: Session, AssessmentModel, QuestionModel, AttemptModel, user_id: int, assessment_id: int, answers: Dict[str, int]):
+        """
+        Evaluate user answers, calculate score and tier, record attempt, and return diagnostic feedback.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            AssessmentModel: Assessment ORM model.
+            QuestionModel: Question ORM model.
+            AttemptModel: Attempt ORM model.
+            user_id: ID of the submitting student.
+            assessment_id: ID of the assessment being taken.
+            answers: Dictionary mapping question IDs to selected option indices.
+
+        Returns:
+            dict: Detailed diagnostic report with question feedback, score, tier, and recommendation note.
+
+        Purpose:
+            Scores student answers, saves persistent attempt record, and produces learning insights.
+
+        Error handling:
+            Raises HTTPException(404) if assessment missing, or HTTPException(400) if no questions.
+        """
         assessment = db.query(AssessmentModel).filter(AssessmentModel.id == assessment_id).first()
         if not assessment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assessment not found")
@@ -117,6 +188,18 @@ class AssessmentService:
 
     @staticmethod
     def get_user_history(db: Session, AttemptModel, AssessmentModel, user_id: int):
+        """
+        Retrieve the chronological assessment attempt history for a specific student.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            AttemptModel: Attempt ORM model.
+            AssessmentModel: Assessment ORM model.
+            user_id: Database ID of the student.
+
+        Returns:
+            List[dict]: Historical attempt summaries with scores, dates, and categories.
+        """
         attempts = db.query(AttemptModel).filter(AttemptModel.user_id == user_id).order_by(AttemptModel.id.desc()).all()
         history = []
         for att in attempts:

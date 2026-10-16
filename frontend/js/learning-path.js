@@ -1,3 +1,7 @@
+// ==========================================
+// SMARTLEARN PERSONALIZED LEARNING PATH CONTROLLER
+// Renders dynamic progressive milestones and curriculum roadmap aligned with target career goals.
+// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     let currentUser = null;
     let profileData = null;

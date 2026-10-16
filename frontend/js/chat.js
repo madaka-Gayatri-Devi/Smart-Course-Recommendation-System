@@ -23,7 +23,10 @@
     let processedNotificationIds = new Set();
     let selectedMsgIds = new Set();
 
-    // --- CATEGORY & FILTER STATE ---
+    // ==========================================
+// CATEGORY, UNREAD & FILTER STATE
+// Tracks active filter tabs (All, Direct, Groups, Unread), search queries, and selected conversations.
+// ==========================================
     let activeCategory = 'chats'; // 'chats', 'unread', 'groups', 'personal'
     let searchQuery = '';
 
@@ -31,10 +34,23 @@
     let pinnedConvs = new Set(JSON.parse(localStorage.getItem('smartlearn_pinned_chats') || '[]'));
     let mutedConvs = new Set(JSON.parse(localStorage.getItem('smartlearn_muted_chats') || '[]'));
 
+    // Track origin group conversation for returning back when direct messaging a member
+    window.previousGroupConversation = null;
+
     document.addEventListener('DOMContentLoaded', () => {
         initChatApp();
     });
 
+        /**
+     * Initializes the chat application lifecycle, authenticates credentials, and opens connections.
+     *
+     * Purpose:
+     * Validates active session token, initializes audio alerts, binds DOM events, connects
+     * WebSocket, fetches conversation list, and handles URL direct-linking (?conv_id=).
+     *
+     * Dependencies:
+     * window.api (getCurrentUser, getToken), setupDOMEvents, connectWebSocket, loadConversations.
+     */
     async function initChatApp() {
         currentUser = window.api ? window.api.getCurrentUser() : null;
         currentToken = window.api ? window.api.getToken() : null;
@@ -65,8 +81,35 @@
         }
     }
 
-    // --- WEBSOCKET REAL-TIME ENGINE ---
+    // ==========================================
+// WEBSOCKET REAL-TIME ENGINE & CONNECTION RECOVERY
+// Manages real-time connection (/chat/ws), status pill, heartbeat, and server event dispatching.
+// ==========================================
 
+    function updateConnectionStatus(isConnected) {
+        const pill = document.getElementById('wsConnectionPill');
+        if (!pill) return;
+        if (isConnected) {
+            pill.className = 'ws-connection-status-pill connected';
+            pill.innerHTML = `<span class="status-dot"></span><span class="status-text">Connected</span>`;
+        } else {
+            pill.className = 'ws-connection-status-pill disconnected';
+            pill.innerHTML = `<span class="status-dot"></span><span class="status-text">Connection lost. Reconnecting...</span>`;
+        }
+    }
+
+        /**
+     * Establishes real-time duplex WebSocket connection to the chat server.
+     *
+     * Purpose:
+     * Transmits new messages, typing indicators, read receipts, and reactions in real time.
+     *
+     * Endpoint:
+     * ws(s)://<host>:8080/chat/ws?token=<token>
+     *
+     * Error handling / Debugging:
+     * Triggers reconnect attempt after 4 seconds on abnormal disconnect.
+     */
     function connectWebSocket() {
         const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname || '127.0.0.1';
@@ -77,6 +120,7 @@
 
             ws.onopen = () => {
                 console.log('[ChatWS] Connected successfully.');
+                updateConnectionStatus(true);
             };
 
             ws.onmessage = (event) => {
@@ -90,17 +134,29 @@
 
             ws.onclose = () => {
                 console.warn('[ChatWS] Disconnected. Reconnecting in 4 seconds...');
+                updateConnectionStatus(false);
                 setTimeout(connectWebSocket, 4000);
             };
 
             ws.onerror = (err) => {
                 console.error('[ChatWS] Error:', err);
+                updateConnectionStatus(false);
             };
         } catch (e) {
             console.error('[ChatWS] Init error:', e);
+            updateConnectionStatus(false);
         }
     }
 
+        /**
+     * Dispatches inbound real-time WebSocket events to UI controllers.
+     *
+     * @param {Object} payload - Event object { type, data, conversation_id }.
+     *
+     * Purpose:
+     * Reacts to NEW_MESSAGE, MESSAGE_EDITED, MESSAGE_DELETED, REACTION_TOGGLED,
+     * USER_TYPING, and READ_RECEIPT events without full-page reloads.
+     */
     function handleWSEvent(payload) {
         const { type, data } = payload;
 
@@ -206,7 +262,10 @@
         }
     }
 
-    // --- DATA LOADING & RENDERING ---
+    // ==========================================
+// CONVERSATIONS & CONTACTS DATA LOADING
+// Fetches conversation lists, allowed directory contacts, and renders sidebar list items.
+// ==========================================
 
     async function loadConversations() {
         try {
@@ -454,6 +513,7 @@
         const isOnline = c.other_user ? c.other_user.is_online : false;
         const isPinned = pinnedConvs.has(c.id);
         const isMuted = mutedConvs.has(c.id);
+        const hasUnread = c.unread_count > 0;
 
         const avatarText = c.other_user ? getInitials(c.other_user.full_name) : (c.title ? c.title.substring(0, 2).toUpperCase() : 'GP');
         const avatarSrc = c.other_user ? c.other_user.profile_image : null;
@@ -464,10 +524,22 @@
                 lastMsgText = c.last_message.content;
             } else if (c.last_message.attachments && c.last_message.attachments.length > 0) {
                 const att = c.last_message.attachments[0];
-                if (att.file_type && att.file_type.startsWith('image/')) {
+                const fileType = (att.file_type || '').toLowerCase();
+                const fileName = (att.file_name || '').toLowerCase();
+                if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => fileName.endsWith('.' + ext))) {
                     lastMsgText = '📷 Image';
+                } else if (fileName.endsWith('.pdf')) {
+                    lastMsgText = '📄 PDF document';
+                } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx') || fileName.endsWith('.csv')) {
+                    lastMsgText = '📊 Excel spreadsheet';
+                } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+                    lastMsgText = '📝 Word document';
+                } else if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+                    lastMsgText = '📊 PowerPoint presentation';
+                } else if (fileName.endsWith('.zip') || fileName.endsWith('.rar') || fileName.endsWith('.7z')) {
+                    lastMsgText = '📦 Archive file';
                 } else {
-                    lastMsgText = `📎 ${att.file_name || 'Document'}`;
+                    lastMsgText = `📎 Document attachment`;
                 }
             } else {
                 lastMsgText = 'Shared attachment';
@@ -477,24 +549,24 @@
         const lastMsgTime = c.last_message ? formatShortTime(c.last_message.created_at) : '';
 
         return `
-            <div class="chat-conv-item ${isActive}" data-conv-id="${c.id}">
+            <div class="chat-conv-item ${isActive} ${hasUnread ? 'has-unread' : ''}" data-conv-id="${c.id}">
                 <div class="chat-avatar-wrapper">
                     <div class="chat-avatar">
                         ${avatarSrc ? `<img src="${window.api.getImageUrl(avatarSrc)}" alt="${escapeHTML(c.title)}">` : avatarText}
                     </div>
-                    ${c.type === 'PERSONAL' ? `<span class="${isOnline ? 'online-indicator' : 'offline-indicator'}"></span>` : ''}
+                    ${c.type === 'PERSONAL' ? `<span class="${isOnline ? 'online-indicator' : 'offline-indicator'}" title="${isOnline ? 'Online' : 'Offline'}"></span>` : ''}
                 </div>
                 <div class="chat-conv-info">
                     <div class="chat-conv-top">
-                        <span class="chat-conv-name">
+                        <span class="chat-conv-name" style="${hasUnread ? 'font-weight: 800;' : ''}">
                             ${escapeHTML(c.title)}
                             ${isPinned ? `<i class="fa-solid fa-thumbtack chat-pin-badge"></i>` : ''}
                             ${isMuted ? `<i class="fa-solid fa-volume-xmark chat-mute-badge"></i>` : ''}
                         </span>
-                        <span class="chat-conv-time">${lastMsgTime}</span>
+                        <span class="chat-conv-time" style="${hasUnread ? 'color: #5B3FE8; font-weight: 700;' : ''}">${lastMsgTime}</span>
                     </div>
                     <div class="chat-conv-bottom">
-                        <p class="chat-conv-last-msg">${escapeHTML(lastMsgText)}</p>
+                        <p class="chat-conv-last-msg" style="${hasUnread ? 'font-weight: 700; color: #172033;' : ''}">${escapeHTML(lastMsgText)}</p>
                         ${c.unread_count > 0 ? `<span class="chat-unread-badge">${c.unread_count}</span>` : ''}
                     </div>
                 </div>
@@ -528,6 +600,18 @@
         `;
     }
 
+        /**
+     * Selects and opens an active conversation thread in the chat interface.
+     *
+     * @param {number|string} convId - Primary key ID of conversation to load.
+     *
+     * Purpose:
+     * Fetches conversation details, updates header, marks messages as read,
+     * and streams recent message history into view.
+     *
+     * Dependencies:
+     * window.api.getConversationDetails, loadActiveMessages, renderChatHeader.
+     */
     async function openConversation(convId) {
         activeConvId = convId;
         if (window.clearMessageSelection) window.clearMessageSelection();
@@ -546,7 +630,21 @@
 
         await loadActiveMessages(convId);
         await window.api.markConversationRead(convId);
+
+        // Auto-refresh Contact Info panel or Group Members modal when switching conversations
+        if (document.getElementById('chatContactPanel')) {
+            window.openContactInfoPanel(convId);
+        }
+        const existingMembersModal = document.getElementById('groupMembersModal');
+        if (existingMembersModal) {
+            if (conv && conv.type !== 'PERSONAL') {
+                window.viewGroupMembers(convId);
+            } else {
+                existingMembersModal.remove();
+            }
+        }
     }
+
 
     function renderChatHeader(conv) {
         const headerTitle = document.getElementById('chatHeaderTitle');
@@ -559,7 +657,7 @@
             if (conv.type === 'COURSE_GROUP') {
                 headerSubtitle.textContent = `Course Group • ${conv.members_count || 1} members`;
             } else if (conv.type === 'PERSONAL' && conv.other_user) {
-                headerSubtitle.textContent = `${conv.other_user.role} • ${conv.other_user.is_online ? '🟢 Online' : '⚪ Offline'}`;
+                headerSubtitle.innerHTML = `${escapeHTML(conv.other_user.role || 'Student')} • ${conv.other_user.is_online ? '<span style="color:#10B981; font-weight:700;">● Online</span>' : '<span style="color:#94A3B8;">Offline</span>'}`;
             } else {
                 headerSubtitle.textContent = `${conv.type} • ${conv.members_count || 1} members`;
             }
@@ -582,21 +680,20 @@
         const actionsContainer = document.querySelector('.chat-header-actions');
         if (actionsContainer) {
             const isPinned = pinnedConvs.has(conv.id);
-            const isMuted = mutedConvs.has(conv.id);
 
             let actionHtml = `<span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: #5B3FE8; font-weight: 600; margin-right: 0.5rem;"></span>`;
 
             actionHtml += `
-                <button class="chat-action-btn" title="Search Messages" onclick="window.openSearchMessagesModal(${conv.id})">
+                <button class="chat-action-btn" title="Search messages" onclick="window.openSearchMessagesModal(${conv.id})">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
-                <button class="chat-action-btn" title="Contact Info" onclick="window.openContactInfoPanel(${conv.id})">
+                <button class="chat-action-btn" title="Conversation information" onclick="window.openContactInfoPanel(${conv.id})">
                     <i class="fa-solid fa-circle-info"></i>
                 </button>
-                <button class="chat-action-btn" title="Media, Links and Docs" onclick="window.openSharedContentPanel(${conv.id})">
+                <button class="chat-action-btn" title="Shared media and files" onclick="window.openSharedContentPanel(${conv.id})">
                     <i class="fa-solid fa-folder-open"></i>
                 </button>
-                <button class="chat-action-btn ${isPinned ? 'active' : ''}" title="${isPinned ? 'Unpin Conversation' : 'Pin Conversation'}" onclick="window.togglePinConv(${conv.id})">
+                <button class="chat-action-btn ${isPinned ? 'active' : ''}" title="Pinned messages" onclick="window.openPinnedMessagesModal(${conv.id})">
                     <i class="fa-solid fa-thumbtack" style="${isPinned ? 'color:#5B3FE8;' : ''}"></i>
                 </button>
                 <button class="chat-action-btn" id="chatHeaderMoreBtn" title="More options" onclick="window.toggleHeaderMoreMenu(event, ${conv.id})">
@@ -606,9 +703,186 @@
 
             actionsContainer.innerHTML = actionHtml;
         }
+
+        renderReturnToGroupBanner(conv);
     }
 
-    // --- PIN & MUTE HANDLERS ---
+    /**
+     * Renders a return to group banner above messages when direct chatting a member from a group.
+     */
+    function renderReturnToGroupBanner(conv) {
+        const existingBanner = document.getElementById('chatBackToGroupBanner');
+        if (existingBanner) existingBanner.remove();
+
+        if (conv && conv.type === 'PERSONAL' && window.previousGroupConversation) {
+            const chatMain = document.querySelector('.chat-main');
+            const messagesContainer = document.getElementById('chatMessagesContainer');
+            if (chatMain && messagesContainer) {
+                const banner = document.createElement('div');
+                banner.id = 'chatBackToGroupBanner';
+                banner.className = 'chat-back-to-group-banner';
+                banner.innerHTML = `
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Return to group: <strong>${escapeHTML(window.previousGroupConversation.title)}</strong></span>
+                `;
+                banner.title = `Return to ${escapeHTML(window.previousGroupConversation.title)}`;
+                banner.onclick = () => window.returnToPreviousGroup();
+                chatMain.insertBefore(banner, messagesContainer);
+            }
+        } else if (conv && conv.type !== 'PERSONAL') {
+            window.previousGroupConversation = null;
+        }
+    }
+
+    /**
+     * Returns back to the previously active group conversation.
+     */
+    window.returnToPreviousGroup = async () => {
+        if (window.previousGroupConversation) {
+            const targetId = window.previousGroupConversation.id;
+            window.previousGroupConversation = null;
+            const banner = document.getElementById('chatBackToGroupBanner');
+            if (banner) banner.remove();
+            await openConversation(targetId);
+        }
+    };
+
+    /**
+     * Opens a direct one-to-one conversation when clicking a group member.
+     * Identifies member, checks existing personal conversation or initializes a new one,
+     * updates message history, headers, and conversation list.
+     */
+    window.openDirectChatWithMember = async (targetUserId, sourceGroupId) => {
+        if (!targetUserId) return;
+        const curUser = window.api ? window.api.getCurrentUser() : currentUser;
+
+        // Remember origin group for returning back seamlessly
+        let sourceConv = null;
+        if (sourceGroupId) {
+            sourceConv = conversations.find(c => c.id === sourceGroupId);
+        }
+        if (!sourceConv && activeConvId) {
+            const activeC = conversations.find(c => c.id === activeConvId);
+            if (activeC && activeC.type !== 'PERSONAL') {
+                sourceConv = activeC;
+            }
+        }
+        if (sourceConv) {
+            window.previousGroupConversation = {
+                id: sourceConv.id,
+                title: sourceConv.title
+            };
+        }
+
+        // Close any open member modals or contextual dropdowns
+        const modal = document.getElementById('groupMembersModal');
+        if (modal) modal.remove();
+        const activeDrop = document.getElementById('activeMemberDropdown');
+        if (activeDrop) activeDrop.remove();
+
+        // Check if member clicked is current logged-in user
+        if (curUser && targetUserId === curUser.id) {
+            const selfConv = conversations.find(c =>
+                c.type === 'PERSONAL' && (!c.other_user || c.other_user.id === curUser.id || c.title === 'Myself')
+            );
+            if (selfConv) {
+                await openConversation(selfConv.id);
+                return;
+            }
+        }
+
+        try {
+            // 1. Check whether a direct conversation already exists between current user and target member
+            let existingConv = conversations.find(c =>
+                c.type === 'PERSONAL' && c.other_user && c.other_user.id === targetUserId
+            );
+
+            if (existingConv) {
+                await openConversation(existingConv.id);
+                return;
+            }
+
+            // 2. If none exists, create or initialize direct conversation using backend API
+            const newConv = await window.api.createConversation({
+                type: 'PERSONAL',
+                target_user_id: targetUserId
+            });
+
+            // 3. Reload conversations list to update previews and category counts
+            await loadConversations();
+
+            // 4. Open the new direct conversation
+            const targetId = newConv ? newConv.id : null;
+            if (targetId) {
+                await openConversation(targetId);
+            } else {
+                const found = conversations.find(c =>
+                    c.type === 'PERSONAL' && c.other_user && c.other_user.id === targetUserId
+                );
+                if (found) await openConversation(found.id);
+            }
+        } catch (err) {
+            console.error('[OpenDirectChat] Error:', err);
+            alert(err.message || 'Could not open direct conversation with this member.');
+        }
+    };
+
+    /**
+     * Toggles the 3-dots action dropdown popup for a group member (Message & Block).
+     */
+    window.toggleMemberOptionsMenu = (e, targetUserId, sourceGroupId, targetUserName) => {
+        e.stopPropagation();
+        const existing = document.getElementById('activeMemberDropdown');
+        if (existing) {
+            existing.remove();
+        }
+
+        const btn = e.currentTarget;
+        const parentRow = btn.closest('.group-member-item, .modal-member-row');
+        if (!parentRow) return;
+
+        const dropdown = document.createElement('div');
+        dropdown.id = 'activeMemberDropdown';
+        dropdown.className = 'group-member-dropdown';
+
+        dropdown.innerHTML = `
+            <div class="group-member-dropdown-item" data-action="message">
+                <i class="fa-regular fa-comment-dots" style="color:#5B3FE8;"></i>
+                <span>Message</span>
+            </div>
+            <div class="group-member-dropdown-item block-action" data-action="block">
+                <i class="fa-solid fa-ban" style="color:#EF4444;"></i>
+                <span>Block</span>
+            </div>
+        `;
+
+        dropdown.querySelector('[data-action="message"]').addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            dropdown.remove();
+            window.openDirectChatWithMember(targetUserId, sourceGroupId);
+        });
+
+        dropdown.querySelector('[data-action="block"]').addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            dropdown.remove();
+            alert(`Direct messages and notifications from ${targetUserName || 'this user'} have been muted.`);
+        });
+
+        parentRow.appendChild(dropdown);
+
+        const onDocClick = (ev) => {
+            if (!dropdown.contains(ev.target)) {
+                dropdown.remove();
+                document.removeEventListener('click', onDocClick);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', onDocClick), 10);
+    };
+
+    // ==========================================
+// PIN & MUTE CONVERSATION PREFERENCES
+// Manages pinned chat ordering and muted notification preferences stored in localStorage.
+// ==========================================
     window.togglePinConv = (convId) => {
         if (pinnedConvs.has(convId)) {
             pinnedConvs.delete(convId);
@@ -637,7 +911,10 @@
         }
     };
 
-    // --- CONTACT INFO & SHARED MEDIA PANELS ---
+    // ==========================================
+// CONTACT INFO, SHARED MEDIA & FILE PREVIEWS
+// Manages sidebar media drawer, document tabs, and contact profile overviews.
+// ==========================================
 
     let currentSharedSearch = '';
     let activeSharedTab = 'media'; // 'media', 'docs', 'links'
@@ -724,10 +1001,29 @@
                     </div>
 
                     ${info.type !== 'PERSONAL' ? `
-                        <div class="contact-media-trigger-card" onclick="window.viewGroupMembers(${targetId})">
-                            <div class="trigger-card-top">
-                                <span class="trigger-card-title"><i class="fa-solid fa-users" style="color:#5B3FE8;"></i> Group Members</span>
-                                <span class="trigger-card-count">${info.members_count} <i class="fa-solid fa-chevron-right" style="font-size:0.7rem; margin-left:2px;"></i></span>
+                        <div class="contact-group-members-card">
+                            <div class="contact-media-trigger-card" onclick="window.toggleGroupMembersAccordion(${targetId})">
+                                <div class="trigger-card-top">
+                                    <span class="trigger-card-title"><i class="fa-solid fa-users" style="color:#5B3FE8;"></i> Group Members</span>
+                                    <span class="trigger-card-count">
+                                        <span id="groupMemberCountBadge_${targetId}">${info.members_count || 0}</span>
+                                        <i id="groupMembersChevron_${targetId}" class="fa-solid fa-chevron-down" style="font-size:0.75rem; margin-left:4px; transition: transform 0.2s;"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div id="groupMembersAccordion_${targetId}" class="group-members-accordion" style="display: block;">
+                                <div class="group-members-accordion-header">
+                                    <input type="text" id="groupMemberSearch_${targetId}" class="group-member-search-input" placeholder="Search members..." oninput="window.filterGroupMembersList(${targetId}, this.value)">
+                                    <button type="button" class="group-members-modal-btn" onclick="window.viewGroupMembers(${targetId})" title="Open Full View">
+                                        <i class="fa-solid fa-up-right-from-square"></i> Full
+                                    </button>
+                                </div>
+                                <div id="groupMembersList_${targetId}" class="group-members-list-container">
+                                    <div style="text-align:center; padding: 12px; color: #64748B; font-size: 0.8rem;">
+                                        <i class="fa-solid fa-spinner fa-spin" style="color:#5B3FE8;"></i> Loading members...
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     ` : ''}
@@ -735,6 +1031,11 @@
             `;
 
             container.appendChild(panel);
+
+            if (info.type !== 'PERSONAL') {
+                window.loadGroupMembersIntoAccordion(targetId);
+            }
+
         } catch (err) {
             console.error('[ContactInfo] Error:', err);
             alert('Unable to load contact information.');
@@ -922,7 +1223,7 @@
                                 <div class="shared-doc-meta">${formatFileSize(d.file_size)} • Shared by ${escapeHTML(d.sender_name)} ${dateFormatted ? '• ' + dateFormatted : ''}</div>
                             </div>
                             <div class="shared-doc-actions">
-                                <a href="${url}" target="_blank" class="doc-btn" title="Open/Preview"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                                <button type="button" onclick="window.openDocumentPreviewModal('${url}', '${escapeHTML(d.file_name)}', '${d.file_type || ''}')" class="doc-btn" title="Open/Preview"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</button>
                                 <a href="${url}" download="${escapeHTML(d.file_name)}" class="doc-btn" title="Download"><i class="fa-solid fa-download"></i></a>
                             </div>
                         </div>
@@ -1022,6 +1323,108 @@
                 </div>
             </div>
             <video src="${videoUrl}" controls autoplay class="lightbox-content" style="max-width:85vw; max-height:85vh; border-radius:12px;" onclick="event.stopPropagation()"></video>
+        `;
+
+        document.body.appendChild(modal);
+    };
+
+    window.openDocumentPreviewModal = (fileUrl, fileName, fileType) => {
+        const ext = (fileName.includes('.') ? fileName.split('.').pop() : '').toLowerCase();
+        const isPdf = ext === 'pdf' || (fileType && fileType.includes('pdf'));
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext) || (fileType && fileType.startsWith('image/'));
+
+        if (isImage) {
+            window.showImageLightbox(fileUrl, fileName);
+            return;
+        }
+
+        const existing = document.getElementById('docPreviewModal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'docPreviewModal';
+        modal.style.cssText = `
+            position: fixed; inset: 0; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px);
+            display: flex; flex-direction: column; z-index: 100000; padding: 1rem;
+        `;
+
+        let bodyContent = '';
+        if (isPdf) {
+            bodyContent = `<iframe src="${fileUrl}" style="width: 100%; height: 100%; border: none; border-radius: 8px; background: #FFFFFF;"></iframe>`;
+        } else {
+            const iconConfig = getDocIconConfig(fileName, fileType);
+            bodyContent = `
+                <div style="margin: auto; text-align: center; color: #FFFFFF; max-width: 420px; background: #172033; padding: 2rem; border-radius: 16px; border: 1px solid #334155;">
+                    <i class="${iconConfig.icon}" style="font-size: 3.5rem; color: ${iconConfig.color}; margin-bottom: 1rem; display: block;"></i>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.5rem; word-break: break-all;">${escapeHTML(fileName)}</h3>
+                    <p style="font-size: 0.85rem; color: #94A3B8; margin-bottom: 1.5rem;">This file type cannot be previewed directly in the browser.</p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                        <a href="${fileUrl}" download="${escapeHTML(fileName)}" style="background: #5B3FE8; color: #FFFFFF; padding: 0.6rem 1.25rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;"><i class="fa-solid fa-download"></i> Download File</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        modal.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; background: #172033; border-radius: 12px 12px 0 0; border-bottom: 1px solid #334155;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                    <i class="fa-solid fa-file-lines" style="color: #5B3FE8; font-size: 1.2rem;"></i>
+                    <span style="font-size: 0.95rem; font-weight: 700; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(fileName)}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <a href="${fileUrl}" download="${escapeHTML(fileName)}" style="color: #FFFFFF; font-size: 1.1rem; text-decoration: none;" title="Download"><i class="fa-solid fa-download"></i></a>
+                    <button onclick="document.getElementById('docPreviewModal').remove()" style="background: none; border: none; color: #FFFFFF; font-size: 1.6rem; cursor: pointer; padding: 0 0.5rem;">&times;</button>
+                </div>
+            </div>
+            <div style="flex: 1; min-height: 0; background: #0F172A; border-radius: 0 0 12px 12px; overflow: hidden; display: flex;">
+                ${bodyContent}
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    };
+
+    window.openPinnedMessagesModal = (convId) => {
+        const existing = document.getElementById('pinnedMsgsModal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'pinnedMsgsModal';
+        modal.style.cssText = `
+            position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(2px);
+            display: flex; align-items: center; justify-content: center; z-index: 100000;
+        `;
+
+        const pinnedList = activeMessages.filter(m => m.is_pinned);
+
+        modal.innerHTML = `
+            <div style="background: #FFFFFF; border-radius: 16px; width: 90%; max-width: 500px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid #E2E8F0;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-thumbtack" style="color: #5B3FE8;"></i>
+                        <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A; margin: 0;">Pinned Messages</h3>
+                    </div>
+                    <button onclick="document.getElementById('pinnedMsgsModal').remove()" style="background: #F1F5F9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; color: #64748B;">&times;</button>
+                </div>
+
+                <div style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.65rem;">
+                    ${pinnedList.length === 0 ? `
+                        <div style="text-align: center; color: #64748B; padding: 2rem 1rem;">
+                            <i class="fa-solid fa-thumbtack" style="font-size: 2.25rem; color: #CBD5E1; margin-bottom: 0.5rem; display: block;"></i>
+                            <p style="font-size: 0.9rem; font-weight: 700; color: #334155; margin: 0 0 4px 0;">No pinned messages</p>
+                            <p style="font-size: 0.8rem; color: #64748B; margin: 0;">Pin important messages from the options menu on any message.</p>
+                        </div>
+                    ` : pinnedList.map(m => `
+                        <div onclick="window.scrollToOriginalMessage(${m.id}); document.getElementById('pinnedMsgsModal').remove();" style="padding: 0.75rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='#F3EEFF'" onmouseout="this.style.background='#F8FAFC'">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748B; margin-bottom: 4px;">
+                                <strong style="color: #5B3FE8;">${escapeHTML(m.sender_name)}</strong>
+                                <span>${formatTime(m.created_at)}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #172033;">${escapeHTML(m.content || 'Attachment')}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
         `;
 
         document.body.appendChild(modal);
@@ -1156,71 +1559,346 @@
         });
     };
 
+    // ==========================================
+// GROUP PARTICIPANTS & MEMBER ROSTER
+// Queries group members from backend, renders role badges (Admin/Instructor/Student), and supports 1-to-1 direct messaging.
+// ==========================================
+    let groupMembersCache = {};
+
+    window.toggleGroupMembersAccordion = (groupId) => {
+        const accordion = document.getElementById(`groupMembersAccordion_${groupId}`);
+        const chevron = document.getElementById(`groupMembersChevron_${groupId}`);
+        if (!accordion) return;
+
+        const isHidden = accordion.style.display === 'none';
+        accordion.style.display = isHidden ? 'block' : 'none';
+        if (chevron) {
+            chevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+        }
+        if (isHidden && !groupMembersCache[groupId]) {
+            window.loadGroupMembersIntoAccordion(groupId);
+        }
+    };
+
+    window.loadGroupMembersIntoAccordion = async (groupId) => {
+        const listEl = document.getElementById(`groupMembersList_${groupId}`);
+        const countBadge = document.getElementById(`groupMemberCountBadge_${groupId}`);
+        if (!listEl) return;
+
+        listEl.innerHTML = `
+            <div style="text-align:center; padding: 14px; color: #64748B; font-size: 0.8rem;">
+                <i class="fa-solid fa-spinner fa-spin" style="color:#5B3FE8;"></i> Loading actual group members...
+            </div>
+        `;
+
+        try {
+            const data = await window.api.getGroupMembers(groupId);
+            groupMembersCache[groupId] = data;
+
+            if (countBadge) {
+                countBadge.textContent = data.total_members || (data.members ? data.members.length : 0);
+            }
+
+            renderGroupMembersAccordionList(groupId, data.members, data.instructor);
+        } catch (err) {
+            listEl.innerHTML = `
+                <div style="text-align:center; padding: 12px; color: #EF4444; font-size: 0.8rem;">
+                    <div><i class="fa-solid fa-triangle-exclamation"></i> Could not load members</div>
+                    <button type="button" onclick="window.loadGroupMembersIntoAccordion(${groupId})" style="margin-top:6px; background:#5B3FE8; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:0.75rem; cursor:pointer;">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button>
+                </div>
+            `;
+        }
+    };
+
+    function renderGroupMembersAccordionList(groupId, members, instructor) {
+        const listEl = document.getElementById(`groupMembersList_${groupId}`);
+        if (!listEl) return;
+
+        if (!members || members.length === 0) {
+            listEl.innerHTML = `
+                <div style="text-align:center; padding: 16px; color: #64748B; font-size: 0.8rem;">
+                    No members in this group yet.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+
+        if (instructor) {
+            html += `
+                <div class="group-accordion-instructor-banner">
+                    <i class="fa-solid fa-chalkboard-user" style="color:#5B3FE8;"></i>
+                    <span><strong>Instructor:</strong> ${escapeHTML(instructor.full_name)}</span>
+                </div>
+            `;
+        }
+
+        members.forEach(m => {
+            const role = (m.role || 'Student').toLowerCase();
+            const groupRole = (m.group_role || role).toLowerCase();
+            const roleBadgeColor = groupRole === 'instructor' || role === 'instructor'
+                ? '#5B3FE8'
+                : (groupRole === 'admin' || role === 'admin' ? '#DC2626' : '#059669');
+            const roleBadgeBg = groupRole === 'instructor' || role === 'instructor'
+                ? 'rgba(91, 63, 232, 0.1)'
+                : (groupRole === 'admin' || role === 'admin' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)');
+            const displayRole = (groupRole === 'instructor' ? 'INSTRUCTOR' : (groupRole === 'admin' ? 'ADMIN' : (m.role || 'STUDENT'))).toUpperCase();
+
+            html += `
+                <div class="group-member-item" data-user-id="${m.id}" data-group-id="${groupId}" role="button" tabindex="0" title="Click to chat with ${escapeHTML(m.full_name)}">
+                    <div class="group-member-item-left">
+                        <div class="chat-avatar" style="width: 32px; height: 32px; font-size: 0.75rem; flex-shrink: 0;">
+                            ${m.profile_image ? `<img src="${window.api.getImageUrl(m.profile_image)}" alt="${escapeHTML(m.full_name)}">` : getInitials(m.full_name)}
+                        </div>
+                        <div class="group-member-item-info">
+                            <span class="group-member-item-name">${escapeHTML(m.full_name)}</span>
+                            <span class="group-member-item-email">${escapeHTML(m.email)}</span>
+                        </div>
+                    </div>
+                    <div class="group-member-item-right">
+                        <span class="group-member-role-badge" style="color:${roleBadgeColor}; background:${roleBadgeBg};">${displayRole}</span>
+                        <span class="group-member-status-dot ${m.is_online ? 'online' : 'offline'}" title="${m.is_online ? 'Online' : 'Offline'}"></span>
+                        <button type="button" class="group-member-menu-btn" data-user-id="${m.id}" data-user-name="${escapeHTML(m.full_name)}" title="Member options" aria-label="Member options">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = html;
+
+        // Attach click listeners to open direct conversation and handle 3-dots menu
+        listEl.querySelectorAll('.group-member-item').forEach(item => {
+            const uid = parseInt(item.dataset.userId, 10);
+            const gid = parseInt(item.dataset.groupId, 10);
+            const uName = item.querySelector('.group-member-item-name')?.textContent || '';
+
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.group-member-menu-btn') || e.target.closest('.group-member-dropdown')) return;
+                window.openDirectChatWithMember(uid, gid);
+            });
+
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.openDirectChatWithMember(uid, gid);
+                }
+            });
+
+            const menuBtn = item.querySelector('.group-member-menu-btn');
+            if (menuBtn) {
+                menuBtn.addEventListener('click', (e) => {
+                    window.toggleMemberOptionsMenu(e, uid, gid, uName);
+                });
+            }
+        });
+    }
+
+    window.filterGroupMembersList = (groupId, query) => {
+        const cached = groupMembersCache[groupId];
+        if (!cached || !cached.members) return;
+
+        const q = (query || '').trim().toLowerCase();
+        if (!q) {
+            renderGroupMembersAccordionList(groupId, cached.members, cached.instructor);
+            return;
+        }
+
+        const filtered = cached.members.filter(m =>
+            (m.full_name && m.full_name.toLowerCase().includes(q)) ||
+            (m.email && m.email.toLowerCase().includes(q)) ||
+            (m.role && m.role.toLowerCase().includes(q)) ||
+            (m.group_role && m.group_role.toLowerCase().includes(q))
+        );
+
+        renderGroupMembersAccordionList(groupId, filtered, cached.instructor);
+    };
+
     window.viewGroupMembers = async (groupId) => {
         try {
             const groupData = await window.api.getGroupMembers(groupId);
+            groupMembersCache[groupId] = groupData;
             showGroupMembersModal(groupData);
         } catch (err) {
             alert(err.message || 'Could not load group members.');
         }
     };
 
+        /**
+     * Opens modal dialog displaying all enrolled participants in a group chat.
+     *
+     * @param {Object} data - Group members payload { group_id, members: [...] }.
+     *
+     * Purpose:
+     * Displays searchable member roster with role pills (Admin, Instructor, Student)
+     * and direct message shortcuts.
+     */
     function showGroupMembersModal(data) {
         const existing = document.getElementById('groupMembersModal');
         if (existing) existing.remove();
 
-        let html = `
-            <div class="modal-overlay" id="groupMembersModal" style="position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-                <div style="background: #FFFFFF; border-radius: 16px; width: 90%; max-width: 480px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid #E2E8F0;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem;">
-                        <div>
-                            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 0;">${escapeHTML(data.title)}</h3>
-                            <span style="font-size: 0.8rem; color: #64748B;">Group Members • ${data.total_members} Total</span>
-                        </div>
-                        <button onclick="document.getElementById('groupMembersModal').remove()" style="background: #F1F5F9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; color: #64748B;">&times;</button>
-                    </div>
+        const modal = document.createElement('div');
+        modal.id = 'groupMembersModal';
+        modal.className = 'modal-overlay';
+        modal.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 10000;';
 
-                    ${data.instructor ? `
-                        <div style="background: #EEF2FF; border-left: 4px solid #6366F1; padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #1E293B;">
+        const total = data.total_members || (data.members ? data.members.length : 0);
+
+        modal.innerHTML = `
+            <div style="background: #FFFFFF; border-radius: 18px; width: 92%; max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; padding: 1.5rem; box-shadow: 0 25px 40px -10px rgba(15,23,42,0.25); border: 1px solid #E2E8F0; overflow: hidden;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.85rem;">
+                    <div>
+                        <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 0; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-users" style="color:#5B3FE8;"></i> ${escapeHTML(data.title)}
+                        </h3>
+                        <span style="font-size: 0.825rem; color: #64748B; font-weight: 500;">
+                            Actual Group Members • <strong id="modalGroupMemberCount">${total}</strong> Total
+                        </span>
+                    </div>
+                    <button type="button" class="modal-close-btn" onclick="document.getElementById('groupMembersModal').remove()" style="background: #F1F5F9; border: none; border-radius: 50%; width: 34px; height: 34px; font-size: 1.15rem; cursor: pointer; color: #64748B; display:flex; align-items:center; justify-content:center; transition: all 0.15s ease;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                ${data.instructor ? `
+                    <div style="background: #EEF2FF; border-left: 4px solid #5B3FE8; padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.85rem; font-size: 0.85rem; color: #1E293B; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-chalkboard-user" style="color:#5B3FE8;"></i>
+                        <div>
                             <strong>Course Instructor:</strong> ${escapeHTML(data.instructor.full_name)} (${escapeHTML(data.instructor.email)})
                         </div>
-                    ` : ''}
-
-                    <div style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
-        `;
-
-        data.members.forEach(m => {
-            const roleBadgeColor = m.role.toLowerCase() === 'instructor' ? '#4F46E5' : (m.role.toLowerCase() === 'admin' ? '#EF4444' : '#10B981');
-            html += `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.75rem; border-radius: 10px; background: #F8FAFC; border: 1px solid #F1F5F9;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem;">
-                        <div class="chat-avatar" style="width: 34px; height: 34px; font-size: 0.8rem;">
-                            ${m.profile_image ? `<img src="${window.api.getImageUrl(m.profile_image)}" alt="${escapeHTML(m.full_name)}">` : getInitials(m.full_name)}
-                        </div>
-                        <div>
-                            <strong style="font-size: 0.875rem; color: #0F172A; display: block;">${escapeHTML(m.full_name)}</strong>
-                            <span style="font-size: 0.75rem; color: #64748B;">${escapeHTML(m.email)}</span>
-                        </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 0.675rem; font-weight: 800; color: ${roleBadgeColor}; background: rgba(0,0,0,0.04); padding: 0.2rem 0.55rem; border-radius: 9999px;">${m.role.toUpperCase()}</span>
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: ${m.is_online ? '#10B981' : '#CBD5E1'};" title="${m.is_online ? 'Online' : 'Offline'}"></span>
-                    </div>
+                ` : ''}
+
+                <div style="margin-bottom: 0.85rem; position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 0.85rem;"></i>
+                    <input type="text" id="modalMemberSearchInput" placeholder="Filter members by name or email..." style="width: 100%; box-sizing: border-box; padding: 8px 12px 8px 34px; border: 1px solid #E2E8F0; border-radius: 10px; font-size: 0.85rem; outline: none; background: #F8FAFC;">
                 </div>
-            `;
-        });
 
-        html += `
-                    </div>
+                <div id="modalMembersList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 4px; max-height: 380px;">
+                    <!-- Rendered dynamically -->
                 </div>
             </div>
         `;
 
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        document.body.appendChild(div.firstElementChild);
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        const onEsc = (e) => {
+            if (e.key === 'Escape') {
+                modal.remove();
+                document.removeEventListener('keydown', onEsc);
+            }
+        };
+        document.addEventListener('keydown', onEsc);
+
+        function renderModalMembers(list) {
+            const listEl = document.getElementById('modalMembersList');
+            if (!listEl) return;
+
+            if (!list || list.length === 0) {
+                listEl.innerHTML = `<div style="text-align: center; padding: 24px; color: #94A3B8; font-size: 0.875rem;">No matching group members found.</div>`;
+                return;
+            }
+
+            let html = '';
+            list.forEach(m => {
+                const role = (m.role || 'Student').toLowerCase();
+                const groupRole = (m.group_role || role).toLowerCase();
+                const roleBadgeColor = groupRole === 'instructor' || role === 'instructor'
+                    ? '#5B3FE8'
+                    : (groupRole === 'admin' || role === 'admin' ? '#DC2626' : '#059669');
+                const roleBadgeBg = groupRole === 'instructor' || role === 'instructor'
+                    ? 'rgba(91, 63, 232, 0.1)'
+                    : (groupRole === 'admin' || role === 'admin' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)');
+                const displayRole = (groupRole === 'instructor' ? 'INSTRUCTOR' : (groupRole === 'admin' ? 'ADMIN' : (m.role || 'STUDENT'))).toUpperCase();
+
+                html += `
+                    <div class="modal-member-row" data-user-id="${m.id}" data-group-id="${data.group_id || data.id}" role="button" tabindex="0" title="Click to chat with ${escapeHTML(m.full_name)}">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="chat-avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                                ${m.profile_image ? `<img src="${window.api.getImageUrl(m.profile_image)}" alt="${escapeHTML(m.full_name)}">` : getInitials(m.full_name)}
+                            </div>
+                            <div>
+                                <strong style="font-size: 0.9rem; color: #0F172A; display: block;">${escapeHTML(m.full_name)}</strong>
+                                <span style="font-size: 0.775rem; color: #64748B;">${escapeHTML(m.email)}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 0.7rem; font-weight: 800; color: ${roleBadgeColor}; background: ${roleBadgeBg}; padding: 0.25rem 0.65rem; border-radius: 9999px;">${displayRole}</span>
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${m.is_online ? '#10B981' : '#CBD5E1'};" title="${m.is_online ? 'Online' : 'Offline'}"></span>
+                            <button type="button" class="group-member-menu-btn" data-user-id="${m.id}" data-user-name="${escapeHTML(m.full_name)}" title="Member options" aria-label="Member options">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+
+            listEl.querySelectorAll('.modal-member-row').forEach(row => {
+                const uid = parseInt(row.dataset.userId, 10);
+                const gid = parseInt(row.dataset.groupId, 10);
+                const uName = row.querySelector('strong')?.textContent || '';
+
+                row.addEventListener('click', (e) => {
+                    if (e.target.closest('.group-member-menu-btn') || e.target.closest('.group-member-dropdown')) return;
+                    window.openDirectChatWithMember(uid, gid);
+                });
+
+                row.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        window.openDirectChatWithMember(uid, gid);
+                    }
+                });
+
+                const menuBtn = row.querySelector('.group-member-menu-btn');
+                if (menuBtn) {
+                    menuBtn.addEventListener('click', (e) => {
+                        window.toggleMemberOptionsMenu(e, uid, gid, uName);
+                    });
+                }
+            });
+        }
+
+        renderModalMembers(data.members);
+
+        const searchInput = document.getElementById('modalMemberSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const q = e.target.value.trim().toLowerCase();
+                if (!q) {
+                    renderModalMembers(data.members);
+                    return;
+                }
+                const filtered = data.members.filter(m =>
+                    (m.full_name && m.full_name.toLowerCase().includes(q)) ||
+                    (m.email && m.email.toLowerCase().includes(q)) ||
+                    (m.role && m.role.toLowerCase().includes(q)) ||
+                    (m.group_role && m.group_role.toLowerCase().includes(q))
+                );
+                renderModalMembers(filtered);
+            });
+        }
     }
 
+
+        /**
+     * Loads message history for the currently selected conversation.
+     *
+     * @param {number|string} convId - Conversation ID.
+     *
+     * Purpose:
+     * Fetches recent 50 messages from backend /chat/conversations/{id}/messages,
+     * resets unread counters, and passes data to renderMessages().
+     */
     async function loadActiveMessages(convId) {
         try {
             activeMessages = await window.api.getMessages(convId, 50);
@@ -1231,7 +1909,10 @@
         }
     }
 
-    // --- RENDER MESSAGES WITH STRICT SENDER ALIGNMENT (CRITICAL REQUIREMENT #2) ---
+    // ==========================================
+// MESSAGE RENDERING & SENDER ALIGNMENT
+// Renders sent messages on right and received on left, delivery statuses, file attachments, and reactions.
+// ==========================================
 
     function renderMessages(messages) {
         const container = document.getElementById('chatMessagesContainer');
@@ -1312,21 +1993,26 @@
             let attachmentsHtml = '';
             if (msg.attachments && msg.attachments.length > 0) {
                 msg.attachments.forEach(att => {
-                    if (att.file_type && att.file_type.startsWith('image/')) {
+                    const imgUrl = window.api.getImageUrl(att.file_path);
+                    const isImg = att.file_type && att.file_type.startsWith('image/');
+
+                    if (isImg) {
                         attachmentsHtml += `
                             <div class="msg-attachment-item msg-image-attachment">
-                                <img src="${window.api.getImageUrl(att.file_path)}" alt="Uploaded image" onclick="window.open('${window.api.getImageUrl(att.file_path)}', '_blank')">
+                                <img src="${imgUrl}" alt="${escapeHTML(att.file_name || 'Uploaded image')}" onclick="window.showImageLightbox('${imgUrl}', '${escapeHTML(att.file_name || 'Image')}')">
                             </div>
                         `;
                     } else {
+                        const iconConfig = getDocIconConfig(att.file_name, att.file_type);
                         attachmentsHtml += `
                             <div class="msg-attachment-item msg-doc-attachment">
-                                <i class="fa-solid fa-file-pdf doc-icon"></i>
+                                <i class="${iconConfig.icon} doc-icon" style="color: ${iconConfig.color};"></i>
                                 <div class="doc-info">
                                     <span class="doc-name">${escapeHTML(att.file_name)}</span>
                                     <span class="doc-size">${formatFileSize(att.file_size)}</span>
                                 </div>
-                                <a href="${window.api.getImageUrl(att.file_path)}" download="${escapeHTML(att.file_name)}" target="_blank" class="doc-download-btn" title="Download"><i class="fa-solid fa-download"></i></a>
+                                <button type="button" onclick="window.openDocumentPreviewModal('${imgUrl}', '${escapeHTML(att.file_name)}', '${att.file_type || ''}')" class="doc-btn" style="background: rgba(91,63,232,0.12); color: #5B3FE8; border: none; padding: 0.25rem 0.55rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-right: 4px;" title="Open / Preview">Open</button>
+                                <a href="${imgUrl}" download="${escapeHTML(att.file_name)}" target="_blank" class="doc-download-btn" title="Download"><i class="fa-solid fa-download"></i></a>
                             </div>
                         `;
                     }
@@ -1473,7 +2159,10 @@
         }
     }
 
-    // --- DOM EVENT LISTENERS ---
+    // ==========================================
+// DOM EVENT LISTENERS & MESSAGE COMPOSITION
+// Handles text input resizing, keyboard dispatch (Enter to send), typing indicators, and file selection.
+// ==========================================
 
     function setupDOMEvents() {
         const catTabs = document.querySelectorAll('#chatCategoryTabs .chat-cat-tab, .chat-cat-tab');
@@ -1497,16 +2186,82 @@
         });
 
         const searchInput = document.getElementById('chatSearchInput');
+        const searchClearBtn = document.getElementById('chatSearchClearBtn');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 searchQuery = (e.target.value || '').trim().toLowerCase();
+                if (searchClearBtn) {
+                    searchClearBtn.style.display = searchQuery ? 'block' : 'none';
+                }
                 renderConversationsList(conversations);
+            });
+        }
+        if (searchClearBtn) {
+            searchClearBtn.addEventListener('click', () => {
+                if (searchInput) searchInput.value = '';
+                searchQuery = '';
+                searchClearBtn.style.display = 'none';
+                renderConversationsList(conversations);
+            });
+        }
+
+        // Drag & Drop File Upload
+        const appContainer = document.getElementById('chatAppContainer');
+        const dragOverlay = document.getElementById('chatDragOverlay');
+
+        if (appContainer && dragOverlay) {
+            let dragCounter = 0;
+
+            appContainer.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                dragOverlay.style.display = 'flex';
+            });
+
+            appContainer.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    dragOverlay.style.display = 'none';
+                }
+            });
+
+            appContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            appContainer.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                dragOverlay.style.display = 'none';
+
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    const file = files[0];
+                    try {
+                        const uploaded = await window.api.uploadChatFile(file);
+                        pendingAttachments.push(uploaded);
+                        renderAttachmentPreview();
+                        toggleSendButtonState();
+                    } catch (err) {
+                        alert(err.message || 'File upload failed');
+                    }
+                }
             });
         }
 
         const mobileBackBtn = document.getElementById('chatMobileBackBtn');
         if (mobileBackBtn) {
             mobileBackBtn.addEventListener('click', () => {
+                if (window.previousGroupConversation) {
+                    window.returnToPreviousGroup();
+                    return;
+                }
                 const appContainer = document.getElementById('chatAppContainer');
                 if (appContainer) appContainer.classList.remove('mobile-open');
             });
@@ -1662,6 +2417,19 @@
         }, 3000);
     }
 
+        /**
+     * Validates and dispatches a composed chat message or file attachment.
+     *
+     * Purpose:
+     * Gathers textarea input, active reply context, or pending file attachment;
+     * sends to backend REST/WebSocket; optimistic updates UI and scrolls to bottom.
+     *
+     * Dependencies:
+     * window.api.sendMessage, window.api.uploadChatFile.
+     *
+     * Error handling / Debugging:
+     * Catches network failure and alerts user; preserves composed message in input box.
+     */
     async function handleSendMessage() {
         const textarea = document.getElementById('chatComposerTextarea');
         const sendBtn = document.getElementById('chatSendBtn');
@@ -1803,7 +2571,10 @@
 
     // --- ACTIONS & CONTEXT MENUS ---
 
-    // --- REPLIES, EDITING & ACTIONS ---
+    // ==========================================
+// REPLIES, MESSAGE EDITING & CONTEXT ACTIONS
+// Manages quoting previous messages, inline editing banners, and context menus.
+// ==========================================
 
     window.toggleReactionAction = async (msgId, emoji) => {
         try {
@@ -1814,7 +2585,10 @@
         }
     };
 
-    // --- SELECTION TOOLBAR & STATE (REFERENCE 1 & REFERENCE 2) ---
+    // ==========================================
+// MULTI-MESSAGE SELECTION & BULK ACTIONS
+// Handles message selection checkboxes, batch deletion for me/everyone, and multi-message forwarding.
+// ==========================================
 
     window.toggleSelectMessage = (msgId) => {
         if (!msgId) return;
@@ -1974,7 +2748,10 @@
         window.updateSelectionUI();
     };
 
-    // --- REFERENCE 2 DELETE CONFIRMATION MODAL ---
+    // ==========================================
+// DELETE CONFIRMATION MODAL
+// Modals for confirming single or batch message deletion (Delete for Me vs Delete for Everyone).
+// ==========================================
 
     window.showDeleteConfirmationModal = (targetMsgId = null) => {
         if (targetMsgId) {
@@ -2177,67 +2954,442 @@
         window.confirmDeleteMsgModal(msgId, isOwn || isAdmin);
     };
 
-    window.forwardMsgAction = async (msgId) => {
-        const msg = activeMessages.find(m => m.id === msgId);
-        if (!msg) return;
-
-        const otherConvs = conversations.filter(c => c.id !== activeConvId);
-        if (otherConvs.length === 0) {
-            alert('No other conversations available to forward to.');
-            return;
+    window.forwardMsgAction = async (msgIdOrIds) => {
+        let msgIds = [];
+        if (Array.isArray(msgIdOrIds)) {
+            msgIds = msgIdOrIds;
+        } else if (msgIdOrIds) {
+            msgIds = [msgIdOrIds];
+        } else if (selectedMsgIds.size > 0) {
+            msgIds = Array.from(selectedMsgIds);
         }
 
-        showForwardModal(msgId, otherConvs);
+        if (msgIds.length === 0) return;
+
+        try {
+            const targetsData = await window.api.getForwardTargets();
+            showForwardModalUI(msgIds, targetsData);
+        } catch (err) {
+            console.error('[Forward] Error loading targets:', err);
+            const targetConvs = conversations.filter(c => c.id !== activeConvId);
+            showForwardModalUI(msgIds, {
+                myself: null,
+                recent: targetConvs.map(c => ({ conversation_id: c.id, title: c.title, subtitle: c.type, icon: c.icon, type: c.type, profile_image: c.other_user ? c.other_user.profile_image : null })),
+                personal: [],
+                groups: []
+            });
+        }
     };
 
-    function showForwardModal(msgId, targetConvs) {
-        const existing = document.getElementById('forwardModal');
+    function showForwardModalUI(msgIds, targetsData) {
+        const existing = document.getElementById('forwardModalOverlay');
         if (existing) existing.remove();
 
-        let html = `
-            <div class="modal-overlay" id="forwardModal" style="position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000;">
-                <div style="background: #FFFFFF; border-radius: 16px; width: 90%; max-width: 440px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border: 1px solid #E2E8F0;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem;">
-                        <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F172A; margin: 0;">Forward Message</h3>
-                        <button onclick="document.getElementById('forwardModal').remove()" style="background: #F1F5F9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer; color: #64748B;">&times;</button>
+        const selectedTargets = new Map();
+
+        const msgsToPreview = msgIds.map(id => activeMessages.find(m => m.id === id)).filter(Boolean);
+        let previewHtml = '';
+
+        if (msgsToPreview.length === 1) {
+            const msg = msgsToPreview[0];
+            if (msg.attachments && msg.attachments.length > 0) {
+                const att = msg.attachments[0];
+                const iconConfig = getDocIconConfig(att.file_name, att.file_type);
+                const isImg = att.file_type && att.file_type.startsWith('image/');
+                const imgUrl = window.api.getImageUrl(att.file_path);
+
+                if (isImg) {
+                    previewHtml = `
+                        <div class="forward-preview-content">
+                            <img src="${imgUrl}" class="preview-thumb" alt="${escapeHTML(att.file_name)}">
+                            <div class="forward-preview-text">
+                                <strong>${escapeHTML(att.file_name)}</strong>
+                                <div style="font-size: 0.75rem; color: #64748B;">Image • ${formatFileSize(att.file_size)}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    previewHtml = `
+                        <div class="forward-preview-content">
+                            <i class="${iconConfig.icon} preview-icon" style="color: ${iconConfig.color};"></i>
+                            <div class="forward-preview-text">
+                                <strong>${escapeHTML(att.file_name)}</strong>
+                                <div style="font-size: 0.75rem; color: #64748B;">${(att.file_type || 'File').toUpperCase()} • ${formatFileSize(att.file_size)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else if (msg.content) {
+                previewHtml = `
+                    <div class="forward-preview-content">
+                        <i class="fa-solid fa-quote-left preview-icon"></i>
+                        <div class="forward-preview-text">
+                            “${escapeHTML(msg.content)}”
+                        </div>
                     </div>
-
-                    <div style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
-        `;
-
-        targetConvs.forEach(c => {
-            html += `
-                <div class="forward-target-item" onclick="window.confirmForward(${msgId}, ${c.id}, '${escapeHTML(c.title)}')" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.85rem; border-radius: 10px; background: #F8FAFC; border: 1px solid #F1F5F9; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='#F8FAFC'">
-                    <strong style="font-size: 0.875rem; color: #0F172A;">${escapeHTML(c.title)}</strong>
-                    <span style="font-size: 0.75rem; color: #4F46E5; font-weight: 700;">Forward →</span>
+                `;
+            } else {
+                previewHtml = `
+                    <div class="forward-preview-content">
+                        <i class="fa-solid fa-share preview-icon"></i>
+                        <div class="forward-preview-text">Shared Message</div>
+                    </div>
+                `;
+            }
+        } else {
+            previewHtml = `
+                <div class="forward-preview-content">
+                    <i class="fa-solid fa-copy preview-icon"></i>
+                    <div class="forward-preview-text">
+                        <strong>${msgsToPreview.length || msgIds.length} messages selected for forwarding</strong>
+                    </div>
                 </div>
             `;
-        });
+        }
 
-        html += `
+        const modal = document.createElement('div');
+        modal.id = 'forwardModalOverlay';
+        modal.className = 'forward-modal-overlay';
+
+        modal.innerHTML = `
+            <div class="forward-modal-card">
+                <div class="forward-modal-header">
+                    <h3 class="forward-modal-title"><i class="fa-solid fa-share"></i> Forward message</h3>
+                    <button type="button" class="forward-modal-close-btn" id="forwardModalCloseBtn" title="Close">&times;</button>
+                </div>
+
+                <div class="forward-privacy-banner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Please make sure you have permission to share information from this conversation.</span>
+                </div>
+
+                <div class="forward-preview-box">
+                    <div class="forward-preview-label">Forwarding Item</div>
+                    ${previewHtml}
+                </div>
+
+                <div class="forward-search-container">
+                    <div class="forward-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="forward-search-input" id="forwardSearchInput" placeholder="Search chats, people or groups..." autofocus autocomplete="off">
                     </div>
+                </div>
+
+                <div class="forward-chips-wrapper" id="forwardChipsWrapper" style="display: none;"></div>
+
+                <div class="forward-recipients-body" id="forwardRecipientsBody">
+                </div>
+
+                <div class="forward-modal-footer">
+                    <button type="button" class="forward-footer-cancel-btn" id="forwardCancelBtn">Cancel</button>
+                    <button type="button" class="forward-footer-send-btn" id="forwardSendBtn" disabled>
+                        <span>Forward</span> <i class="fa-solid fa-paper-plane"></i>
+                    </button>
                 </div>
             </div>
         `;
 
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        document.body.appendChild(div.firstElementChild);
+        document.body.appendChild(modal);
+
+        renderForwardRecipientsList(targetsData, selectedTargets);
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                closeForwardModal();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+
+        const closeForwardModal = () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            modal.remove();
+        };
+
+        document.getElementById('forwardModalCloseBtn').onclick = closeForwardModal;
+        document.getElementById('forwardCancelBtn').onclick = closeForwardModal;
+
+        const searchInput = document.getElementById('forwardSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = (e.target.value || '').trim().toLowerCase();
+                filterForwardRecipientsList(query);
+            });
+        }
+
+        const sendBtn = document.getElementById('forwardSendBtn');
+        sendBtn.onclick = async () => {
+            if (selectedTargets.size === 0) return;
+
+            sendBtn.setAttribute('disabled', 'true');
+            sendBtn.innerHTML = `<span>Forwarding...</span> <i class="fa-solid fa-spinner fa-spin"></i>`;
+
+            const targetConvIds = [];
+            const targetUserIds = [];
+
+            selectedTargets.forEach(t => {
+                if (t.convId) targetConvIds.push(t.convId);
+                else if (t.userId) targetUserIds.push(t.userId);
+            });
+
+            try {
+                const res = await window.api.forwardMessage(msgIds, targetConvIds, targetUserIds);
+                closeForwardModal();
+
+                if (window.clearMessageSelection) window.clearMessageSelection();
+
+                showInAppToast({
+                    title: 'Message Forwarded',
+                    body: res.message || `Message forwarded to ${selectedTargets.size} chat(s).`,
+                    avatar: null
+                });
+
+                await loadConversations();
+                if (activeConvId && (targetConvIds.includes(activeConvId))) {
+                    await loadActiveMessages(activeConvId);
+                }
+            } catch (err) {
+                alert(err.message || 'Failed to forward message.');
+                sendBtn.removeAttribute('disabled');
+                sendBtn.innerHTML = `<span>Forward (${selectedTargets.size})</span> <i class="fa-solid fa-paper-plane"></i>`;
+            }
+        };
     }
 
-    window.confirmForward = async (msgId, targetConvId, targetTitle) => {
-        const modal = document.getElementById('forwardModal');
-        if (modal) modal.remove();
+    function renderForwardRecipientsList(targetsData, selectedTargets) {
+        const body = document.getElementById('forwardRecipientsBody');
+        if (!body) return;
 
-        try {
-            await window.api.forwardMessage(msgId, [targetConvId]);
-            alert(`Message forwarded to ${targetTitle}!`);
-        } catch (err) {
-            alert(err.message || 'Forward failed.');
+        let html = '';
+
+        // 1. MYSELF
+        if (targetsData.myself) {
+            const m = targetsData.myself;
+            const key = `conv-${m.conversation_id}`;
+            const isSel = selectedTargets.has(key);
+            html += `
+                <div class="forward-section-label"><i class="fa-solid fa-user-gear" style="color:#6366F1;"></i> MYSELF</div>
+                <div class="forward-recipient-item ${isSel ? 'selected' : ''}" data-key="${key}" data-conv-id="${m.conversation_id}" data-title="Myself" data-search="myself message yourself saved messages">
+                    <div class="forward-recipient-left">
+                        <div class="forward-recipient-avatar" style="background: linear-gradient(135deg, #6366F1, #4F46E5);">
+                            ${m.profile_image ? `<img src="${window.api.getImageUrl(m.profile_image)}" alt="Myself">` : '<i class="fa-solid fa-user"></i>'}
+                        </div>
+                        <div class="forward-recipient-info">
+                            <span class="forward-recipient-name">Myself <span style="font-size:0.685rem; background:#EEF2FF; color:#4F46E5; padding:2px 6px; border-radius:99px;">Saved Messages</span></span>
+                            <span class="forward-recipient-sub">${escapeHTML(m.subtitle)}</span>
+                        </div>
+                    </div>
+                    <div class="forward-checkbox"><i class="fa-solid fa-check"></i></div>
+                </div>
+            `;
+        }
+
+        // 2. RECENT CHATS
+        if (targetsData.recent && targetsData.recent.length > 0) {
+            html += `<div class="forward-section-label"><i class="fa-solid fa-clock-rotate-left"></i> RECENT CHATS</div>`;
+            targetsData.recent.forEach(r => {
+                const key = `conv-${r.conversation_id}`;
+                const isSel = selectedTargets.has(key);
+                const initials = getInitials(r.title);
+                const searchStr = `${r.title} ${r.subtitle || ''}`.toLowerCase();
+
+                html += `
+                    <div class="forward-recipient-item ${isSel ? 'selected' : ''}" data-key="${key}" data-conv-id="${r.conversation_id}" data-title="${escapeHTML(r.title)}" data-search="${escapeHTML(searchStr)}">
+                        <div class="forward-recipient-left">
+                            <div class="forward-recipient-avatar">
+                                ${r.profile_image ? `<img src="${window.api.getImageUrl(r.profile_image)}" alt="${escapeHTML(r.title)}">` : initials}
+                            </div>
+                            <div class="forward-recipient-info">
+                                <span class="forward-recipient-name">${escapeHTML(r.title)}</span>
+                                <span class="forward-recipient-sub">${escapeHTML(r.subtitle || r.type)}</span>
+                            </div>
+                        </div>
+                        <div class="forward-checkbox"><i class="fa-solid fa-check"></i></div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. PERSONAL CHATS
+        if (targetsData.personal && targetsData.personal.length > 0) {
+            html += `<div class="forward-section-label"><i class="fa-solid fa-user-group"></i> PERSONAL CHATS</div>`;
+            targetsData.personal.forEach(p => {
+                const key = p.conversation_id ? `conv-${p.conversation_id}` : `user-${p.target_user_id}`;
+                const isSel = selectedTargets.has(key);
+                const initials = getInitials(p.title);
+                const searchStr = `${p.title} ${p.subtitle || ''} ${p.role || ''}`.toLowerCase();
+
+                html += `
+                    <div class="forward-recipient-item ${isSel ? 'selected' : ''}" data-key="${key}" ${p.conversation_id ? `data-conv-id="${p.conversation_id}"` : ''} ${p.target_user_id ? `data-user-id="${p.target_user_id}"` : ''} data-title="${escapeHTML(p.title)}" data-search="${escapeHTML(searchStr)}">
+                        <div class="forward-recipient-left">
+                            <div class="forward-recipient-avatar" style="background: linear-gradient(135deg, #8B5CF6, #6366F1);">
+                                ${p.profile_image ? `<img src="${window.api.getImageUrl(p.profile_image)}" alt="${escapeHTML(p.title)}">` : initials}
+                            </div>
+                            <div class="forward-recipient-info">
+                                <span class="forward-recipient-name">${escapeHTML(p.title)} <span style="font-size:0.65rem; background:#F1F5F9; color:#475569; padding:2px 6px; border-radius:99px;">${(p.role || 'User').toUpperCase()}</span></span>
+                                <span class="forward-recipient-sub">${escapeHTML(p.subtitle)}</span>
+                            </div>
+                        </div>
+                        <div class="forward-checkbox"><i class="fa-solid fa-check"></i></div>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. COURSE GROUPS
+        if (targetsData.groups && targetsData.groups.length > 0) {
+            html += `<div class="forward-section-label"><i class="fa-solid fa-graduation-cap"></i> COURSE GROUPS</div>`;
+            targetsData.groups.forEach(g => {
+                const key = `conv-${g.conversation_id}`;
+                const isSel = selectedTargets.has(key);
+                const initials = getInitials(g.title);
+                const searchStr = `${g.title} ${g.subtitle || ''}`.toLowerCase();
+
+                html += `
+                    <div class="forward-recipient-item ${isSel ? 'selected' : ''}" data-key="${key}" data-conv-id="${g.conversation_id}" data-title="${escapeHTML(g.title)}" data-search="${escapeHTML(searchStr)}">
+                        <div class="forward-recipient-left">
+                            <div class="forward-recipient-avatar" style="background: linear-gradient(135deg, #3B82F6, #1D4ED8);">
+                                <i class="${g.icon || 'fa-solid fa-graduation-cap'}"></i>
+                            </div>
+                            <div class="forward-recipient-info">
+                                <span class="forward-recipient-name">${escapeHTML(g.title)}</span>
+                                <span class="forward-recipient-sub">${escapeHTML(g.subtitle)}</span>
+                            </div>
+                        </div>
+                        <div class="forward-checkbox"><i class="fa-solid fa-check"></i></div>
+                    </div>
+                `;
+            });
+        }
+
+        body.innerHTML = html;
+
+        body.querySelectorAll('.forward-recipient-item').forEach(item => {
+            item.onclick = () => {
+                const key = item.dataset.key;
+                const convId = item.dataset.convId ? parseInt(item.dataset.convId, 10) : null;
+                const userId = item.dataset.userId ? parseInt(item.dataset.userId, 10) : null;
+                const title = item.dataset.title || 'Chat';
+
+                if (selectedTargets.has(key)) {
+                    selectedTargets.delete(key);
+                    item.classList.remove('selected');
+                } else {
+                    if (selectedTargets.size >= 10) {
+                        alert('You can select a maximum of 10 destinations at a time.');
+                        return;
+                    }
+                    selectedTargets.set(key, { convId, userId, title });
+                    item.classList.add('selected');
+                }
+
+                updateForwardSelectedChips(selectedTargets);
+            };
+        });
+    }
+
+    function filterForwardRecipientsList(query) {
+        const body = document.getElementById('forwardRecipientsBody');
+        if (!body) return;
+
+        const items = body.querySelectorAll('.forward-recipient-item');
+        const labels = body.querySelectorAll('.forward-section-label');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const searchData = item.dataset.search || '';
+            if (!query || searchData.includes(query)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        labels.forEach(lbl => {
+            let nextEl = lbl.nextElementSibling;
+            let hasVisible = false;
+            while (nextEl && !nextEl.classList.contains('forward-section-label')) {
+                if (nextEl.classList.contains('forward-recipient-item') && nextEl.style.display !== 'none') {
+                    hasVisible = true;
+                    break;
+                }
+                nextEl = nextEl.nextElementSibling;
+            }
+            lbl.style.display = hasVisible ? 'flex' : 'none';
+        });
+
+        let emptyMsg = body.querySelector('.forward-empty-search');
+        if (visibleCount === 0) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.className = 'forward-empty-search';
+                emptyMsg.style.cssText = 'padding: 2.5rem 1rem; text-align: center; color: #94A3B8;';
+                emptyMsg.innerHTML = `
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 2.25rem; color: #CBD5E1; margin-bottom: 0.5rem; display: block;"></i>
+                    <p style="font-size: 0.9rem; font-weight: 700; color: #334155; margin: 0 0 4px 0;">No chats found</p>
+                    <p style="font-size: 0.8rem; color: #64748B; margin: 0;">Try searching with a different name or group title.</p>
+                `;
+                body.appendChild(emptyMsg);
+            } else {
+                emptyMsg.style.display = 'block';
+            }
+        } else if (emptyMsg) {
+            emptyMsg.style.display = 'none';
+        }
+    }
+
+    function updateForwardSelectedChips(selectedTargets) {
+        const chipsWrapper = document.getElementById('forwardChipsWrapper');
+        const sendBtn = document.getElementById('forwardSendBtn');
+        if (!sendBtn) return;
+
+        const count = selectedTargets.size;
+
+        if (count > 0) {
+            sendBtn.removeAttribute('disabled');
+            sendBtn.innerHTML = `<span>Forward (${count})</span> <i class="fa-solid fa-paper-plane"></i>`;
+        } else {
+            sendBtn.setAttribute('disabled', 'true');
+            sendBtn.innerHTML = `<span>Forward</span> <i class="fa-solid fa-paper-plane"></i>`;
+        }
+
+        if (!chipsWrapper) return;
+
+        if (count === 0) {
+            chipsWrapper.style.display = 'none';
+            chipsWrapper.innerHTML = '';
+            return;
+        }
+
+        chipsWrapper.style.display = 'flex';
+        let html = '';
+        selectedTargets.forEach((t, key) => {
+            html += `
+                <span class="forward-chip">
+                    ${escapeHTML(t.title)}
+                    <button type="button" class="forward-chip-remove" onclick="window.removeForwardChip('${key}')">&times;</button>
+                </span>
+            `;
+        });
+        chipsWrapper.innerHTML = html;
+
+        window._activeForwardSelectedTargets = selectedTargets;
+    }
+
+    window.removeForwardChip = (key) => {
+        const selectedTargets = window._activeForwardSelectedTargets;
+        if (selectedTargets && selectedTargets.has(key)) {
+            selectedTargets.delete(key);
+            const item = document.querySelector(`.forward-recipient-item[data-key="${key}"]`);
+            if (item) item.classList.remove('selected');
+            updateForwardSelectedChips(selectedTargets);
         }
     };
 
-    // --- NEW CHAT MODAL ---
+    // ==========================================
+// NEW CHAT & GROUP CREATION MODALS
+// Allows initiating direct 1-on-1 chats or creating group conversations with selected participants.
+// ==========================================
 
     function showNewChatModal() {
         const existing = document.getElementById('newChatModal');
@@ -2321,7 +3473,10 @@
         }
     };
 
-    // --- BROWSER DESKTOP NOTIFICATIONS & SETTINGS MODAL ---
+    // ==========================================
+// DESKTOP PUSH NOTIFICATIONS & AUDIO ALERTS
+// Handles HTML5 Desktop Notifications, audio chimes, and per-user alert preference modal.
+// ==========================================
 
     function getNotifSettings() {
         const defaults = {
@@ -2572,7 +3727,10 @@
         setTimeout(() => toast.remove(), 4500);
     }
 
-    // --- UTILITIES ---
+    // ==========================================
+// UTILITY HELPERS & STRING FORMATTING
+// Sanitization (XSS escape), time formatting, avatar initials, and byte size calculations.
+// ==========================================
 
     function getInitials(name) {
         if (!name) return 'U';

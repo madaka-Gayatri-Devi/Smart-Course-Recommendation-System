@@ -1,3 +1,7 @@
+"""
+SmartLearn Notification Validation Schemas
+Defines Pydantic models for notification creation, read status updates, and unread counts.
+"""
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 

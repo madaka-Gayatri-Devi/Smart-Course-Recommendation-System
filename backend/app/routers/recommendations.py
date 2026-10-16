@@ -29,6 +29,12 @@ router = APIRouter(prefix="/admin/recommendations", tags=["Admin Recommendations
 
 @router.get("/stats")
 def get_recommendation_stats(admin: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Endpoint GET /stats - Retrieve high-level recommendation and skill-gap metrics for current user.
+
+    Returns:
+        dict: Summary metrics including target skills, missing skills, readiness score, and match counts.
+    """
     total_records = db.query(RecommendationDB).count()
     students_count = db.query(RecommendationDB.student_id).distinct().count()
     courses_count = db.query(RecommendationDB.course_id).distinct().count()

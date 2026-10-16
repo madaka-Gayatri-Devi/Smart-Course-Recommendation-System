@@ -3,7 +3,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // CUSTOM UI ALERT & CONFIRM MODALS (No native alert/confirm)
     // ----------------------------------------------------
-    function showCustomAlert(title, message, iconType = 'info') {
+    // ==========================================
+// MODAL DIALOG & TIMER UTILITIES
+// ==========================================
+function showCustomAlert(title, message, iconType = 'info') {
         return new Promise((resolve) => {
             let existingModal = document.getElementById('customAlertModal');
             if (existingModal) existingModal.remove();
@@ -142,7 +145,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // TIMER UTILITIES
     // ----------------------------------------------------
-    function startTimer(durationMinutes) {
+    /**
+ * Starts assessment countdown timer and auto-submits when remaining time reaches 0.
+ * @param {number} durationSeconds - Allowed test duration in seconds.
+ */
+function startTimer(durationMinutes) {
         if (timerInterval) clearInterval(timerInterval);
         remainingSeconds = (durationMinutes || 15) * 60;
         updateTimerDisplay();
@@ -158,7 +165,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 1000);
     }
 
-    function stopTimer() {
+    /**
+ * Halts active assessment timer when test is submitted or cancelled.
+ */
+function stopTimer() {
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
@@ -196,7 +206,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // LOAD ASSESSMENTS & HISTORY (Personalized Sorting)
     // ----------------------------------------------------
-    async function loadCatalog() {
+    /**
+ * Fetches available diagnostic assessments and student test history from backend API.
+ * Purpose: Queries window.api.getAssessments and window.api.getAssessmentHistory.
+ */
+// ==========================================
+// ASSESSMENT CATALOG & HISTORY
+// ==========================================
+async function loadCatalog() {
         try {
             const assessments = await window.api.getAssessments();
             renderAssessments(assessments);
@@ -232,7 +249,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return false;
     }
 
-    function renderAssessments(list) {
+    /**
+ * Renders assessment catalog cards with category badges, duration, question count, and take-test buttons.
+ * @param {Array<Object>} assessments - List of diagnostic assessments.
+ */
+function renderAssessments(list) {
         if (!assessmentsListContainer) return;
         if (!list || list.length === 0) {
             assessmentsListContainer.innerHTML = '<p style="color: var(--secondary-text);">No assessments currently available.</p>';
@@ -291,7 +312,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function renderHistory(history) {
+    /**
+ * Renders previous assessment attempts table with score percentages and performance tiers.
+ * @param {Array<Object>} history - List of attempt records.
+ */
+function renderHistory(history) {
         if (!historyListContainer) return;
         if (!history || history.length === 0) {
             historyListContainer.innerHTML = '<p style="color: var(--secondary-text); font-size: 13px;">No previous assessment attempts recorded.</p>';
@@ -320,7 +345,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // START & RENDER ACTIVE TEST
     // ----------------------------------------------------
-    async function startAssessment(id) {
+    /**
+ * Enters test mode for selected assessment, initializes timer, and presents first question.
+ * @param {number} assessmentId - Database ID of selected assessment.
+ */
+// ==========================================
+// TEST RUNNER & QUESTION RENDERING
+// ==========================================
+async function startAssessment(id) {
         try {
             const data = await window.api.getAssessment(id);
             activeAssessment = data;
@@ -348,7 +380,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function renderQuestion() {
+    /**
+ * Renders active multiple-choice question card with option radio buttons and progress indicator.
+ * @param {number} index - Zero-based index of question to render.
+ */
+function renderQuestion() {
         const q = currentQuestions[currentQIndex];
         if (!q) return;
 
@@ -435,7 +471,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // SUBMIT ASSESSMENT & RENDER RESULT
     // ----------------------------------------------------
-    async function triggerAssessmentSubmission() {
+    /**
+ * Submits student answers to backend assessment service for automatic grading and analysis.
+ * Purpose: Posts answers payload to backend, triggers score calculation and recommendation notes.
+ */
+// ==========================================
+// GRADING SUBMISSION & DIAGNOSTIC RESULTS
+// ==========================================
+async function triggerAssessmentSubmission() {
         stopTimer();
         const btnSubmit = document.getElementById('btnSubmitAssessment');
         if (btnSubmit) {
@@ -475,7 +518,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await triggerAssessmentSubmission();
     });
 
-    function renderResultView(res) {
+    /**
+ * Renders post-assessment diagnostic score card with breakdown of correct answers and study tips.
+ * @param {Object} result - Diagnostic grading payload from backend.
+ */
+function renderResultView(res) {
         const resPercentage = document.getElementById('resPercentage');
         const resScoreFraction = document.getElementById('resScoreFraction');
         const resAssessmentTitle = document.getElementById('resAssessmentTitle');

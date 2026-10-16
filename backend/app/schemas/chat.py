@@ -1,3 +1,7 @@
+"""
+SmartLearn Chat Request & Response Pydantic Schemas
+Defines structured validation schemas for conversations, messages, reactions, attachments, and forwarding.
+"""
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 
@@ -110,6 +114,7 @@ class ReactionPayload(BaseModel):
 
 class ForwardMessagePayload(BaseModel):
     target_conversation_ids: List[int]
+    message_ids: Optional[List[int]] = None
 
 
 class CreateGroupPayload(BaseModel):

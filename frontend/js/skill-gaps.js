@@ -1,3 +1,7 @@
+// ==========================================
+// SMARTLEARN SKILL GAP ANALYSIS CONTROLLER
+// Compares student's current skills against target career benchmark and highlights bridge courses.
+// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     let currentUser = null;
     let profileData = null;

@@ -1,3 +1,7 @@
+"""
+SmartLearn Diagnostic Assessment Schemas
+Defines validation schemas for assessment questions, submissions, scoring feedback, and user attempt records.
+"""
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 

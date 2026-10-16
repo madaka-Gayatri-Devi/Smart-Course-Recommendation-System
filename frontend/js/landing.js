@@ -37,7 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.getElementById('header');
     const sections = document.querySelectorAll('section[id]');
     
-    function updateHeaderAndNav() {
+    /**
+ * Checks authentication status and dynamically updates landing page navbar.
+ * Displays 'Go to Dashboard' if authenticated, or 'Sign In / Register' buttons if guest.
+ */
+// ==========================================
+// LANDING PAGE AUTH NAVIGATION CONTROLLER
+// ==========================================
+function updateHeaderAndNav() {
         const scrollY = window.pageYOffset;
         
         // Sticky Header

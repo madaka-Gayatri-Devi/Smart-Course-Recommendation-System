@@ -1,6 +1,9 @@
 """Course catalog and dynamic personalization scoring logic for SmartLearn recommendation engine."""
 from typing import List, Dict, Any, Optional, Tuple, Set
 
+# ============================================================================
+# DEFAULT COURSE CATALOG & BENCHMARKS
+# ============================================================================
 COURSE_CATALOG: List[Dict[str, Any]] = [
     {
         "id": 1,
@@ -205,11 +208,24 @@ COURSE_LEVELS: Dict[str, int] = {
 }
 
 
+# ============================================================================
+# COURSE SCORER & WEIGHTED MATCHING ENGINE
+# ============================================================================
 class CourseScorer:
     """Calculates granular, profile-driven weighted recommendation scores and match explanations."""
 
     @classmethod
     def get_goal_required_skills(cls, goal_name: str, goals_map: Optional[Dict[str, List[str]]] = None) -> List[str]:
+        """
+        Retrieve normalized set of benchmark skills required for a given career goal.
+
+        Args:
+            goal_name: Target career goal string (e.g. 'Frontend Developer', 'Data Scientist').
+            goals_map: Optional dynamic benchmark mapping dictionary.
+
+        Returns:
+            List[str]: List of required skill strings.
+        """
         if not goal_name:
             return []
         goal_clean = goal_name.strip().lower()
@@ -238,8 +254,25 @@ class CourseScorer:
         goals_map: Optional[Dict[str, List[str]]] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Calculates a personalized score (0-100) for a course against a student's profile.
-        Returns None if course is already completed.
+        Calculate multi-dimensional match score between a candidate course and a student's profile.
+
+        Args:
+            course: Course data dictionary containing category, skills, target_roles, rating, level.
+            student_skills: Set or list of skills already acquired or self-reported by the student.
+            target_skills: Set or list of required skills derived from career goals.
+            interests: Set or list of personal learning interest topics.
+            experience_level: Student's self-assessed experience tier ('Beginner', 'Intermediate', 'Advanced').
+            career_goal: Primary professional career aspiration string.
+            secondary_goal: Optional secondary career goal string.
+            assessment_strengths: Optional set of skills verified via high assessment scores.
+            assessment_weaknesses: Optional set of skills identified as needing improvement.
+
+        Returns:
+            Tuple[float, List[str]]: Composite compatibility score (0-100) and list of matched explanation tags.
+
+        Purpose:
+            Weights career goal alignment (35%), skill gap coverage (30%), interest overlap (15%),
+            experience level fit (10%), and course quality/rating (10%) to generate personalized scores.
         """
         course_id = course.get("id")
         course_title = course.get("title", "")

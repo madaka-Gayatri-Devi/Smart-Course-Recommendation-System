@@ -34,8 +34,26 @@ GOOGLE_PUBLIC_KEYS_URL = "https://www.googleapis.com/robot/v1/metadata/x509/secu
 _cached_google_keys = {}
 _keys_expire_at = 0
 
+# ============================================================================
+# GOOGLE PUBLIC KEY RETRIEVAL & CACHING
+# ============================================================================
 def _get_google_public_keys() -> Dict[str, str]:
-    """Fetch and cache Google's public x509 certs for Firebase ID token verification."""
+    """
+    Fetch and cache Google's public x509 certificates for Firebase ID token verification.
+
+    Returns:
+        Dict[str, str]: Mapping of key IDs to x509 public certificate strings.
+
+    Purpose:
+        Verifies signatures of JWT tokens issued by Google Identity / Firebase Auth.
+        Caches keys according to Cache-Control max-age header (typically 1 hour).
+
+    Dependencies:
+        requests.get, GOOGLE_PUBLIC_KEYS_URL.
+
+    Error handling:
+        Logs connection or HTTP errors and falls back to cached keys if available.
+    """
     global _cached_google_keys, _keys_expire_at
     now = time.time()
     if _cached_google_keys and now < _keys_expire_at:
@@ -61,16 +79,31 @@ def _get_google_public_keys() -> Dict[str, str]:
 
     return _cached_google_keys
 
+# ============================================================================
+# FIREBASE ID TOKEN VERIFICATION & CLAIMS EXTRACTION
+# ============================================================================
 class FirebaseService:
     """Backend service for verifying Firebase ID Tokens."""
 
     @staticmethod
     def verify_id_token(id_token_str: str) -> Dict[str, Any]:
         """
-        Verifies a Firebase ID token.
-        First tries Firebase Admin SDK if available, then falls back to verifying
-        against Google's official public keys using PyJWT/jose.
-        Returns a dict containing verified user claims: email, name, picture, uid.
+        Verify and decode a Firebase Google ID token, extracting verified user profile claims.
+
+        Args:
+            id_token_str: Encoded JWT string received from client-side Google sign-in.
+
+        Returns:
+            Dict[str, Any]: Decoded token payload containing uid, email, name, and picture.
+
+        Purpose:
+            Validates authentication tokens sent by frontend Google OAuth flow before account creation or login.
+
+        Dependencies:
+            firebase_admin.auth or jose.jwt with Google public x509 certificates.
+
+        Error handling:
+            Raises ValueError or JWTError if token is expired, revoked, or signature is invalid.
         """
         if not id_token_str or not isinstance(id_token_str, str):
             raise ValueError("Firebase ID Token is required and must be a string.")

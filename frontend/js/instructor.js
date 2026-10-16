@@ -16,6 +16,14 @@ let selectedPricingMode = 'free'; // 'free' | 'paid'
 let uploadedThumbnailUrl = '';
 let uploadedDemoVideoUrl = '';
 
+/**
+ * Master initialization router for all instructor portal pages.
+ * Purpose: Verifies instructor authorization, renders header navigation, and mounts the active page view.
+ * Dependencies: window.INSTRUCTOR_PAGE, setupInstructorHeader, loadInstructorDashboardData.
+ */
+// ==========================================
+// INITIALIZATION & NAVBAR SETUP
+// ==========================================
 async function initInstructorApp() {
     const user = window.guardPage('INSTRUCTOR');
     if (!user) return;
@@ -59,6 +67,10 @@ if (document.readyState === 'loading') {
     initInstructorApp();
 }
 
+/**
+ * Sets instructor display name, initials avatar, and binds logout button in the top navbar.
+ * @param {Object} instructorUser - Authenticated instructor profile object.
+ */
 function setupInstructorHeader(user) {
     const name = user.full_name || user.name || 'Instructor';
     const initial = name.charAt(0).toUpperCase();
@@ -74,6 +86,13 @@ function setupInstructorHeader(user) {
 // 1. DASHBOARD & COURSES LISTING METHODS
 // =========================================================================
 
+/**
+ * Loads aggregated instructor dashboard metrics (total students, active courses, gross earnings, average rating).
+ * Purpose: Queries /instructor/analytics and populates KPI metric cards and summary tables.
+ */
+// ==========================================
+// INSTRUCTOR DASHBOARD KPIS & STATS
+// ==========================================
 async function loadInstructorDashboardData(user) {
     try {
         const summary = await window.api.getInstructorDashboardSummary();
@@ -97,6 +116,10 @@ async function loadInstructorDashboardData(user) {
     }
 }
 
+/**
+ * Renders table of instructor's authored courses with enrollment counts, ratings, and status badges.
+ * @param {Array<Object>} courses - List of courses authored by the instructor.
+ */
 function renderMyCoursesTable(courses) {
     const tbodies = [
         document.getElementById('instructorCoursesTableBody'),
@@ -158,6 +181,11 @@ function renderMyCoursesTable(courses) {
     tbodies.forEach(tb => tb.innerHTML = rowsHtml);
 }
 
+/**
+ * Toggles a course between draft and published status.
+ * @param {number} courseId - Database ID of the course.
+ * @param {boolean} currentPublishedState - Current publication state flag.
+ */
 window.handleInstructorTogglePublish = async function(courseId, isPublished) {
     const action = isPublished ? 'unpublish' : 'publish';
     if (!confirm(`Are you sure you want to ${action} this course?`)) return;
@@ -175,6 +203,10 @@ window.handleInstructorTogglePublish = async function(courseId, isPublished) {
     }
 };
 
+/**
+ * Renders recent student enrollments and milestone progress tracker in the dashboard.
+ * @param {Array<Object>} enrollments - Recent enrollment records.
+ */
 function renderStudentEnrollmentsAndProgress(students) {
     const enrollmentsList = document.getElementById('instStudentEnrollmentsList');
     const progressList = document.getElementById('instStudentProgressList');
@@ -216,6 +248,10 @@ function renderStudentEnrollmentsAndProgress(students) {
     }
 }
 
+/**
+ * Renders student course completion rate statistics and certificates awarded count.
+ * @param {Object} stats - Completion statistics object.
+ */
 function renderCompletionStats(stats, students) {
     const totalLearners = stats.total_students || (students ? students.length : 0);
     const completedLearners = students ? students.filter(s => s.progress_percentage === 100).length : 0;
@@ -226,6 +262,10 @@ function renderCompletionStats(stats, students) {
     document.getElementById('instStatCompletionRate') && (document.getElementById('instStatCompletionRate').textContent = `${rate}%`);
 }
 
+/**
+ * Renders recent student course ratings and written feedback in the dashboard feed.
+ * @param {Array<Object>} reviews - List of recent student review objects.
+ */
 function renderReviews(reviews, avgRating) {
     const feed = document.getElementById('instReviewsFeed');
     const badge = document.getElementById('instAvgRatingBadge');
@@ -251,6 +291,10 @@ function renderReviews(reviews, avgRating) {
     `).join('');
 }
 
+/**
+ * Renders monthly revenue and enrollment trend charts for the instructor.
+ * @param {Object} analytics - Analytics time series data.
+ */
 function renderCourseAnalytics(courses) {
     const container = document.getElementById('instCourseAnalyticsContainer');
     if (!container) return;
@@ -271,6 +315,13 @@ function renderCourseAnalytics(courses) {
 let allInstructorCourses = [];
 let currentFilterTab = 'all';
 
+/**
+ * Initializes the full instructor course management catalog view (/instructor/courses.html).
+ * Purpose: Binds tab filters (All, Published, Drafts, Archived) and search inputs.
+ */
+// ==========================================
+// COURSE MANAGEMENT & CATALOG FILTERS
+// ==========================================
 async function loadInstructorCoursesPage() {
     const tbody = document.getElementById('instructorMyCoursesBody');
     if (!tbody) return;
@@ -285,6 +336,10 @@ async function loadInstructorCoursesPage() {
     }
 }
 
+/**
+ * Updates numerical badges on course management tabs (All, Published, Drafts, Archived).
+ * @param {Array<Object>} courses - Complete catalog of instructor's courses.
+ */
 function updateCourseTabCounts() {
     const total = allInstructorCourses.length;
     const published = allInstructorCourses.filter(c => (c.status || '').toLowerCase() === 'published').length;
@@ -299,6 +354,9 @@ function updateCourseTabCounts() {
     document.getElementById('countPaid') && (document.getElementById('countPaid').textContent = paid);
 }
 
+/**
+ * Filters the displayed course list based on active tab, search keywords, and category selection.
+ */
 function applyInstructorCourseFilters() {
     let filtered = [...allInstructorCourses];
 
@@ -372,6 +430,13 @@ function setupCoursePageEventListeners() {
 // 2. COURSE STUDIO (CREATE & EDIT) SYSTEM
 // =========================================================================
 
+/**
+ * Initializes the interactive multi-step course authoring studio (/instructor/course-editor.html).
+ * Purpose: Configures basic details, curriculum builder, quiz editor, media uploads, and pricing.
+ */
+// ==========================================
+// COURSE STUDIO & CURRICULUM BUILDER
+// ==========================================
 async function setupCourseStudio(user) {
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get('id');
@@ -579,6 +644,12 @@ async function setupCourseStudio(user) {
 // 3. TAG CHIP UI LOGIC
 // =========================================================================
 
+/**
+ * Initializes dynamic tag/chip input for course prerequisites, target roles, and covered skills.
+ * @param {string} inputId - DOM ID of text input field.
+ * @param {string} wrapperId - DOM ID of chips container element.
+ * @param {Array<string>} dataArray - Mutable array storing active tag strings.
+ */
 function initChipInput(inputId, wrapperId, dataArray, onChangeCallback) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -613,6 +684,11 @@ function initChipInput(inputId, wrapperId, dataArray, onChangeCallback) {
     });
 }
 
+/**
+ * Renders visual tag pills inside a chip container with click-to-remove badges.
+ * @param {string} wrapperId - Container DOM element ID.
+ * @param {Array<string>} dataArray - Active tags array.
+ */
 function renderChipList(wrapperId, dataArray) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -644,6 +720,9 @@ window.removeChip = function(wrapperId, idx) {
 // 4. LEARNING OUTCOMES REPEATABLE MANAGER
 // =========================================================================
 
+/**
+ * Renders dynamic rows for 'What you will learn' bullet points in the course editor.
+ */
 function renderLearningOutcomes() {
     const container = document.getElementById('outcomesContainer');
     if (!container) return;
@@ -691,6 +770,10 @@ window.updateOutcome = function(idx, val) {
 // 5. EXPANDABLE CURRICULUM, MODULES & MULTI-TYPE LESSON BUILDER
 // =========================================================================
 
+/**
+ * Renders interactive curriculum tree containing modules, lessons, and assessment quizzes.
+ * Purpose: Allows instructors to add, reorder, expand, and configure chapters and lessons.
+ */
 function renderModulesBuilder() {
     const container = document.getElementById('modulesContainer');
     if (!container) return;
@@ -775,6 +858,11 @@ function renderModulesBuilder() {
     }).join('');
 }
 
+/**
+ * Renders lessons list inside a specific curriculum module accordion.
+ * @param {Object} module - Module data object containing lessons array.
+ * @param {number} mIdx - Index of the parent module.
+ */
 function renderLessonsList(module, mIdx) {
     if (!module.lessons || module.lessons.length === 0) {
         return `
@@ -883,6 +971,12 @@ function renderLessonsList(module, mIdx) {
     }).join('');
 }
 
+/**
+ * Renders conditional lesson editor fields based on lesson type (Video, Article, Quiz, Coding Exercise).
+ * @param {Object} lesson - Lesson data object.
+ * @param {number} mIdx - Module index.
+ * @param {number} lIdx - Lesson index.
+ */
 function renderTypeSpecificLessonFields(lesson, mIdx, lIdx) {
     const type = (lesson.type || 'video').toLowerCase();
 
@@ -1161,6 +1255,15 @@ window.updateQuizCorrectOption = function(mIdx, lIdx, qIdx, optIdx) {
 };
 
 // Video Upload Handlers
+/**
+ * Uploads a video file for a specific lesson and binds the generated stream URL.
+ * @param {HTMLInputElement} inputEl - File input element containing selected video.
+ * @param {number} mIdx - Target module index.
+ * @param {number} lIdx - Target lesson index.
+ */
+// ==========================================
+// MEDIA UPLOADS & ASSET MANAGEMENT
+// ==========================================
 window.handleUploadLessonVideo = async function(mIdx, lIdx) {
     const fileInput = document.getElementById(`lessonVideoFile_${mIdx}_${lIdx}`);
     const statusEl = document.getElementById(`lessonUploadStatus_${mIdx}_${lIdx}`);
@@ -1307,6 +1410,10 @@ window.selectPricingOption = function(mode) {
 // 8. COURSE THUMBNAIL MANAGER
 // =========================================================================
 
+/**
+ * Uploads course banner thumbnail image to backend media storage.
+ * @param {HTMLInputElement} inputEl - Image file input element.
+ */
 window.handleUploadThumbnail = async function() {
     const fileInput = document.getElementById('thumbnailFileInput');
     const statusEl = document.getElementById('thumbUploadStatus');
@@ -1413,6 +1520,13 @@ window.removeCourseResource = function(idx) {
 // 10. VALIDATION & PERSISTENCE (SAVE DRAFT VS PUBLISH)
 // =========================================================================
 
+/**
+ * Validates mandatory course fields, curriculum completeness, and pricing before publishing.
+ * @returns {Array<string>} List of validation error strings, empty if valid.
+ */
+// ==========================================
+// COURSE VALIDATION, SAVE & PREVIEW
+// ==========================================
 function validateCourseStudio(isDraft = false) {
     // Clear existing error states
     document.querySelectorAll('.error-msg').forEach(el => el.style.display = 'none');
@@ -1487,6 +1601,11 @@ function validateCourseStudio(isDraft = false) {
     return { isValid, firstErrorElement };
 }
 
+/**
+ * Serializes course studio data and submits create/update request to backend API.
+ * @param {boolean} isDraft - If true, saves as draft; if false, submits for publication.
+ * Purpose: Dispatches course payload to POST /courses or PUT /courses/{id}.
+ */
 window.handleSaveCourse = async function(isDraft = false) {
     const alertBox = document.getElementById('editorAlert');
     const saveDraftBtn = document.getElementById('saveDraftBtn');
@@ -1606,6 +1725,9 @@ window.handleSaveCourse = async function(isDraft = false) {
 // 11. STUDENT PREVIEW MODAL
 // =========================================================================
 
+/**
+ * Opens full-screen modal showing realistic student-facing preview of the course details page.
+ */
 window.openCoursePreviewModal = function() {
     const modal = document.getElementById('coursePreviewModal');
     const modalBody = document.getElementById('coursePreviewModalBody');
@@ -1724,6 +1846,9 @@ window.openCoursePreviewModal = function() {
     modal.style.display = 'flex';
 };
 
+/**
+ * Closes the student course preview modal.
+ */
 window.closeCoursePreviewModal = function() {
     const modal = document.getElementById('coursePreviewModal');
     if (modal) modal.style.display = 'none';
@@ -1749,6 +1874,13 @@ function escapeHtml(str) {
 
 let allInstructorStudents = [];
 
+/**
+ * Initializes the instructor's enrolled student learners directory (/instructor/students.html).
+ * Purpose: Fetches student roster, course enrollment dates, and milestone progress.
+ */
+// ==========================================
+// ENROLLED STUDENTS & LEARNER PROGRESS
+// ==========================================
 async function loadInstructorStudentsPage() {
     const tbody = document.getElementById('instructorStudentsTableBody');
     if (!tbody) return;
@@ -1862,6 +1994,10 @@ async function loadInstructorStudentsPage() {
     sortSelect && sortSelect.addEventListener('change', applyFilters);
 }
 
+/**
+ * Renders table rows for enrolled students with avatars, course names, and progress bars.
+ * @param {Array<Object>} students - Array of enrolled student records.
+ */
 function renderInstructorStudentsTable(students) {
     const tbody = document.getElementById('instructorStudentsTableBody');
     if (!tbody) return;
@@ -1947,6 +2083,10 @@ function renderInstructorStudentsTable(students) {
     }).join('');
 }
 
+/**
+ * Opens detailed modal showing a student's lesson completion history and quiz scores.
+ * @param {number} idx - Index of the student record in allInstructorStudents.
+ */
 window.openStudentDetailModal = function(idx) {
     const s = allInstructorStudents[idx];
     if (!s) return;
@@ -2020,6 +2160,9 @@ window.openStudentDetailModal = function(idx) {
     modal.style.display = 'flex';
 };
 
+/**
+ * Closes the student inspection modal.
+ */
 window.closeStudentDetailModal = function() {
     const modal = document.getElementById('studentDetailModal');
     if (modal) modal.style.display = 'none';
@@ -2031,6 +2174,13 @@ window.closeStudentDetailModal = function() {
 
 let allInstructorReviews = [];
 
+/**
+ * Initializes the course reviews and ratings dashboard (/instructor/reviews.html).
+ * Purpose: Binds star rating filters, course selectors, and renders feedback comments.
+ */
+// ==========================================
+// REVIEWS & STUDENT FEEDBACK
+// ==========================================
 async function loadInstructorReviewsPage() {
     const container = document.getElementById('instructorReviewsContainer');
     if (!container) return;
@@ -2119,6 +2269,10 @@ function populateReviewsCourseFilter(reviews) {
     courseFilter.innerHTML = optionsHtml;
 }
 
+/**
+ * Renders student review cards with star ratings, student avatars, dates, and feedback text.
+ * @param {Array<Object>} reviews - List of review records.
+ */
 function renderInstructorReviewsList(reviews) {
     const container = document.getElementById('instructorReviewsContainer');
     if (!container) return;
@@ -2169,6 +2323,13 @@ function renderInstructorReviewsList(reviews) {
 
 let allCourseAnalyticsData = null;
 
+/**
+ * Initializes the comprehensive instructor analytics dashboard (/instructor/analytics.html).
+ * Purpose: Powers student engagement metrics, drop-off analysis, and revenue breakdowns.
+ */
+// ==========================================
+// INSTRUCTOR ANALYTICS & INSIGHTS
+// ==========================================
 async function loadInstructorAnalyticsPage() {
     const tbody = document.getElementById('instructorAnalyticsTableBody');
     if (!tbody) return;
@@ -2281,6 +2442,10 @@ function renderInstructorAnalyticsTable(courses) {
     }).join('');
 }
 
+/**
+ * Opens detailed modal displaying per-lesson drop-off rates and completion velocity for a course.
+ * @param {number} idx - Course index in analytics list.
+ */
 window.openCourseAnalyticsModal = function(idx) {
     if (!allCourseAnalyticsData || !allCourseAnalyticsData.courses || !allCourseAnalyticsData.courses[idx]) return;
     const c = allCourseAnalyticsData.courses[idx];
@@ -2346,6 +2511,9 @@ window.openCourseAnalyticsModal = function(idx) {
     modal.style.display = 'flex';
 };
 
+/**
+ * Closes the course analytics breakdown modal.
+ */
 window.closeCourseAnalyticsModal = function() {
     const modal = document.getElementById('courseAnalyticsModal');
     if (modal) modal.style.display = 'none';

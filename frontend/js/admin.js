@@ -5,6 +5,15 @@
  * Categories, Skills, Career Goals, Assessments, Enrollments, Reports, & Analytics.
  */
 
+/**
+ * Sanitizes unsafe HTML string characters to prevent XSS injection.
+ * @param {string} str - Raw input string.
+ * @returns {string} Sanitized string safe for DOM interpolation.
+ * Purpose: Ensures untrusted user data is safely escaped in admin tables.
+ */
+// ==========================================
+// UTILITY & AUTHENTICATION INITIALIZATION
+// ==========================================
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -34,6 +43,11 @@ function getAdminUser() {
     return null;
 }
 
+/**
+ * Master initialization router for all administrator portal subpages.
+ * Purpose: Detects active page via window.ADMIN_PAGE or DOM selectors and invokes page controllers.
+ * Dependencies: window.ADMIN_PAGE, setupAdminHeader, loadAdminDashboardData, setupAdminUsersPage, etc.
+ */
 async function initAdminApp() {
     if (window.__adminInitDone) return;
     window.__adminInitDone = true;
@@ -99,6 +113,11 @@ if (document.readyState === 'loading') {
     initAdminApp();
 }
 
+/**
+ * Renders administrator avatar, display name, and binds logout handler in the top navbar.
+ * @param {Object} adminUser - Authenticated admin profile object.
+ * Purpose: Synchronizes navigation bar state across all admin views.
+ */
 function setupAdminHeader(user) {
     const name = user.full_name || user.name || 'Administrator';
     const initial = name.charAt(0).toUpperCase();
@@ -114,6 +133,15 @@ function setupAdminHeader(user) {
 // 1. DASHBOARD OVERVIEW & PLATFORM HEALTH
 // =========================================================================
 
+/**
+ * Loads aggregated system analytics, active user counts, and moderation queues for the main dashboard.
+ * Purpose: Fetches platform metrics from /admin/analytics and populates KPI widgets and overview tables.
+ * Dependencies: window.api.getAdminAnalytics, renderSystemOverviewKPIs, renderUserManagementTable.
+ * Debugging: Inspect network payload for /admin/analytics if KPI counters display 0.
+ */
+// ==========================================
+// DASHBOARD OVERVIEW & SYSTEM KPIS
+// ==========================================
 async function loadAdminDashboardData() {
     try {
         const summary = await window.api.getAdminDashboardSummary();
@@ -150,6 +178,11 @@ async function loadAdminDashboardData() {
     }
 }
 
+/**
+ * Populates dashboard summary metric cards with animated numbers.
+ * @param {Object} data - Aggregated analytics payload.
+ * Purpose: Displays Total Users, Active Courses, Total Enrollments, and Platform Revenue.
+ */
 function renderSystemOverviewKPIs(stats) {
     const totalStudents = stats.total_students || 0;
     const totalInstructors = stats.total_instructors || 0;
@@ -162,6 +195,11 @@ function renderSystemOverviewKPIs(stats) {
     document.getElementById('kpiTotalEnrollments') && (document.getElementById('kpiTotalEnrollments').textContent = stats.total_enrollments || 0);
 }
 
+/**
+ * Renders recent user registrations and quick action toggles in the dashboard overview.
+ * @param {Array<Object>} users - List of recently registered user objects.
+ * Purpose: Provides instant access to activate, suspend, or inspect user accounts.
+ */
 function renderUserManagementTable(users) {
     const tbody = document.getElementById('adminRecentUsersBody');
     if (!tbody) return;
@@ -203,6 +241,11 @@ function renderUserManagementTable(users) {
     }).join('');
 }
 
+/**
+ * Renders pending course reviews and moderation queue in the dashboard.
+ * @param {Array<Object>} courses - List of courses submitted by instructors.
+ * Purpose: Allows administrators to review, approve, publish, or reject course submissions.
+ */
 function renderCatalogModerationTable(courses, stats) {
     const tbody = document.getElementById('adminCoursesBody');
     const breakdown = document.getElementById('kpiCourseBreakdown');
@@ -245,6 +288,10 @@ function renderCatalogModerationTable(courses, stats) {
     }).join('');
 }
 
+/**
+ * Renders category breakdown chart or badges on the dashboard.
+ * @param {Object} categories - Distribution map of course counts per category.
+ */
 function renderCategoryDistribution(categories) {
     const container = document.getElementById('adminCategoryDistribution');
     if (!container) return;
@@ -273,11 +320,19 @@ function renderCategoryDistribution(categories) {
     }).join('');
 }
 
+/**
+ * Renders skill distribution and career goal alignment statistics.
+ * @param {Object} skills - Map of skills tracked across enrolled students.
+ */
 function renderSkillsAndCareers(stats) {
     document.getElementById('kpiTotalSkills') && (document.getElementById('kpiTotalSkills').textContent = stats.total_skills || 0);
     document.getElementById('kpiTotalCareers') && (document.getElementById('kpiTotalCareers').textContent = stats.total_career_goals || 0);
 }
 
+/**
+ * Renders diagnostic assessment metrics and enrollment conversion ratios.
+ * @param {Object} data - Diagnostic assessment attempt summaries.
+ */
 function renderAssessmentsAndEnrollments(stats) {
     document.getElementById('kpiTotalAssessments') && (document.getElementById('kpiTotalAssessments').textContent = stats.total_assessments || 0);
 
@@ -298,10 +353,18 @@ function renderAssessmentsAndEnrollments(stats) {
     }
 }
 
+/**
+ * Populates secondary statistics cards including completion rates and average ratings.
+ * @param {Object} stats - Platform operational metrics object.
+ */
 function renderPlatformStatistics(stats) {
     document.getElementById('kpiCompletionRate') && (document.getElementById('kpiCompletionRate').textContent = `${stats.completion_rate || 0}%`);
 }
 
+/**
+ * Renders the top-performing courses ranked by enrollment numbers and ratings.
+ * @param {Array<Object>} courses - List of top course records.
+ */
 function renderPopularCourses(popular) {
     const container = document.getElementById('adminPopularCourses');
     if (!container) return;
@@ -328,6 +391,14 @@ function renderPopularCourses(popular) {
 
 let allAdminUsersList = [];
 
+/**
+ * Initializes the full user directory management page (/admin/users.html).
+ * Purpose: Binds search filters, role dropdowns, status toggles, and paginated user lists.
+ * Dependencies: window.api.getAdminUsers, renderUsersDirectoryTable.
+ */
+// ==========================================
+// USER DIRECTORY & STATUS MANAGEMENT
+// ==========================================
 async function setupAdminUsersPage() {
     const tbody = document.getElementById('adminUsersTableBody');
     if (!tbody) return;
@@ -385,7 +456,12 @@ async function setupAdminUsersPage() {
         }
     };
 
-    function renderUsersDirectoryTable(users) {
+    /**
+ * Generates interactive table rows for the comprehensive user directory.
+ * @param {Array<Object>} users - List of user accounts matching current search/filter.
+ * Purpose: Renders user profile images, roles, verification status, and action buttons.
+ */
+function renderUsersDirectoryTable(users) {
         if (!tbody) return;
 
         if (!users || users.length === 0) {
@@ -476,6 +552,13 @@ async function setupAdminUsersPage() {
     await fetchAndRenderUsers();
 }
 
+/**
+ * Toggles a user account between active and suspended states.
+ * @param {number} userId - Database ID of the target user.
+ * @param {boolean} currentStatus - Current active state of the user.
+ * Purpose: Allows admins to immediately suspend or reactivate compromised or violating accounts.
+ * Dependencies: window.api.updateAdminUserStatus.
+ */
 window.handleToggleUserStatus = async function(userId, currentIsActive) {
     const action = currentIsActive ? 'deactivate' : 'activate';
     if (!confirm(`Are you sure you want to ${action} user #${userId}?`)) return;
@@ -495,6 +578,14 @@ window.handleToggleUserStatus = async function(userId, currentIsActive) {
 
 let allAdminStudentsData = [];
 
+/**
+ * Initializes the dedicated student learners directory (/admin/students.html).
+ * Purpose: Fetches student profiles, enrollment stats, and binds student inspection modals.
+ * Dependencies: window.api.getAdminStudents, renderAdminStudentsTable.
+ */
+// ==========================================
+// STUDENT DIRECTORY & DETAIL MODALS
+// ==========================================
 async function setupAdminStudentsPage() {
     const tbody = document.getElementById('adminStudentsTableBody');
     if (!tbody) return;
@@ -571,7 +662,11 @@ async function setupAdminStudentsPage() {
         }
     };
 
-    function renderAdminStudentsTable(students) {
+    /**
+ * Renders table of student learners with enrolled course counts and completion progress.
+ * @param {Array<Object>} students - Array of student learner records.
+ */
+function renderAdminStudentsTable(students) {
         if (!tbody) return;
 
         if (!students || students.length === 0) {
@@ -656,6 +751,11 @@ async function setupAdminStudentsPage() {
     await fetchAndRenderStudents();
 }
 
+/**
+ * Opens detailed modal showing student academic progress, enrolled courses, and assessment scores.
+ * @param {number} studentId - Target student database identifier.
+ * Purpose: Provides deep diagnostic insights into learner performance and history.
+ */
 window.openAdminStudentDetailModal = async function(studentId) {
     try {
         const s = await window.api.getAdminStudentDetail(studentId);
@@ -785,6 +885,9 @@ window.openAdminStudentDetailModal = async function(studentId) {
     }
 };
 
+/**
+ * Closes and resets the student detail inspection modal.
+ */
 window.closeAdminStudentDetailModal = function() {
     const modal = document.getElementById('adminStudentDetailModal');
     if (modal) modal.style.display = 'none';
@@ -796,6 +899,13 @@ window.closeAdminStudentDetailModal = function() {
 
 let allAdminInstructorsData = [];
 
+/**
+ * Initializes the instructor directory and verification portal (/admin/instructors.html).
+ * Purpose: Manages instructor applications, course authoring metrics, and payout summaries.
+ */
+// ==========================================
+// INSTRUCTOR DIRECTORY & DETAIL MODALS
+// ==========================================
 async function setupAdminInstructorsPage() {
     const tbody = document.getElementById('adminInstructorsTableBody');
     if (!tbody) return;
@@ -869,7 +979,11 @@ async function setupAdminInstructorsPage() {
         }
     };
 
-    function renderAdminInstructorsTable(instructors) {
+    /**
+ * Renders table of platform instructors with authored course counts, student reach, and ratings.
+ * @param {Array<Object>} instructors - List of instructor profiles.
+ */
+function renderAdminInstructorsTable(instructors) {
         if (!tbody) return;
 
         if (!instructors || instructors.length === 0) {
@@ -940,6 +1054,10 @@ async function setupAdminInstructorsPage() {
     await fetchAndRenderInstructors();
 }
 
+/**
+ * Opens comprehensive modal showing instructor bio, authored courses, and review ratings.
+ * @param {number} instructorId - Target instructor database identifier.
+ */
 window.openAdminInstructorDetailModal = async function(instructorId) {
     try {
         const inst = await window.api.getAdminInstructorDetail(instructorId);
@@ -1073,6 +1191,9 @@ window.openAdminInstructorDetailModal = async function(instructorId) {
     }
 };
 
+/**
+ * Closes the instructor detail inspection modal.
+ */
 window.closeAdminInstructorDetailModal = function() {
     const modal = document.getElementById('adminInstructorDetailModal');
     if (modal) modal.style.display = 'none';
@@ -1084,6 +1205,13 @@ window.closeAdminInstructorDetailModal = function() {
 
 let adminCurrentModules = [];
 
+/**
+ * Initializes the course catalog moderation and management view (/admin/courses.html).
+ * Purpose: Binds category filters, publish status toggles, and catalog search.
+ */
+// ==========================================
+// COURSE CATALOG MODERATION & CONTROLS
+// ==========================================
 async function setupAdminCoursesPage() {
     const tbody = document.getElementById('adminCoursesTableBody');
     const searchInput = document.getElementById('adminCourseSearchInput');
@@ -1110,7 +1238,11 @@ async function setupAdminCoursesPage() {
         }
     }
 
-    async function fetchAndRenderCourses() {
+    /**
+ * Fetches filtered course catalog and updates the course moderation table.
+ * Purpose: Retrieves course list from backend API applying search queries and status filters.
+ */
+async function fetchAndRenderCourses() {
         if (!tbody) return;
         tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--secondary-text);"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Loading catalog...</td></tr>`;
 
@@ -1134,7 +1266,11 @@ async function setupAdminCoursesPage() {
         }
     }
 
-    function renderAdminCoursesTable(courses) {
+    /**
+ * Renders table of all courses with thumbnail, instructor, pricing, status, and control actions.
+ * @param {Array<Object>} courses - List of course records.
+ */
+function renderAdminCoursesTable(courses) {
         if (!tbody) return;
 
         if (!courses || courses.length === 0) {
@@ -1227,6 +1363,11 @@ async function setupAdminCoursesPage() {
     await fetchAndRenderCourses();
 }
 
+/**
+ * Approves and toggles publication status of an instructor-submitted course.
+ * @param {number} courseId - Database ID of the course.
+ * @param {boolean} currentPublishedState - Current publish status flag.
+ */
 window.handleAdminTogglePublish = async function(courseId, isPublished) {
     const action = isPublished ? 'unpublish' : 'publish';
     if (!confirm(`Are you sure you want to ${action} course #${courseId}?`)) return;
@@ -1240,6 +1381,11 @@ window.handleAdminTogglePublish = async function(courseId, isPublished) {
     }
 };
 
+/**
+ * Deactivates or archives a course from the public catalog.
+ * @param {number} courseId - Database ID of the course.
+ * @param {boolean} currentActiveState - Current active flag.
+ */
 window.handleAdminToggleDeactivate = async function(courseId, isDeactivated) {
     const action = isDeactivated ? 'activate' : 'deactivate';
     if (!confirm(`Are you sure you want to ${action} course #${courseId}?`)) return;
@@ -1275,6 +1421,13 @@ let currentRecFilters = {
     min_score: 0
 };
 
+/**
+ * Initializes the recommendation engine audit and monitoring dashboard (/admin/recommendations.html).
+ * Purpose: Monitors recommendation hit-rates, triggers manual batch re-scoring, and audits rationale.
+ */
+// ==========================================
+// RECOMMENDATION MONITORING & AUDIT
+// ==========================================
 async function setupAdminRecommendationsPage() {
     await loadRecFilterOptions();
     await loadRecStats();
@@ -1285,6 +1438,9 @@ async function setupAdminRecommendationsPage() {
     setupRecEventListeners();
 }
 
+/**
+ * Loads dynamic filter options (career goals, categories) for recommendation audit logs.
+ */
 async function loadRecFilterOptions() {
     try {
         const categories = await (window.api.getCategories ? window.api.getCategories() : []);
@@ -1305,6 +1461,9 @@ async function loadRecFilterOptions() {
     } catch (_) {}
 }
 
+/**
+ * Fetches recommendation engine diagnostic statistics (accuracy, coverage, active models).
+ */
 async function loadRecStats() {
     try {
         const stats = await window.api.getAdminRecommendationStats();
@@ -1324,6 +1483,10 @@ async function loadRecStats() {
     }
 }
 
+/**
+ * Fetches and renders paginated student recommendation logs with match score breakdowns.
+ * @param {number} page - Page number to retrieve (1-indexed).
+ */
 async function loadRecRecordsTable() {
     const tbody = document.getElementById('recTableBody');
     if (!tbody) return;
@@ -1410,6 +1573,11 @@ async function loadRecRecordsTable() {
     }
 }
 
+/**
+ * Updates pagination buttons and page indicators for recommendation audit records.
+ * @param {number} currentPage - Currently active page index.
+ * @param {number} totalPages - Total available pages count.
+ */
 function updateRecPagination(start, end, total, totalPages) {
     const info = document.getElementById('paginationInfo');
     const pageNum = document.getElementById('currentPageNum');
@@ -1423,6 +1591,9 @@ function updateRecPagination(start, end, total, totalPages) {
     if (btnNext) btnNext.disabled = (currentRecPage >= totalPages);
 }
 
+/**
+ * Renders recommendation analytics charts (match score distribution, top recommended courses).
+ */
 async function loadRecAnalytics() {
     try {
         const analytics = await window.api.getAdminRecommendationAnalytics();
@@ -1481,6 +1652,9 @@ async function loadRecAnalytics() {
     }
 }
 
+/**
+ * Monitors course catalog relevance scores and flags stale courses with low recommendation affinity.
+ */
 async function loadCourseRelevanceMonitoring() {
     const container = document.getElementById('monitoringContainer');
     if (!container) return;
@@ -1535,6 +1709,9 @@ async function loadCourseRelevanceMonitoring() {
     }
 }
 
+/**
+ * Binds DOM event listeners for recommendation filters, search inputs, and batch regeneration triggers.
+ */
 function setupRecEventListeners() {
     // Search input
     let searchTimeout;
@@ -1730,6 +1907,9 @@ function setupRecEventListeners() {
     }
 }
 
+/**
+ * Fetches student selection list for targeted recommendation cache recalculation.
+ */
 async function loadRegenStudentList() {
     const studentSelect = document.getElementById('regenStudentSelect');
     if (!studentSelect) return;
@@ -1750,6 +1930,10 @@ async function loadRegenStudentList() {
 }
 
 // Global View Details Handler
+/**
+ * Opens detailed audit modal displaying factor weights (goals, skills, interests) for a specific recommendation.
+ * @param {number} recId - Unique recommendation database identifier.
+ */
 window.handleViewRecDetails = async function(recId) {
     const modal = document.getElementById('recDetailsModal');
     if (!modal) return;
@@ -1916,6 +2100,10 @@ window.setupAdminRecommendationsPage = setupAdminRecommendationsPage;
 
 const adminReportCharts = {};
 
+/**
+ * Safely tears down and destroys an existing Chart.js report instance to prevent canvas memory leaks.
+ * @param {string} chartKey - Key identifier in the active charts registry.
+ */
 function destroyReportChart(chartId) {
     if (adminReportCharts[chartId]) {
         adminReportCharts[chartId].destroy();
@@ -1923,6 +2111,13 @@ function destroyReportChart(chartId) {
     }
 }
 
+/**
+ * Initializes the business reporting and CSV/PDF export dashboard (/admin/reports.html).
+ * Purpose: Orchestrates sales, enrollment, completion, and student progress reports.
+ */
+// ==========================================
+// BUSINESS REPORTS & DATA EXPORTS
+// ==========================================
 async function setupAdminReportsPage() {
     const popularTbody = document.getElementById('popularCoursesTableBody');
     if (!popularTbody) return;
@@ -2096,6 +2291,10 @@ async function setupAdminReportsPage() {
     }
 }
 
+/**
+ * Renders formatted tabular breakdown of top revenue and enrollment courses.
+ * @param {Array<Object>} courses - List of top-performing courses.
+ */
 function renderPopularCoursesTable(courses) {
     const tbody = document.getElementById('popularCoursesTableBody');
     if (!tbody) return;
@@ -2122,6 +2321,10 @@ function renderPopularCoursesTable(courses) {
     `).join('');
 }
 
+/**
+ * Renders Chart.js horizontal bar chart visualizing enrollment distribution across top courses.
+ * @param {Array<Object>} courses - Top course data.
+ */
 function renderPopularCoursesBarChart(topCourses) {
     const canvas = document.getElementById('popularCoursesBarChart');
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2159,6 +2362,10 @@ function renderPopularCoursesBarChart(topCourses) {
     });
 }
 
+/**
+ * Renders Chart.js pie chart depicting platform user role ratios (Students vs Instructors vs Admins).
+ * @param {Object} roleCounts - User counts indexed by role.
+ */
 function renderUserDistributionPieChart(dist) {
     const canvas = document.getElementById('userDistributionChart');
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2187,6 +2394,10 @@ function renderUserDistributionPieChart(dist) {
     });
 }
 
+/**
+ * Renders Chart.js doughnut chart showing course distribution across subject categories.
+ * @param {Object} categoryCounts - Course count map per category.
+ */
 function renderCategoryDistributionChart(catData) {
     const canvas = document.getElementById('coursesByCategoryChart');
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2217,6 +2428,10 @@ function renderCategoryDistributionChart(catData) {
     });
 }
 
+/**
+ * Renders Chart.js bar chart showing course counts per difficulty tier (Beginner, Intermediate, Advanced).
+ * @param {Object} levels - Course counts grouped by difficulty.
+ */
 function renderDifficultyDistributionChart(diffData) {
     const canvas = document.getElementById('difficultyDistributionChart');
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2242,6 +2457,10 @@ function renderDifficultyDistributionChart(diffData) {
     });
 }
 
+/**
+ * Renders detailed enrollment transactions table with student names, course titles, and dates.
+ * @param {Array<Object>} enrollments - Enrollment records.
+ */
 function renderEnrollmentReportTable(items) {
     const tbody = document.getElementById('enrollmentReportTableBody');
     if (!tbody) return;
@@ -2285,6 +2504,11 @@ function renderEnrollmentReportTable(items) {
     }).join('');
 }
 
+/**
+ * Updates pagination controls for enrollment reports.
+ * @param {number} page - Active page index.
+ * @param {number} total - Total enrollment records.
+ */
 function renderEnrollmentPagination(total, page, limit) {
     const meta = document.getElementById('enrollmentPaginationInfo');
     const prevBtn = document.getElementById('prevEnrollmentPage');
@@ -2298,6 +2522,10 @@ function renderEnrollmentPagination(total, page, limit) {
     if (nextBtn) nextBtn.disabled = end >= total;
 }
 
+/**
+ * Renders Chart.js monthly/weekly enrollment velocity line graph.
+ * @param {Array<Object>} trendData - Chronological enrollment count data points.
+ */
 function renderEnrollmentTrendChart(trendData) {
     const canvas = document.getElementById('enrollmentTrendLineChart');
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2332,6 +2560,10 @@ function renderEnrollmentTrendChart(trendData) {
     });
 }
 
+/**
+ * Renders course graduation rate report with completion percentages and average time to complete.
+ * @param {Array<Object>} completionStats - Aggregated completion metrics per course.
+ */
 function renderCourseCompletionTable(courses) {
     const tbody = document.getElementById('courseCompletionTableBody');
     if (!tbody) return;
@@ -2357,6 +2589,10 @@ function renderCourseCompletionTable(courses) {
     `).join('');
 }
 
+/**
+ * Renders granular student milestone progress metrics across enrolled curricula.
+ * @param {Array<Object>} progressData - Student progress entries.
+ */
 function renderStudentProgressTable(students) {
     const tbody = document.getElementById('studentProgressTableBody');
     if (!tbody) return;
@@ -2383,6 +2619,10 @@ function renderStudentProgressTable(students) {
     `).join('');
 }
 
+/**
+ * Renders instructor productivity report with total courses authored, active students, and ratings.
+ * @param {Array<Object>} instructors - Instructor report records.
+ */
 function renderInstructorReportTable(instructors) {
     const tbody = document.getElementById('instructorReportTableBody');
     if (!tbody) return;
@@ -2407,6 +2647,10 @@ function renderInstructorReportTable(instructors) {
     `).join('');
 }
 
+/**
+ * Renders financial transactions report with gross revenue, instructor splits, and gateway fees.
+ * @param {Array<Object>} payments - Payment transaction records.
+ */
 function renderPaymentReportTable(items) {
     const tbody = document.getElementById('paymentReportTableBody');
     if (!tbody) return;
@@ -2432,6 +2676,10 @@ function renderPaymentReportTable(items) {
     `).join('');
 }
 
+/**
+ * Renders recommendation conversion report showing click-through and enrollment rates from recommendations.
+ * @param {Array<Object>} recMetrics - Conversion metric data.
+ */
 function renderRecommendationReportTable(items) {
     const tbody = document.getElementById('recommendationReportTableBody');
     if (!tbody) return;
@@ -2459,6 +2707,10 @@ function renderRecommendationReportTable(items) {
 
 const adminAnalyticsCharts = {};
 
+/**
+ * Destroys existing Chart.js instances in the platform analytics tab.
+ * @param {string} chartKey - Target chart registry identifier.
+ */
 function destroyAnalyticsChart(chartId) {
     if (adminAnalyticsCharts[chartId]) {
         adminAnalyticsCharts[chartId].destroy();
@@ -2466,6 +2718,13 @@ function destroyAnalyticsChart(chartId) {
     }
 }
 
+/**
+ * Initializes the real-time operational analytics dashboard (/admin/analytics.html).
+ * Purpose: Powers platform telemetry, active user concurrency, and system utilization metrics.
+ */
+// ==========================================
+// PLATFORM ANALYTICS & VISUALIZATIONS
+// ==========================================
 async function setupAdminAnalyticsPage() {
     // 1. Fetch Overview & Factual Insights
     try {
@@ -2499,23 +2758,26 @@ async function setupAdminAnalyticsPage() {
     try {
         const cData = await window.api.getAdminAnalyticsCharts();
         
+        const themeColors = window.SmartLearnTheme ? window.SmartLearnTheme.getColors() : { primary: '#5B3FE8', secondary: '#8B4AD9', accent: '#E83FA5' };
+        const isDark = window.SmartLearnTheme ? window.SmartLearnTheme.getResolvedAppearance() === 'dark' : false;
+
         // A. Enrollment Growth (Line)
-        renderAnalyticsLineChart('chartEnrollmentGrowth', cData.enrollment_trend || [], 'month', 'count', 'Enrollments', '#5B3FE8');
+        renderAnalyticsLineChart('chartEnrollmentGrowth', cData.enrollment_trend || [], 'month', 'count', 'Enrollments', themeColors.primary);
         
         // B. Course Popularity (Horizontal Bar)
-        renderAnalyticsHorizontalBarChart('chartCoursePopularity', cData.popular_courses || [], 'title', 'enrollments', 'Enrollments', '#F59E0B');
+        renderAnalyticsHorizontalBarChart('chartCoursePopularity', cData.popular_courses || [], 'title', 'enrollments', 'Enrollments', themeColors.secondary);
 
         // C. Completion Rate by Course (Bar)
         renderAnalyticsBarChart('chartCompletionRateByCourse', cData.completion_rate_by_course || [], 'title', 'rate', 'Completion Rate %', '#10B981');
 
         // D. Courses by Category (Doughnut)
-        renderAnalyticsDoughnutChart('chartCoursesByCategory', cData.courses_by_category || {}, ['#5B3FE8', '#8B4AD9', '#E83FA5', '#F21B8F', '#10B981', '#3B82F6', '#F59E0B']);
+        renderAnalyticsDoughnutChart('chartCoursesByCategory', cData.courses_by_category || {}, [themeColors.primary, themeColors.secondary, themeColors.accent, '#10B981', '#3B82F6', '#F59E0B']);
 
         // E. Courses by Difficulty (Pie)
         renderAnalyticsPieChart('chartCoursesByDifficulty', cData.courses_by_difficulty || {}, ['#10B981', '#3B82F6', '#F59E0B']);
 
         // F. Student Enrollment Status (Doughnut)
-        renderAnalyticsDoughnutChart('chartStudentStatus', cData.enrollment_status || {}, ['#64748B', '#5B3FE8', '#10B981']);
+        renderAnalyticsDoughnutChart('chartStudentStatus', cData.enrollment_status || {}, ['#64748B', themeColors.primary, '#10B981']);
 
         // G. Rating Distribution (Bar)
         renderAnalyticsRatingBarChart('chartRatingDistribution', cData.rating_distribution || {});
@@ -2524,19 +2786,24 @@ async function setupAdminAnalyticsPage() {
         renderAnalyticsLineChart('chartMonthlyRevenue', cData.monthly_revenue || [], 'month', 'amount', 'Revenue (₹)', '#10B981');
 
         // I. Recommendation Frequency (Bar)
-        renderAnalyticsBarChart('chartRecommendationDistribution', cData.recommendation_distribution || [], 'title', 'count', 'Times Recommended', '#F21B8F');
+        renderAnalyticsBarChart('chartRecommendationDistribution', cData.recommendation_distribution || [], 'title', 'count', 'Times Recommended', themeColors.accent);
 
         // J. Top Student Skills (Horizontal Bar)
-        renderAnalyticsHorizontalBarChart('chartSkillTrends', cData.skills_insights || [], 'skill', 'count', 'Students with Skill', '#8B4AD9');
+        renderAnalyticsHorizontalBarChart('chartSkillTrends', cData.skills_insights || [], 'skill', 'count', 'Students with Skill', themeColors.secondary);
 
         // K. Common Career Goals (Horizontal Bar)
-        renderAnalyticsHorizontalBarChart('chartCareerGoalDistribution', cData.career_goals_insights || [], 'goal', 'count', 'Students pursuing Goal', '#5B3FE8');
+        renderAnalyticsHorizontalBarChart('chartCareerGoalDistribution', cData.career_goals_insights || [], 'goal', 'count', 'Students pursuing Goal', themeColors.primary);
 
     } catch (err) {
         console.error("Error loading analytics charts:", err);
     }
 }
 
+/**
+ * Renders interactive line chart tracking daily active users (DAU) and platform engagement over time.
+ * @param {string} canvasId - Target DOM canvas element ID.
+ * @param {Object} chartData - Time series data points.
+ */
 function renderAnalyticsLineChart(canvasId, items, labelKey, valueKey, labelName, color) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2571,6 +2838,11 @@ function renderAnalyticsLineChart(canvasId, items, labelKey, valueKey, labelName
     });
 }
 
+/**
+ * Renders vertical bar chart comparing quarterly revenue or enrollment metrics.
+ * @param {string} canvasId - Canvas DOM ID.
+ * @param {Object} chartData - Formatted Chart.js dataset.
+ */
 function renderAnalyticsBarChart(canvasId, items, labelKey, valueKey, labelName, color) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2600,6 +2872,11 @@ function renderAnalyticsBarChart(canvasId, items, labelKey, valueKey, labelName,
     });
 }
 
+/**
+ * Renders horizontal bar chart ranking top learning skills or career goals by student adoption.
+ * @param {string} canvasId - Canvas DOM ID.
+ * @param {Object} chartData - Skills or goals dataset.
+ */
 function renderAnalyticsHorizontalBarChart(canvasId, items, labelKey, valueKey, labelName, color) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2630,6 +2907,11 @@ function renderAnalyticsHorizontalBarChart(canvasId, items, labelKey, valueKey, 
     });
 }
 
+/**
+ * Renders doughnut chart illustrating device, browser, or traffic breakdown.
+ * @param {string} canvasId - Canvas DOM ID.
+ * @param {Object} chartData - Categorical proportion dataset.
+ */
 function renderAnalyticsDoughnutChart(canvasId, objData, palette) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2655,6 +2937,11 @@ function renderAnalyticsDoughnutChart(canvasId, objData, palette) {
     });
 }
 
+/**
+ * Renders pie chart showing payment method or geographical distributions.
+ * @param {string} canvasId - Canvas DOM ID.
+ * @param {Object} chartData - Proportion data.
+ */
 function renderAnalyticsPieChart(canvasId, objData, palette) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2680,6 +2967,11 @@ function renderAnalyticsPieChart(canvasId, objData, palette) {
     });
 }
 
+/**
+ * Renders bar chart displaying course review star distribution (1 to 5 stars).
+ * @param {string} canvasId - Canvas DOM ID.
+ * @param {Object} chartData - Rating frequencies dataset.
+ */
 function renderAnalyticsRatingBarChart(canvasId, ratingObj) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -2710,5 +3002,15 @@ function renderAnalyticsRatingBarChart(canvasId, ratingObj) {
 }
 
 window.setupAdminReportsPage = setupAdminReportsPage;
+
+// Listen to theme changes to dynamically re-render analytics & report charts
+window.addEventListener('smartlearn:themechanged', () => {
+    if (typeof setupAdminAnalyticsPage === 'function' && document.getElementById('chartEnrollmentGrowth')) {
+        setupAdminAnalyticsPage();
+    }
+    if (typeof setupAdminReportsPage === 'function' && document.getElementById('popularCoursesBarChart')) {
+        setupAdminReportsPage();
+    }
+});
 window.setupAdminAnalyticsPage = setupAdminAnalyticsPage;
 

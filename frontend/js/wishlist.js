@@ -1,3 +1,7 @@
+// ==========================================
+// SMARTLEARN WISHLIST MANAGEMENT CONTROLLER
+// Manages student bookmarked courses, removal, and direct checkout transitions.
+// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     let currentUser = null;
     let profileData = null;

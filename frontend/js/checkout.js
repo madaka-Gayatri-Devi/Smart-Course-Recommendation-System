@@ -136,7 +136,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Helper: Render Course and Price Summary
-    function renderCourseSummary(c) {
+    /**
+ * Renders checkout order details, itemized course price, discounts, and total amount due.
+ * @param {Object} course - Course metadata object.
+ */
+// ==========================================
+// ORDER SUMMARY & PRICING BREAKDOWN
+// ==========================================
+function renderCourseSummary(c) {
         const titleEl = document.getElementById('courseSummaryTitle');
         const catBadge = document.getElementById('courseCategoryBadge');
         const instName = document.getElementById('courseInstructorName');
@@ -187,7 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Helper: Payment Method Selection
-    function setupPaymentMethodSelection() {
+    /**
+ * Binds payment gateway selector radios (Card, UPI, Net Banking, Wallet) and updates pay button text.
+ */
+function setupPaymentMethodSelection() {
         const selector = document.getElementById('paymentMethodSelector');
         const methodDetailContent = document.getElementById('methodDetailContent');
         if (!selector) return;
@@ -248,7 +258,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Helper: Initiate Payment Flow
-    async function initiatePaymentFlow() {
+    /**
+ * Coordinates checkout payment initiation: creates order on backend and opens gateway modal.
+ * Purpose: Calls window.api.createPaymentOrder to secure gateway transaction ID.
+ */
+// ==========================================
+// PAYMENT GATEWAY & TRANSACTION DISPATCH
+// ==========================================
+async function initiatePaymentFlow() {
         if (!currentCourse) return;
 
         setProcessingState(true);
@@ -300,7 +317,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Open Real Razorpay Checkout Modal
-    function openRazorpayGateway(orderData) {
+    /**
+ * Mounts and launches the Razorpay modal checkout popup with transaction order token.
+ * @param {Object} orderData - Gateway order credentials and prefill metadata.
+ */
+function openRazorpayGateway(orderData) {
         if (typeof window.Razorpay !== 'function') {
             setProcessingState(false);
             showError('Razorpay Checkout Unavailable', 'Could not load Razorpay payment SDK. Please check your internet connection and refresh the page.');
@@ -365,7 +386,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Backend Payment Verification Handler
-    async function handlePaymentSuccessVerification(verifyPayload) {
+    /**
+ * Verifies gateway cryptographic signature on backend, activates course enrollment, and displays receipt.
+ * @param {Object} response - Gateway payment confirmation object (payment_id, order_id, signature).
+ * Purpose: Calls window.api.verifyPayment to finalize transaction.
+ */
+// ==========================================
+// VERIFICATION, ENROLLMENT & RECEIPT
+// ==========================================
+async function handlePaymentSuccessVerification(verifyPayload) {
         setProcessingState(true);
         if (processingBanner) {
             processingBanner.style.display = 'block';
@@ -393,7 +422,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function renderSuccessView(data) {
+    /**
+ * Renders confirmed order success banner with receipt transaction ID and 'Start Learning' button.
+ * @param {Object} verificationData - Finalized enrollment confirmation payload.
+ */
+function renderSuccessView(data) {
         if (mainContainer) mainContainer.style.display = 'none';
         if (cancelContainer) cancelContainer.style.display = 'none';
         if (errorEl) errorEl.style.display = 'none';
@@ -419,7 +452,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function handlePaymentFailed(orderId, reason) {
+    /**
+ * Handles failed transaction notifications, logs payment error, and enables retry.
+ * @param {Object} error - Payment failure details.
+ */
+async function handlePaymentFailed(orderId, reason) {
         setProcessingState(false);
         try {
             await window.api.recordPaymentFailed({
@@ -451,7 +488,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function handlePaymentCancelled(orderId) {
+    /**
+ * Handles user cancellation of checkout flow, releasing pending locks and restoring pay button.
+ */
+async function handlePaymentCancelled(orderId) {
         setProcessingState(false);
         try {
             await window.api.recordPaymentCancel({

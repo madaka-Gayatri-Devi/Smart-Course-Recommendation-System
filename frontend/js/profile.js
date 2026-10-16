@@ -121,7 +121,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     const selectedSkillsGrid = document.getElementById('selectedSkillsGrid');
 
-    function renderConfiguredSkills() {
+    /**
+ * Renders interactive skill tags with proficiency level dropdowns (Beginner, Intermediate, Advanced).
+ */
+// ==========================================
+// SKILL & INTEREST TAG MANAGEMENT
+// ==========================================
+function renderConfiguredSkills() {
         if (!selectedSkillsGrid) return;
         selectedSkillsGrid.innerHTML = '';
 
@@ -171,7 +177,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function addSkill(skillName, level = 'Intermediate') {
+    /**
+ * Appends a new skill to student's profile skill list with duplicate prevention.
+ * @param {string} skillName - Name of skill to add.
+ * @param {string} level - Selected proficiency tier.
+ */
+function addSkill(skillName, level = 'Intermediate') {
         const cleanName = skillName.trim();
         if (!cleanName) return;
         configuredSkills.set(cleanName, { skill: cleanName, level });
@@ -186,7 +197,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderConfiguredSkills();
     }
 
-    function removeSkill(skillName) {
+    /**
+ * Removes a skill tag from student profile.
+ * @param {number} index - Index of skill to remove.
+ */
+function removeSkill(skillName) {
         configuredSkills.delete(skillName);
         // Unhighlight in pool
         document.querySelectorAll('#skill-pool .skill-chip').forEach(chip => {
@@ -200,7 +215,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // LOAD EXISTING USER & PROFILE DATA
     // ----------------------------------------------------
-    async function loadUserData() {
+    /**
+ * Fetches existing student profile and populates wizard form fields (goals, interests, bio).
+ * Purpose: Queries window.api.getProfile to populate multi-step profile editor.
+ */
+// ==========================================
+// PROFILE DATA LOADING & WIZARD NAVIGATION
+// ==========================================
+async function loadUserData() {
         try {
             const user = await window.api.getMe();
             if (nameEl) nameEl.value = user.full_name || '';
@@ -298,7 +320,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prevBtn = document.getElementById('prevBtn');
     const submitWizardBtn = document.getElementById('submitWizardBtn');
 
-    function updateWizardUI() {
+    /**
+ * Controls step-by-step progress through the profile wizard (Step 1 -> Step 2 -> Step 3).
+ * @param {number} targetStep - Target step index (1, 2, or 3).
+ */
+function updateWizardUI() {
         // Hide all steps
         document.querySelectorAll('.wizard-step').forEach(step => {
             step.classList.remove('active');
@@ -373,7 +399,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // POPULATE REVIEW STEP 10
     // ----------------------------------------------------
-    function populateReview() {
+    /**
+ * Populates final confirmation review card with all entered profile details before submission.
+ */
+function populateReview() {
         // Personal
         const revName = document.getElementById('revName');
         const revEmail = document.getElementById('revEmail');

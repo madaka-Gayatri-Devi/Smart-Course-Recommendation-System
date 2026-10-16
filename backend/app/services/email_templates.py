@@ -5,7 +5,21 @@ Provides responsive HTML and plain text email templates for learning notificatio
 
 from typing import List, Dict, Any, Optional
 
+# ============================================================================
+# BASE BRANDED HTML EMAIL LAYOUT
+# ============================================================================
 def get_base_html_template(subject: str, content_html: str, action_button: Optional[Dict[str, str]] = None) -> str:
+    """
+    Generate responsive HTML wrapper with SmartLearn branding, header logo, and footer.
+
+    Args:
+        content_html: Core inner HTML body for the specific message.
+        recipient_name: Name of the recipient for greeting.
+        unsubscribe_link: Optional URL to manage notification preferences.
+
+    Returns:
+        str: Fully formed HTML email document with inline styles.
+    """
     button_html = ""
     if action_button:
         btn_url = action_button.get("url", "#")
@@ -112,7 +126,22 @@ def get_base_html_template(subject: str, content_html: str, action_button: Optio
 </html>
 """
 
+# ============================================================================
+# STUDENT MILESTONE & COMPLETION TEMPLATES
+# ============================================================================
 def generate_progress_milestone_email(student_name: str, course_name: str, progress_percentage: int, completed_lessons: int, total_lessons: int, app_url: str = "http://127.0.0.1:8080") -> Dict[str, str]:
+    """
+    Generate branded HTML & plaintext email celebrating course progress milestones (e.g., 25%, 50%, 75%).
+
+    Args:
+        student_name: Full name of the student.
+        course_name: Name of the enrolled course.
+        milestone_percent: Percentage of completion achieved.
+        course_url: Navigation link to resume course in player.
+
+    Returns:
+        Tuple[str, str]: (html_body, text_body).
+    """
     subject = f"You're {progress_percentage}% through your {course_name}!"
     content = f"""
         <p>Hi <strong>{student_name}</strong>,</p>
@@ -139,6 +168,17 @@ def generate_progress_milestone_email(student_name: str, course_name: str, progr
     return {"subject": subject, "html": html, "text": text}
 
 def generate_course_completion_email(student_name: str, course_name: str, completion_date: str, next_recommendation: Optional[str] = None, app_url: str = "http://127.0.0.1:8080") -> Dict[str, str]:
+    """
+    Generate celebratory HTML & plaintext email congratulating student on 100% course completion.
+
+    Args:
+        student_name: Full name of the graduating learner.
+        course_name: Name of completed course.
+        certificate_url: URL to view/download completion certificate.
+
+    Returns:
+        Tuple[str, str]: (html_body, text_body).
+    """
     subject = f"Congratulations! You completed {course_name}"
     
     rec_html = ""
@@ -175,7 +215,21 @@ def generate_course_completion_email(student_name: str, course_name: str, comple
     )
     return {"subject": subject, "html": html, "text": text}
 
+# ============================================================================
+# RE-ENGAGEMENT & ASSESSMENT IMPROVEMENT TEMPLATES
+# ============================================================================
 def generate_inactivity_reminder_email(student_name: str, course_name: str, last_lesson_title: Optional[str], progress_percentage: int, suggested_next_lesson: Optional[str] = None, app_url: str = "http://127.0.0.1:8080") -> Dict[str, str]:
+    """
+    Generate re-engagement HTML & plaintext email for learners inactive for 3+ days.
+
+    Args:
+        student_name: Full name of the student.
+        days_inactive: Number of days since last learning activity.
+        courses_in_progress: List of courses currently in progress.
+
+    Returns:
+        Tuple[str, str]: (html_body, text_body).
+    """
     subject = f"Continue your learning journey with {course_name}"
     
     last_lesson_str = last_lesson_title if last_lesson_title else "Lesson 1"
@@ -207,6 +261,19 @@ def generate_inactivity_reminder_email(student_name: str, course_name: str, last
     return {"subject": subject, "html": html, "text": text}
 
 def generate_assessment_improvement_email(student_name: str, assessment_name: str, score_percentage: int, strong_skills: List[str], weak_skills: List[str], recommended_courses: List[Dict[str, Any]], app_url: str = "http://127.0.0.1:8080") -> Dict[str, str]:
+    """
+    Generate congratulatory diagnostic HTML & plaintext email when a student improves their assessment score.
+
+    Args:
+        student_name: Full name of the student.
+        skill_name: Assessed skill name.
+        new_score: Latest percentage score.
+        prev_score: Previous percentage score.
+        study_tips: List of actionable tips for further mastery.
+
+    Returns:
+        Tuple[str, str]: (html_body, text_body).
+    """
     subject = f"Your SmartLearn skill improvement update for {assessment_name}"
     
     strong_items = "".join([f"<li>✅ {s}</li>" for s in strong_skills]) if strong_skills else "<li>No specific strong skills identified yet</li>"
@@ -266,6 +333,16 @@ def generate_assessment_improvement_email(student_name: str, assessment_name: st
     return {"subject": subject, "html": html, "text": text}
 
 def generate_recommendation_update_email(student_name: str, career_goal: str, recommended_courses: List[Dict[str, Any]], app_url: str = "http://127.0.0.1:8080") -> Dict[str, str]:
+    """
+    Generate course digest HTML & plaintext email with AI-recommended courses tailored to student goals.
+
+    Args:
+        student_name: Full name of the student.
+        top_courses: List of course recommendation dictionaries.
+
+    Returns:
+        Tuple[str, str]: (html_body, text_body).
+    """
     subject = f"New courses recommended for your career goal as {career_goal}"
     
     course_cards = ""

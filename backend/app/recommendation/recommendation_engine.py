@@ -3,6 +3,9 @@ from typing import List, Dict, Any, Optional
 from .course_scorer import CourseScorer, COURSE_CATALOG
 
 
+# ============================================================================
+# RECOMMENDATION ENGINE COORDINATOR
+# ============================================================================
 class RecommendationEngine:
     """Core recommendation engine orchestrating profile-based weighted scoring."""
 
@@ -18,6 +21,29 @@ class RecommendationEngine:
         goals_map: Optional[Dict[str, List[str]]] = None
     ) -> Dict[str, Any]:
         
+        """
+        Orchestrate multi-factor personalized course recommendations for a student.
+
+        Args:
+            profile_data: Student profile dictionary (career_goal, skills, interests, experience_level).
+            assessment_attempts: List of previous diagnostic assessment scores.
+            limit: Maximum count of recommendations to return (default: 6).
+            category: Optional filter for specific course domain.
+            courses_catalog: Optional course database override.
+            enrolled_course_ids: List of course IDs already enrolled (excluded from recommendations).
+            completed_course_ids: List of completed course IDs.
+            goals_map: Optional benchmark skills map.
+
+        Returns:
+            Dict[str, Any]: Ranked list of recommended courses with match percentages, rationale tags,
+                           and aggregate match summary statistics.
+
+        Purpose:
+            Central recommendation coordinator powering student dashboard and catalog feeds.
+
+        Dependencies:
+            CourseScorer.score_course, SkillGapAnalyzer.analyze.
+        """
         profile = profile_data or {}
         attempts = assessment_attempts or []
         

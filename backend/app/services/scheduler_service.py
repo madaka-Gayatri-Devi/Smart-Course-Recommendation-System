@@ -17,7 +17,19 @@ INACTIVITY_THRESHOLD_DAYS = int(os.getenv("INACTIVITY_THRESHOLD_DAYS", "3"))
 REMINDER_COOLDOWN_DAYS = int(os.getenv("REMINDER_COOLDOWN_DAYS", "7"))
 SCHEDULER_CHECK_INTERVAL_SECONDS = int(os.getenv("SCHEDULER_CHECK_INTERVAL_SECONDS", "3600"))  # Default 1 hour
 
+# ============================================================================
+# DEPENDENCY RESOLUTION & MODEL IMPORTS
+# ============================================================================
 def _get_services_and_models():
+    """
+    Dynamically loads and resolves database models and dependent services for the inactivity scheduler.
+
+    Returns:
+        Tuple of (SessionLocal, UserDB, ProfileDB, CourseDB, EnrollmentDB, EmailLogDB, EmailService, generate_inactivity_reminder_email, NotificationService).
+
+    Purpose:
+        Avoids circular import chains when the scheduler runs as a standalone daemon or background worker.
+    """
     try:
         from app.main import SessionLocal, UserDB, ProfileDB, CourseDB, EnrollmentDB, EmailLogDB
         from app.services.email_service import EmailService
@@ -37,10 +49,26 @@ def _get_services_and_models():
 
     return SessionLocal, UserDB, ProfileDB, CourseDB, EnrollmentDB, EmailLogDB, EmailService, generate_inactivity_reminder_email, NotificationService
 
+# ============================================================================
+# INACTIVITY SCANNER & REMINDER ENGINE
+# ============================================================================
 def check_and_send_inactivity_reminders():
     """
     Synchronous scanner function that queries database for inactive students
     and triggers personalized learning reminder emails and in-app notifications.
+
+    Returns:
+        dict: Scan summary metrics including students checked, reminders sent, and errors.
+
+    Purpose:
+        Identifies students who have not engaged in course activities for threshold days (default 3),
+        enforces a cooldown period (default 7 days), and sends customized re-engagement nudges.
+
+    Dependencies:
+        UserDB, EnrollmentDB, EmailLogDB, EmailService, NotificationService.
+
+    Error handling:
+        Catches database and network exceptions, logs details, and safely closes DB sessions.
     """
     SessionLocal, UserDB, ProfileDB, CourseDB, EnrollmentDB, EmailLogDB, EmailService, generate_inactivity_reminder_email, NotificationService = _get_services_and_models()
 
@@ -172,8 +200,22 @@ def check_and_send_inactivity_reminders():
     finally:
         db.close()
 
+# ============================================================================
+# BACKGROUND SCHEDULER DAEMON LOOP
+# ============================================================================
 async def start_inactivity_scheduler():
-    """Background asyncio loop that periodically triggers the inactivity check."""
+    """
+    Asynchronous daemon task running the periodic inactivity scanner on a fixed time interval.
+
+    Returns:
+        None. Runs indefinitely in the background event loop.
+
+    Purpose:
+        Wakes up periodically (default every 1 hour) to check student engagement and send reminders.
+
+    Dependencies:
+        asyncio.sleep, check_and_send_inactivity_reminders.
+    """
     print(f"[Scheduler] Inactivity Reminder Scheduler initialized (Threshold: {INACTIVITY_THRESHOLD_DAYS} days, Interval: {SCHEDULER_CHECK_INTERVAL_SECONDS}s).")
     while True:
         try:

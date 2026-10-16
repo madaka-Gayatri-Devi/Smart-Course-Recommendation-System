@@ -3,17 +3,17 @@
    ============================================================================== */
 
 :root {
-  --rec-primary: #5B3FE8;
-  --rec-primary-hover: #4B32D1;
-  --rec-primary-light: #EEECFE;
-  --rec-violet: #8B4AD9;
-  --rec-pink: #E83FA5;
-  --rec-bg: #F8F7FF;
-  --rec-card-bg: #FFFFFF;
-  --rec-text-main: #0F172A;
-  --rec-text-muted: #64748B;
-  --rec-border: #E2E8F0;
-  --rec-border-light: #F1F5F9;
+  --rec-primary: var(--color-primary, #5B3FE8);
+  --rec-primary-hover: var(--color-primary-hover, #4B32D1);
+  --rec-primary-light: var(--color-primary-soft, #EEECFE);
+  --rec-violet: var(--color-secondary, #8B4AD9);
+  --rec-pink: var(--color-accent, #E83FA5);
+  --rec-bg: var(--bg-page, #F8F7FF);
+  --rec-card-bg: var(--bg-surface, #FFFFFF);
+  --rec-text-main: var(--text-primary, #0F172A);
+  --rec-text-muted: var(--text-secondary, #64748B);
+  --rec-border: var(--border, #E2E8F0);
+  --rec-border-light: var(--border-light, #F1F5F9);
   --rec-radius: 12px;
   --rec-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
   --rec-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
@@ -270,7 +270,7 @@
 .rec-input:focus, .rec-select:focus {
   outline: none;
   border-color: var(--rec-primary);
-  box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.12);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
 }
 
 .rec-search-wrapper {
@@ -529,7 +529,7 @@
 
 .btn-rec-primary:hover {
   background: var(--rec-primary-hover);
-  box-shadow: 0 4px 10px rgba(91, 63, 232, 0.25);
+  box-shadow: 0 4px 10px var(--color-primary-alpha);
 }
 
 .btn-rec-secondary {

@@ -1,12 +1,29 @@
 /**
  * SmartLearn Notification Manager
- * Real-time WebSocket + Desktop Browser Notifications + In-App Toast + Dynamic Bell Badge + Dropdown Popover
+ * ===================================================
+ * Coordinates multi-channel notifications across the SmartLearn portal:
+ * 1. Real-Time WebSocket Alerts (/ws/notifications) with automatic heartbeat & reconnection.
+ * 2. In-App Floating Toast popups with color-coded category icons.
+ * 3. Browser Desktop Push Notifications via Web Notification API (honoring user preferences).
+ * 4. Topbar Header Bell Badge with live unread counter and quick-view popover dropdown.
+ * 5. Full Notifications Center Page (student/notifications.html) with filter tabs and actions.
  */
+
+// ==========================================
+// NOTIFICATION MANAGER INITIALIZATION
+// Manages notification lifecycle, WebSockets, DOM elements, and user preferences.
+// ==========================================
 
 (function () {
     'use strict';
 
+    /**
+     * Singleton controller for real-time and persistent notification handling across portals.
+     */
     class SmartLearnNotificationManager {
+        /**
+         * Initializes instance state and kicks off setup when authenticated.
+         */
         constructor() {
             this.ws = null;
             this.reconnectTimer = null;
@@ -18,6 +35,29 @@
             this.init();
         }
 
+        /**
+         * Bootstraps notification client services if an active session exists.
+         *
+         * @returns {Promise<void>}
+         *
+         * Purpose:
+         * Verifies auth token, connects notification WebSocket, fetches unread count,
+         * and attaches bell dropdown and page listeners.
+         *
+         * Processing:
+         * 1. Checks window.api.getToken(); exits early if unauthenticated.
+         * 2. Calls requestDesktopPermission() (without unsolicited prompts).
+         * 3. Establishes persistent WebSocket connection via connectWebSocket().
+         * 4. Fetches recent notifications and unread badge via refreshNotifications().
+         * 5. Configures topbar bell trigger and popover via setupHeaderBellAndDropdown().
+         * 6. Configures full-page feed if user is on notifications.html.
+         *
+         * Dependencies:
+         * window.api (getToken, getUnreadNotificationCount, getNotifications).
+         *
+         * Error handling:
+         * Network or storage errors during fetch are trapped gracefully in refreshNotifications.
+         */
         async init() {
             // Check auth token
             if (typeof window.api === 'undefined' || !window.api.getToken()) {
@@ -42,12 +82,46 @@
             }
         }
 
-        // --- BROWSER DESKTOP NOTIFICATIONS ---
+        // ==========================================
+        // BROWSER DESKTOP NOTIFICATIONS
+        // Manages HTML5 Notification API permissions and native system alerts.
+        // ==========================================
 
+        /**
+         * Guards permission requesting to prevent intrusive prompts on initial page load.
+         *
+         * Purpose:
+         * Complies with modern browser UX guidelines by requesting permissions only in response
+         * to explicit user interaction in chat or notification settings.
+         */
         requestDesktopPermission() {
             // Do NOT prompt permission automatically on initial load to obey user settings & browser guidelines
         }
 
+        /**
+         * Dispatches an OS-level desktop notification banner if granted and permitted by settings.
+         *
+         * @param {Object} data - Notification payload { title, message, type, reference_id, related_course_id, id }.
+         *
+         * Purpose:
+         * Alerts users even when the browser tab is minimized or in the background.
+         *
+         * Input:
+         * data object received via WebSocket or API.
+         *
+         * Processing:
+         * 1. Checks if Notification API is supported and permission is 'granted'.
+         * 2. Reads 'smartlearn_notif_settings' from localStorage to verify desktopNotifs === true.
+         * 3. Constructs native Notification instance with SmartLearn icon and unique tag.
+         * 4. Attaches onclick handler to focus browser tab and route to relevant page
+         *    (chat.html for chat messages, course-details.html for courses, or notifications.html).
+         *
+         * Dependencies:
+         * Browser window.Notification API and localStorage ('smartlearn_notif_settings').
+         *
+         * Error handling:
+         * Exceptions during Notification construction are caught and logged to console.warn.
+         */
         showDesktopNotification(data) {
             console.log("Notification permission:", Notification.permission);
             console.log("Visibility:", document.visibilityState);
@@ -99,8 +173,31 @@
             }
         }
 
-        // --- WEBSOCKET CONNECTION ---
+        // ==========================================
+        // WEBSOCKET REAL-TIME CONNECTION
+        // Manages live WebSocket socket lifecycle, heartbeat pings, and reconnect logic.
+        // ==========================================
 
+        /**
+         * Establishes a real-time WebSocket connection to /ws/notifications.
+         *
+         * Purpose:
+         * Listens for instant server-pushed notifications (recommendations, payments, chat alerts).
+         *
+         * Processing:
+         * 1. Resolves API URL host and switches protocol from http(s): to ws(s):.
+         * 2. Appends auth token as query parameter to /ws/notifications.
+         * 3. Sets onopen handler to start 25-second heartbeat ping timer.
+         * 4. Sets onmessage handler to parse JSON and dispatch handleRealTimeNotification.
+         * 5. Sets onclose and onerror handlers to clear ping interval and trigger 5s reconnect backoff.
+         *
+         * Dependencies:
+         * Backend endpoint: GET /ws/notifications?token=<jwt>
+         * Standard WebSocket browser API.
+         *
+         * Error handling / Debugging:
+         * Network drops trigger automatic reconnect after 5 seconds without user intervention.
+         */
         connectWebSocket() {
             const token = window.api.getToken();
             if (!token) return;
@@ -149,6 +246,23 @@
             }
         }
 
+        /**
+         * Dispatches a newly arrived real-time notification across all visual channels.
+         *
+         * @param {Object} data - Live notification object from WebSocket message.
+         *
+         * Purpose:
+         * Instantly updates badge counters, prepends to notification array, and triggers toasts.
+         *
+         * Processing:
+         * 1. Increments unread count or adopts server-reported count.
+         * 2. Repaints topbar bell badge via updateBellBadge().
+         * 3. Prepends record to in-memory notifications list.
+         * 4. Renders floating in-app toast banner.
+         * 5. Dispatches desktop browser push notification.
+         * 6. Re-renders dropdown popover if currently open.
+         * 7. Re-renders notification page feed if active.
+         */
         handleRealTimeNotification(data) {
             // Update unread count
             this.unreadCount = (data.unread_count !== undefined) ? data.unread_count : (this.unreadCount + 1);
@@ -174,8 +288,25 @@
             }
         }
 
-        // --- IN-APP TOAST ALERT ---
+        // ==========================================
+        // IN-APP TOAST ALERT
+        // Renders ephemeral animated alert toasts in the viewport top-right corner.
+        // ==========================================
 
+        /**
+         * Creates and animates a toast banner in the top-right screen corner.
+         *
+         * @param {Object} data - Notification object { title, message, type, related_course_id }.
+         *
+         * Purpose:
+         * Provides immediate visual feedback for urgent announcements without breaking user flow.
+         *
+         * Processing:
+         * 1. Ensures fixed #smartlearnToastContainer exists in document.body.
+         * 2. Builds toast element with gradient background, icon, title, message, and close button.
+         * 3. Binds click handler to navigate to target resource (course or notification feed).
+         * 4. Automatically fades and destroys toast after 5.5 seconds.
+         */
         showInAppToast(data) {
             let container = document.getElementById('smartlearnToastContainer');
             if (!container) {
@@ -245,8 +376,19 @@
             }, 5500);
         }
 
-        // --- FETCHING & REFRESHING ---
+        // ==========================================
+        // FETCHING & BADGE SYNCHRONIZATION
+        // Retrieves unread counts and recent notifications via REST APIs.
+        // ==========================================
 
+        /**
+         * Fetches latest notification count and top 20 notifications from backend REST API.
+         *
+         * @returns {Promise<void>}
+         *
+         * Dependencies:
+         * window.api.getUnreadNotificationCount, window.api.getNotifications.
+         */
         async refreshNotifications() {
             try {
                 const countRes = await window.api.getUnreadNotificationCount();
@@ -260,6 +402,12 @@
             }
         }
 
+        /**
+         * Updates visual badge counter on topbar bell icons across all portal pages.
+         *
+         * Purpose:
+         * Shows badge with "99+" cap when unread count > 0; hides badge when all are read.
+         */
         updateBellBadge() {
             // Target topbar notification bells across student pages
             const badgeEls = document.querySelectorAll('#topNotificationBadge, .top-notification-badge');
@@ -275,8 +423,17 @@
             });
         }
 
-        // --- HEADER BELL & DROPDOWN POPOVER ---
+        // ==========================================
+        // HEADER BELL & DROPDOWN POPOVER
+        // Builds and manages the quick-preview popover dropdown anchored under topbar bell.
+        // ==========================================
 
+        /**
+         * Attaches popover menu container and click handlers to topbar notification bells.
+         *
+         * Purpose:
+         * Enables 1-click preview of top 5 notifications without leaving the current dashboard view.
+         */
         setupHeaderBellAndDropdown() {
             // Target bell link/container in topbar
             const bellLinks = document.querySelectorAll('a[href="notifications.html"], .notification-bell-btn');
@@ -346,6 +503,11 @@
             });
         }
 
+        /**
+         * Toggles the visibility of the bell notification dropdown.
+         *
+         * @param {HTMLElement} dropdown - The popover container element.
+         */
         toggleDropdown(dropdown) {
             this.dropdownOpen = (dropdown.style.display !== 'block');
             if (this.dropdownOpen) {
@@ -358,6 +520,14 @@
             }
         }
 
+        /**
+         * Renders the top 5 notifications into the popover dropdown.
+         *
+         * @param {HTMLElement} [dropdown=null] - Optional reference to dropdown element.
+         *
+         * Purpose:
+         * Generates notification list items, 'Mark all as read' action, and link to full page.
+         */
         async renderDropdownContent(dropdown = null) {
             const container = dropdown || document.querySelector('.notification-dropdown-menu');
             if (!container) return;
@@ -439,8 +609,14 @@
             });
         }
 
-        // --- FULL NOTIFICATIONS PAGE HANDLER (`student/notifications.html`) ---
+        // ==========================================
+        // FULL NOTIFICATIONS PAGE HANDLER
+        // Manages full list view on notifications.html, filtering, and item deletion.
+        // ==========================================
 
+        /**
+         * Sets up the complete notifications view on notifications.html.
+         */
         async setupNotificationPage() {
             const pageContainer = document.querySelector('.dashboard-content');
             if (!pageContainer) return;
@@ -449,6 +625,16 @@
             await this.renderFullNotificationPage();
         }
 
+        /**
+         * Renders the complete interactive notifications list on student/notifications.html.
+         *
+         * Purpose:
+         * Displays filter tabs (All / Unread), error recovery UI, single/bulk read actions,
+         * course navigation buttons, and delete buttons.
+         *
+         * Error handling / Debugging:
+         * Shows friendly retry alert if backend server is unreachable.
+         */
         async renderFullNotificationPage() {
             const pageContainer = document.querySelector('.dashboard-content');
             if (!pageContainer) return;
@@ -617,8 +803,16 @@
             });
         }
 
-        // --- HELPER UTILITIES ---
+        // ==========================================
+        // HELPER UTILITIES & FORMATTING
+        // Category styling, date calculations, and XSS sanitization.
+        // ==========================================
 
+        /**
+         * Resolves the FontAwesome icon class for a given notification category.
+         * @param {string} type - Notification type identifier.
+         * @returns {string} Icon CSS classes.
+         */
         getNotificationIconClass(type) {
             switch (type) {
                 case 'COURSE_RECOMMENDATION': return 'fa-solid fa-bullseye';
@@ -631,6 +825,11 @@
             }
         }
 
+        /**
+         * Resolves brand foreground color for category icon.
+         * @param {string} type - Notification type.
+         * @returns {string} Hex color code.
+         */
         getIconColor(type) {
             switch (type) {
                 case 'COURSE_RECOMMENDATION': return '#8B5CF6';
@@ -643,6 +842,11 @@
             }
         }
 
+        /**
+         * Resolves soft background fill color for category icon wrapper.
+         * @param {string} type - Notification type.
+         * @returns {string} Hex color code.
+         */
         getIconBgColor(type) {
             switch (type) {
                 case 'COURSE_RECOMMENDATION': return '#F3E8FF';
@@ -655,6 +859,11 @@
             }
         }
 
+        /**
+         * Resolves left accent border color for notification cards.
+         * @param {string} type - Notification type.
+         * @returns {string} Hex color code.
+         */
         getBorderColor(type) {
             switch (type) {
                 case 'COURSE_RECOMMENDATION': return '#8B5CF6';
@@ -667,6 +876,12 @@
             }
         }
 
+        /**
+         * Converts an ISO datetime string into human-friendly relative format.
+         *
+         * @param {string} isoString - Date timestamp string.
+         * @returns {string} Formatted relative time (e.g. "Just now", "5 min ago", "2 hours ago", "Yesterday").
+         */
         formatRelativeTime(isoString) {
             if (!isoString) return 'Recently';
             try {
@@ -686,6 +901,12 @@
             }
         }
 
+        /**
+         * Sanitizes raw text strings to prevent HTML injection and Cross-Site Scripting (XSS).
+         *
+         * @param {string} str - Raw input text.
+         * @returns {string} Sanitized string safe for innerHTML injection.
+         */
         escapeHtml(str) {
             if (!str) return '';
             return String(str)

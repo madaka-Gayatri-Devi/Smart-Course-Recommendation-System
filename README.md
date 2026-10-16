@@ -29,6 +29,9 @@ SmartLearn provides personalized course recommendations based on student skills,
 - **Reviews & Ratings**: Course feedback and peer reviews
 - **Notifications**: Real-time updates on assignments, recommendations, and milestones
 - **Admin Management**: Administrative tools for course and user management
+- **AI Learning Coach Chatbot**: Role-grounded conversational AI assistant for Students, Instructors, and Administrators with conversation session persistence and multi-provider fallback (Groq, Gemini, OpenAI, Anthropic)
+- **Voice-Based Speech-to-Text**: Browser Web Speech API (`SpeechRecognition`) microphone voice input with real-time transcription, editing before submission, and robust error handling
+- **Audio Text-to-Speech (TTS)**: Browser SpeechSynthesis speaker playback controls on AI responses with toggleable stop controls
 
 ---
 

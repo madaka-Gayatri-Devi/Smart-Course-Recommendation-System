@@ -1,3 +1,7 @@
+"""
+SmartLearn Student Profile Schemas
+Defines validation models for student personal details, career goals, skills, interests, and profile completion.
+"""
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Union, Dict, Any
 

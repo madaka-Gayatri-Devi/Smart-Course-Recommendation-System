@@ -23,7 +23,16 @@ except ImportError:
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
+# ============================================================================
+# DEPENDENCY INJECTION HELPERS
+# ============================================================================
 def _get_main_deps():
+    """
+    Dynamically resolves get_db and get_current_user dependencies.
+
+    Returns:
+        Tuple of (get_db, get_current_user).
+    """
     try:
         from app.main import get_db, get_current_user, get_db_course_dicts, UserDB, NotificationDB, CareerGoalDB, SessionLocal
     except ImportError:
@@ -34,6 +43,12 @@ def _get_main_deps():
     return get_db, get_current_user, get_db_course_dicts, UserDB, NotificationDB, CareerGoalDB, SessionLocal
 
 def get_db_session():
+    """
+    FastAPI dependency providing active database session.
+
+    Yields:
+        Session: Database session.
+    """
     _, _, _, _, _, _, SessionLocal = _get_main_deps()
     db = SessionLocal()
     try:
@@ -49,6 +64,16 @@ def get_user_notifications(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
+    """
+    Endpoint GET / - Retrieve notifications for the current authenticated user.
+
+    Args:
+        limit: Max count to return (default: 50).
+        unread_only: Boolean filter for unread alerts.
+
+    Returns:
+        dict: Notifications list and unread count summary.
+    """
     _, get_current_user_fn, get_db_course_dicts_fn, UserDB, NotificationDB, CareerGoalDB, _ = _get_main_deps()
     # Manual auth call to support depends
     current_user = get_current_user_fn(token=token, authorization=authorization, db=db)
@@ -96,6 +121,12 @@ def get_unread_notification_count(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
+    """
+    Endpoint GET /unread-count - Retrieve count of unread notifications for badge counters.
+
+    Returns:
+        dict: {'unread_count': int}.
+    """
     _, get_current_user_fn, _, _, NotificationDB, _, _ = _get_main_deps()
     current_user = get_current_user_fn(token=token, authorization=authorization, db=db)
 
@@ -115,6 +146,15 @@ def mark_notification_as_read(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
+    """
+    Endpoint POST /{notification_id}/read - Mark a single notification as read.
+
+    Args:
+        notification_id: Target notification database ID.
+
+    Returns:
+        dict: Success status message.
+    """
     _, get_current_user_fn, _, _, NotificationDB, _, _ = _get_main_deps()
     current_user = get_current_user_fn(token=token, authorization=authorization, db=db)
 
@@ -145,6 +185,12 @@ def mark_all_notifications_as_read(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
+    """
+    Endpoint POST /mark-all-read - Mark all unread notifications as read for current user.
+
+    Returns:
+        dict: Count of notifications updated.
+    """
     _, get_current_user_fn, _, _, NotificationDB, _, _ = _get_main_deps()
     current_user = get_current_user_fn(token=token, authorization=authorization, db=db)
 
@@ -171,6 +217,15 @@ def delete_notification(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session),
 ):
+    """
+    Endpoint DELETE /{notification_id} - Permanently delete a notification record.
+
+    Args:
+        notification_id: Target notification ID to remove.
+
+    Returns:
+        dict: Success status message.
+    """
     _, get_current_user_fn, _, _, NotificationDB, _, _ = _get_main_deps()
     current_user = get_current_user_fn(token=token, authorization=authorization, db=db)
 

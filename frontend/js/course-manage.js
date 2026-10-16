@@ -89,6 +89,13 @@ let activeQuizEditor = {
 };
 
 // --- LOAD COURSE STUDIO ---
+/**
+ * Loads existing course details and curriculum structure into the instructor studio, or prepares blank form.
+ * Purpose: Fetches course data via window.api.getCourseDetails if editing, and populates inputs.
+ */
+// ==========================================
+// COURSE STUDIO INITIALIZATION & NAVIGATION
+// ==========================================
 async function loadCourseStudio(courseId) {
     try {
         const data = await window.api.getCourseContent(courseId);
@@ -149,6 +156,10 @@ async function loadCourseStudio(courseId) {
 }
 
 // --- NAVIGATION ---
+/**
+ * Smoothly scrolls the studio window to a specified editor section (Curriculum, Pricing, Media).
+ * @param {string} sectionId - Target DOM section ID.
+ */
 window.scrollToSection = function(sectionId) {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -359,6 +370,13 @@ window.togglePricingFields = function(isFree) {
 };
 
 // --- CURRICULUM STUDIO BUILDER ---
+/**
+ * Renders curriculum accordion containing chapter modules, lessons, and assessment quizzes.
+ * Purpose: Allows instructors to add, reorder, expand, and configure chapters and lessons.
+ */
+// ==========================================
+// CURRICULUM & MODULE ACCORDION BUILDER
+// ==========================================
 function renderCurriculumModules() {
     const container = document.getElementById('curriculumModulesContainer');
     if (!container) return;
@@ -420,6 +438,12 @@ function renderCurriculumModules() {
     `).join('');
 }
 
+/**
+ * Renders individual lesson item card with type icon (Video/Article/Quiz), title input, and duration.
+ * @param {Object} lesson - Lesson data object.
+ * @param {number} mIdx - Parent module index.
+ * @param {number} lIdx - Lesson index.
+ */
 function renderLessonCard(mIdx, lIdx, lesson) {
     const type = lesson.type || 'video';
     const isPreview = !!lesson.is_preview;
@@ -519,6 +543,9 @@ function renderLessonTypeBody(mIdx, lIdx, lesson, type) {
 }
 
 // Module / Lesson mutation helpers
+/**
+ * Appends a new blank module chapter to the curriculum builder.
+ */
 window.addNewModule = function() {
     const nextId = (courseState.modules.length || 0) + 1;
     courseState.modules.push({
@@ -558,6 +585,10 @@ window.updateModuleField = function(mIdx, field, val) {
     }
 };
 
+/**
+ * Appends a new lesson (Video, Article, Quiz, Assignment) to a specific module.
+ * @param {number} mIdx - Target module index.
+ */
 window.addNewLesson = function(mIdx) {
     if (!courseState.modules[mIdx]) return;
     if (!courseState.modules[mIdx].lessons) courseState.modules[mIdx].lessons = [];
@@ -609,6 +640,12 @@ window.handleModuleMaterialUpload = async function(mIdx, input) {
     }
 };
 
+/**
+ * Uploads lesson video file to backend media storage and links stream URL.
+ * @param {HTMLInputElement} input - File input element containing selected video.
+ * @param {number} mIdx - Target module index.
+ * @param {number} lIdx - Target lesson index.
+ */
 window.handleLessonVideoUpload = async function(mIdx, lIdx, input) {
     const file = input.files[0];
     if (!file) return;
@@ -680,6 +717,14 @@ function renderPreviewLessonsSummary() {
 }
 
 // --- QUIZ MODAL EDITOR ---
+/**
+ * Opens modal dialog to create and edit multiple-choice assessment questions and passing scores.
+ * @param {number} mIdx - Module index.
+ * @param {number} lIdx - Lesson index.
+ */
+// ==========================================
+// QUIZ EDITOR MODAL & QUESTION BUILDER
+// ==========================================
 window.openQuizEditor = function(mIdx, lIdx) {
     activeQuizEditor.moduleIdx = mIdx;
     activeQuizEditor.lessonIdx = lIdx;
@@ -749,6 +794,9 @@ function renderQuizModalQuestions() {
     `).join('');
 }
 
+/**
+ * Validates and saves quiz questions and passing score into the active lesson data structure.
+ */
 window.saveQuizModal = function() {
     if (activeQuizEditor.moduleIdx !== null && activeQuizEditor.lessonIdx !== null) {
         const lesson = courseState.modules[activeQuizEditor.moduleIdx].lessons[activeQuizEditor.lessonIdx];
@@ -838,6 +886,14 @@ function updateStudioHeaderAndValidation() {
 }
 
 // --- SAVE STUDIO CONTENT ---
+/**
+ * Validates course studio inputs and submits create or update payload to backend API.
+ * @param {boolean} isDraft - True if saving as draft, False if submitting for publication.
+ * Purpose: Calls window.api.createCourse or window.api.updateCourse with serialized curriculum.
+ */
+// ==========================================
+// VALIDATION & COURSE SUBMISSION
+// ==========================================
 async function saveCourseStudio(courseId) {
     const saveBtn = document.getElementById('saveStudioBtn');
     if (saveBtn) {

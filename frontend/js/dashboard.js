@@ -52,6 +52,15 @@ function setupHeaderAndSidebar(user) {
     }
 }
 
+/**
+ * Master data loader fetching student profile, enrollments, recommendations, and assessments in parallel.
+ * Purpose: Populates all widgets across the student dashboard using window.api calls.
+ * Dependencies: window.api.getMe, getProfile, getMyCourses, getRecommendations, getAssessmentHistory.
+ * Error handling: Displays user-friendly error state banner if core API requests fail.
+ */
+// ==========================================
+// MASTER DATA LOADER & ERROR STATE
+// ==========================================
 async function loadStudentDashboardData() {
     try {
         const data = await window.api.getStudentDashboardSummary();
@@ -83,6 +92,10 @@ async function loadStudentDashboardData() {
     }
 }
 
+/**
+ * Displays error state banner with retry button when dashboard data loading fails.
+ * @param {string} msg - User-friendly error message string.
+ */
 function showErrorState(err) {
     const mainContent = document.getElementById('mainDashboardContent');
     if (!mainContent) return;
@@ -98,6 +111,14 @@ function showErrorState(err) {
 }
 
 // 1. Welcome Hero
+/**
+ * Renders hero banner with greeting, daily streak counter, and dynamic motivational quote.
+ * @param {Object} user - Student user object.
+ * @param {Object} profile - Student profile data.
+ */
+// ==========================================
+// HERO BANNER & KPI METRICS
+// ==========================================
 function renderWelcomeHero(data) {
     const user = data.user || {};
     const goalInfo = data.career_goal_info || {};
@@ -117,6 +138,10 @@ function renderWelcomeHero(data) {
 }
 
 // 2. Top Summary Cards
+/**
+ * Renders summary metrics row (In Progress, Completed Courses, Learning Hours, Overall Progress).
+ * @param {Array<Object>} enrollments - List of student course enrollments.
+ */
 function renderLearningSummaryCards(data) {} // legacy alias
 
 function renderTopSummaryCards(data) {
@@ -137,6 +162,15 @@ function renderTopSummaryCards(data) {
 }
 
 // 3. Next Best Action Smart Banner
+/**
+ * Computes and displays the most immediate high-impact learning recommendation for the student.
+ * @param {Array<Object>} enrollments - Active enrolled courses.
+ * @param {Array<Object>} recs - Recommendation list.
+ * Purpose: Guides student directly to next uncompleted lesson or high-priority skill gap.
+ */
+// ==========================================
+// ACTIVE COURSES & AI RECOMMENDATIONS
+// ==========================================
 function renderNextBestAction(nextAction) {
     const container = document.getElementById('nextBestActionContainer');
     if (!container || !nextAction) return;
@@ -161,6 +195,10 @@ function renderNextBestAction(nextAction) {
 }
 
 // 4. Continue Learning
+/**
+ * Renders interactive cards for currently in-progress courses with completion progress bars and resume buttons.
+ * @param {Array<Object>} enrollments - Student enrollments array.
+ */
 function renderContinueLearning(courses) {
     const container = document.getElementById('continueLearningList');
     if (!container) return;
@@ -232,6 +270,10 @@ function renderContinueLearning(courses) {
 }
 
 // 5. Personalized Recommendations
+/**
+ * Renders AI-driven course recommendations with percentage match badges and 'Why Recommended?' triggers.
+ * @param {Array<Object>} recs - Recommended courses array from recommendation engine.
+ */
 function renderRecommendations(recommendations) {
     const grid = document.getElementById('studentRecommendationsGrid');
     if (!grid) return;
@@ -292,6 +334,13 @@ function renderRecommendations(recommendations) {
 }
 
 // 6. Career Readiness & Skill Gaps
+/**
+ * Renders circular readiness gauge and benchmark comparison for student's target career goal.
+ * @param {Object} readinessData - Career readiness metrics and benchmark scores.
+ */
+// ==========================================
+// CAREER READINESS, SKILL GAPS & PATH
+// ==========================================
 function renderCareerReadiness(goalInfo) {
     const container = document.getElementById('careerGoalContainer');
     if (!container) return;
@@ -334,6 +383,10 @@ function renderCareerReadiness(goalInfo) {
     `;
 }
 
+/**
+ * Renders visual breakdown of acquired student skills versus missing skills required for target career.
+ * @param {Object} skillGapData - Skill gap analysis report.
+ */
 function renderSkillGaps(skillGaps) {
     const container = document.getElementById('skillGapsContainer');
     if (!container) return;
@@ -370,6 +423,10 @@ function renderSkillGaps(skillGaps) {
 }
 
 // 7. Personalized Learning Path
+/**
+ * Renders step-by-step milestone roadmap displaying completed, active, and upcoming curriculum phases.
+ * @param {Object} pathData - Structured learning path milestones.
+ */
 function renderLearningPath(path) {
     const container = document.getElementById('learningPathStepsContainer');
     if (!container) return;
@@ -413,6 +470,13 @@ function renderLearningPath(path) {
 }
 
 // 8. Skill Assessment
+/**
+ * Renders diagnostic assessment status widget with recent test scores and retake invitations.
+ * @param {Array<Object>} attempts - Assessment attempt history records.
+ */
+// ==========================================
+// ASSESSMENTS, GOALS & ACHIEVEMENTS
+// ==========================================
 function renderAssessmentSection(assessmentInfo, stats) {
     const container = document.getElementById('latestAssessmentContainer');
     if (!container) return;
@@ -457,6 +521,10 @@ function renderAssessmentSection(assessmentInfo, stats) {
 }
 
 // 9. Weekly Learning Goal
+/**
+ * Renders weekly study time goal progress bar and logged learning minutes.
+ * @param {Object} goalData - Weekly goal target and progress metrics.
+ */
 function renderWeeklyGoal(weeklyGoal) {
     const container = document.getElementById('weeklyGoalContainer');
     if (!container) return;
@@ -486,6 +554,10 @@ function renderWeeklyGoal(weeklyGoal) {
 }
 
 // 10. Achievements
+/**
+ * Renders unlocked skill certificates, milestone badges, and platform achievements.
+ * @param {Array<Object>} achievements - List of student achievements.
+ */
 function renderAchievements(achievements) {
     const container = document.getElementById('achievementsContainer');
     if (!container) return;
@@ -517,6 +589,10 @@ function renderAchievements(achievements) {
 }
 
 // 11. Recent Activity
+/**
+ * Renders chronological activity stream (completed lessons, submitted quizzes, enrolled courses).
+ * @param {Array<Object>} activities - Activity log entries.
+ */
 function renderRecentActivity(activityList) {
     const container = document.getElementById('recentActivityContainer');
     if (!container) return;
@@ -542,6 +618,13 @@ function renderRecentActivity(activityList) {
 }
 
 // 12. Wishlist
+/**
+ * Renders saved wishlist courses in the dashboard side panel with quick checkout buttons.
+ * @param {Array<Object>} wishlist - Wishlist course items.
+ */
+// ==========================================
+// SIDEBAR WIDGETS & MODAL LISTENERS
+// ==========================================
 function renderWishlist(wishlistItems) {
     const container = document.getElementById('wishlistContainer');
     if (!container) return;
@@ -567,6 +650,10 @@ function renderWishlist(wishlistItems) {
 }
 
 // 13. Notifications
+/**
+ * Populates recent notifications dropdown with system alerts, milestone celebrations, and recommendations.
+ * @param {Array<Object>} notifs - In-app notification items.
+ */
 async function renderNotifications(activityList) {
     const container = document.getElementById('studentNotificationsList');
     if (!container) return;
@@ -595,6 +682,10 @@ async function renderNotifications(activityList) {
 }
 
 // 14. Recent Payment
+/**
+ * Renders last completed payment invoice and transaction receipt card.
+ * @param {Object} payment - Most recent payment transaction record.
+ */
 function renderRecentPayment(payment) {
     const container = document.getElementById('recentPaymentContainer');
     if (!container) return;
@@ -618,6 +709,10 @@ function renderRecentPayment(payment) {
 }
 
 // 15. Profile Completion
+/**
+ * Displays profile completeness percentage bar with quick links to finish uncompleted profile sections.
+ * @param {Object} profile - Student profile data.
+ */
 function renderProfileCompletion(info) {
     const container = document.getElementById('profileCompletionContainer');
     if (!container) return;
@@ -644,6 +739,10 @@ function renderProfileCompletion(info) {
 }
 
 // 16. Why Recommended Modal Listener Setup
+/**
+ * Binds click listeners to open the 'Why is this recommended?' explanation modal showing matching criteria.
+ * @param {Array<Object>} recs - Recommendation items.
+ */
 function setupWhyModalListeners(recommendations) {
     const modal = document.getElementById('whyRecommendedModal');
     const closeBtn = document.getElementById('closeWhyModalBtn');

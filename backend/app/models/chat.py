@@ -1,3 +1,7 @@
+"""
+SmartLearn Chat and Direct Messaging Database Models
+Defines SQLAlchemy ORM models for conversations, participants, messages, reactions, and attachments.
+"""
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, Text
 from sqlalchemy.orm import declarative_base
 
@@ -11,6 +15,7 @@ except ImportError:
 
 
 class ConversationDB(Base):
+    """Represents a direct, group, or self conversation entity."""
     __tablename__ = "conversations"
     __table_args__ = {'extend_existing': True}
 
@@ -27,6 +32,7 @@ class ConversationDB(Base):
 
 
 class ConversationMemberDB(Base):
+    """Tracks member participation, role, unread count, and mute/pin preferences."""
     __tablename__ = "conversation_members"
     __table_args__ = {'extend_existing': True}
 
@@ -41,6 +47,7 @@ class ConversationMemberDB(Base):
 
 
 class MessageDB(Base):
+    """Represents a chat message supporting text, attachments, and replies."""
     __tablename__ = "messages"
     __table_args__ = {'extend_existing': True}
 
@@ -65,6 +72,7 @@ class MessageDB(Base):
 
 
 class MessageUserDeletionDB(Base):
+    """Records soft-deletion exclusions per user (delete-for-me)."""
     __tablename__ = "message_user_deletions"
     __table_args__ = {'extend_existing': True}
 
@@ -76,6 +84,7 @@ class MessageUserDeletionDB(Base):
 
 
 class MessageReactionDB(Base):
+    """Tracks emoji reactions attached to specific messages."""
     __tablename__ = "message_reactions"
     __table_args__ = {'extend_existing': True}
 
@@ -87,6 +96,7 @@ class MessageReactionDB(Base):
 
 
 class MessageAttachmentDB(Base):
+    """Stores metadata and file paths for media and files attached to messages."""
     __tablename__ = "message_attachments"
     __table_args__ = {'extend_existing': True}
 
@@ -100,6 +110,7 @@ class MessageAttachmentDB(Base):
 
 
 class MessageForwardDB(Base):
+    """Tracks message forwarding provenance and multi-destination dispatch history."""
     __tablename__ = "message_forwards"
     __table_args__ = {'extend_existing': True}
 

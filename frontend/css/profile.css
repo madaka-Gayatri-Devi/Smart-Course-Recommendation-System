@@ -14,13 +14,13 @@
     --secondary-text: #64748B;
     --border: #E2E8F0;
     --border-light: #EDE9FE;
-    --gradient-primary: linear-gradient(135deg, #5B3FE8, #8B4AD9, #E83FA5);
+    --gradient-primary: var(--color-gradient-primary);
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px;
     --radius-full: 9999px;
-    --shadow-main: 0 12px 35px rgba(91, 63, 232, 0.08);
-    --shadow-btn: 0 6px 16px rgba(91, 63, 232, 0.20);
+    --shadow-main: 0 12px 35px var(--color-primary-alpha);
+    --shadow-btn: 0 6px 16px var(--color-primary-alpha);
     
     /* Section Colors */
     --card-personal: #FCFBFF;
@@ -98,12 +98,12 @@ body.profile-wizard-page {
     align-items: center;
     justify-content: center;
     margin: 0 auto 1.25rem;
-    box-shadow: 0 0 20px rgba(91, 63, 232, 0.15);
+    box-shadow: 0 0 20px var(--color-primary-alpha);
 }
 .profile-header-icon i {
     font-size: 28px;
     background: var(--primary-purple); /* Fallback */
-    background: linear-gradient(135deg, #5B3FE8, #8B4AD9);
+    background: var(--color-gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -512,7 +512,7 @@ textarea.form-control {
     background: linear-gradient(135deg, var(--light-lavender), #FFF0F8);
     border-color: var(--primary-violet);
     color: var(--primary-purple);
-    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.1);
+    box-shadow: 0 4px 15px var(--color-primary-alpha);
 }
 .selectable-card.selected::after {
     content: '\f00c';
@@ -712,7 +712,7 @@ textarea.form-control {
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
     padding: 0.6rem 0.9rem;
-    box-shadow: 0 2px 8px rgba(91, 63, 232, 0.04);
+    box-shadow: 0 2px 8px var(--color-primary-alpha);
 }
 .skill-level-card .skill-name {
     font-weight: 600;
@@ -941,7 +941,7 @@ textarea.form-control {
 }
 .assessment-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 14px 30px rgba(91, 63, 232, 0.09);
+    box-shadow: 0 14px 30px var(--color-primary-alpha);
     border-color: #DDD6FE;
 }
 .assessment-header {
@@ -1015,7 +1015,7 @@ textarea.form-control {
     background: #F3EEFF;
     border-color: #DDD6FE;
     color: var(--primary-purple);
-    box-shadow: 0 2px 8px rgba(91, 63, 232, 0.08);
+    box-shadow: 0 2px 8px var(--color-primary-alpha);
 }
 .test-timer-badge i {
     font-size: 15px;
@@ -1027,7 +1027,7 @@ textarea.form-control {
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     padding: 2.5rem;
-    box-shadow: 0 10px 35px rgba(91, 63, 232, 0.06);
+    box-shadow: 0 10px 35px var(--color-primary-alpha);
 }
 .question-header {
     display: flex;
@@ -1091,7 +1091,7 @@ textarea.form-control {
 .option-item.selected {
     border-color: var(--primary-purple);
     background: linear-gradient(135deg, #F3EEFF 0%, #FAF5FF 100%);
-    box-shadow: 0 4px 16px rgba(91, 63, 232, 0.12);
+    box-shadow: 0 4px 16px var(--color-primary-alpha);
     font-weight: 600;
 }
 .option-indicator {
@@ -1117,7 +1117,7 @@ textarea.form-control {
     border-color: var(--primary-purple);
     background: var(--primary-purple);
     color: var(--white);
-    box-shadow: 0 2px 8px rgba(91, 63, 232, 0.3);
+    box-shadow: 0 2px 8px var(--color-primary-alpha);
 }
 
 .test-footer-nav {
@@ -1140,13 +1140,13 @@ textarea.form-control {
 
 /* Result Card */
 .result-hero-card {
-    background: linear-gradient(135deg, #5B3FE8 0%, #7C3AED 50%, #E83FA5 100%);
+    background: linear-gradient(135deg, #5B3FE8 0%, var(--color-primary) 50%, #E83FA5 100%);
     color: var(--white);
     border-radius: var(--radius-xl);
     padding: 3.5rem 2rem;
     text-align: center;
     margin-bottom: 2rem;
-    box-shadow: 0 14px 40px rgba(91, 63, 232, 0.28);
+    box-shadow: 0 14px 40px var(--color-primary-alpha);
 }
 .result-score-circle {
     width: 140px;

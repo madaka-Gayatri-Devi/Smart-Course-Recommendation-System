@@ -356,6 +356,12 @@ Base.metadata.create_all(bind=engine)
 
 # --- MIGRATIONS ---
 def run_migrations():
+    """
+    Executes incremental database schema updates for payments and user tables.
+
+    Purpose:
+        Adds base_amount, tax_amount, and discount_amount columns to payments table if missing.
+    """
     inspector = inspect(engine)
     
     if "notifications" not in inspector.get_table_names():
@@ -536,13 +542,41 @@ run_migrations()
 
 # --- PASSWORD & TOKEN UTILITIES ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verifies a plaintext password against a stored bcrypt hash.
+
+    Args:
+        plain_password: Raw password string entered by the user.
+        hashed_password: Stored bcrypt hashed password string from the database.
+
+    Returns:
+        True if the password matches the hash, False otherwise.
+    """
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password: str) -> str:
+    """
+    Computes a secure bcrypt hash for a user password using a freshly generated salt.
+
+    Args:
+        password: Plaintext password to hash.
+
+    Returns:
+        UTF-8 decoded bcrypt hash string safe for database storage.
+    """
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def create_access_token(data: dict) -> str:
+    """
+    Generates a cryptographically signed JSON Web Token (JWT) containing user claims.
+
+    Args:
+        data: Dictionary of claims to embed in payload (e.g. 'sub' with user email, 'id', 'role').
+
+    Returns:
+        Signed JWT string with configured expiration delta (ACCESS_TOKEN_EXPIRE_MINUTES).
+    """
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
@@ -554,6 +588,12 @@ INITIAL_ADMIN_EMAIL = "admin@smartlearn.edu"
 INITIAL_ADMIN_PASS = "Admin@SmartLearn2026!"
 
 def seed_initial_admin():
+    """
+    Seeds default administrator account and admin profile if no admin exists in the database.
+
+    Purpose:
+        Guarantees that an initial admin account (admin@smartlearn.edu) is available upon initial setup.
+    """
     db = SessionLocal()
     try:
         admin_user = db.query(UserDB).filter(UserDB.role.in_(["Admin", "ADMIN", "admin"])).first()
@@ -586,6 +626,13 @@ def seed_initial_admin():
         db.close()
 
 def seed_catalogs():
+    """
+    Populates standard categories, career goals, and skills taxonomy on fresh database installations.
+
+    Purpose:
+        Initializes core reference data (Web Development, Data Science, Cyber Security, etc.)
+        required by the course catalog and AI recommendation algorithms.
+    """
     db = SessionLocal()
     try:
         now_str = datetime.utcnow().strftime("%Y-%m-%d")
@@ -794,6 +841,12 @@ def seed_catalogs():
         db.close()
 
 def seed_assessments():
+    """
+    Seeds initial skill diagnostic assessments, questions, and scoring weights.
+
+    Purpose:
+        Ensures assessments for Python, React, JavaScript, and Machine Learning exist in database.
+    """
     db = SessionLocal()
     try:
         count = db.query(AssessmentDB).count()
@@ -1029,6 +1082,15 @@ def seed_assessments():
         db.close()
 
 def get_db_course_dicts(db: Session) -> List[Dict[str, Any]]:
+    """
+    Queries courses from the database and serializes them into dictionaries compatible with CourseScorer.
+
+    Args:
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of course dictionary payloads.
+    """
     courses = db.query(CourseDB).all()
     res = []
     for c in courses:
@@ -1051,6 +1113,16 @@ def get_db_course_dicts(db: Session) -> List[Dict[str, Any]]:
     return res
 
 def sync_student_recommendations(db: Session, student_id: int, force: bool = False) -> List[RecommendationDB]:
+    """
+    Recomputes and syncs cached personalized course recommendations for a student.
+
+    Args:
+        student_id: Primary key of student.
+        db: Active SQLAlchemy database session.
+
+    Purpose:
+        Invokes RecommendationEngine to score courses and stores results in student_recommendations table.
+    """
     user = db.query(UserDB).filter(UserDB.id == student_id).first()
     if not user or (user.role or '').capitalize() != "Student":
         return []
@@ -1183,6 +1255,12 @@ def sync_student_recommendations(db: Session, student_id: int, force: bool = Fal
     return updated_records
 
 def seed_initial_recommendations():
+    """
+    Generates initial recommendations for all active students upon database bootstrap.
+
+    Purpose:
+        Populates default recommendation rows so student dashboards have instant recommendations on first login.
+    """
     db = SessionLocal()
     try:
         students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).all()
@@ -1204,6 +1282,12 @@ app = FastAPI(title="SmartLearn Role-Based API")
 
 @app.on_event("startup")
 async def on_startup():
+    """
+    Application startup event handler.
+
+    Purpose:
+        Seeds initial admin, catalogs, assessments, and recommendations; boots background notification scheduler.
+    """
     run_migrations()
     try:
         try:
@@ -1247,6 +1331,15 @@ app.add_middleware(
 
 # --- DEPENDENCIES ---
 def get_db():
+    """
+    Yields a transactional SQLAlchemy database session per HTTP request.
+
+    Yields:
+        Active SQLAlchemy Session instance.
+
+    Purpose:
+        Ensures clean database connection lifecycle: closes connection after request completes.
+    """
     db = SessionLocal()
     try:
         yield db
@@ -1258,6 +1351,22 @@ def get_current_user(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> UserDB:
+    """
+    Extracts and authenticates the current user from the Authorization header Bearer token.
+
+    Args:
+        token: Raw JWT Bearer token extracted from request header or query parameter.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        UserDB record corresponding to authenticated token identity.
+
+    Purpose:
+        Decodes JWT token, validates signature with SECRET_KEY, and checks user existence.
+
+    Error handling:
+        Raises HTTP 401 if token is expired, invalid, or user record does not exist.
+    """
     token_str = token
     if not token_str and authorization:
         if authorization.startswith("Bearer "):
@@ -1293,6 +1402,18 @@ def get_current_admin(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> UserDB:
+    """
+    Enforces Admin role authorization for protected administration endpoints.
+
+    Args:
+        current_user: UserDB record from get_current_user.
+
+    Returns:
+        UserDB record if role is Admin.
+
+    Error handling:
+        Raises HTTP 403 Forbidden if user is not an administrator.
+    """
     user = get_current_user(token=token, authorization=authorization, db=db)
     if user.role.upper() != "ADMIN":
         raise HTTPException(
@@ -1306,6 +1427,18 @@ def get_current_instructor(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> UserDB:
+    """
+    Enforces Instructor role authorization for protected endpoints.
+
+    Args:
+        current_user: UserDB record from get_current_user.
+
+    Returns:
+        UserDB record if role is Instructor or Admin.
+
+    Error handling:
+        Raises HTTP 403 Forbidden if user lacks instructor privileges.
+    """
     user = get_current_user(token=token, authorization=authorization, db=db)
     if user.role.upper() not in ["INSTRUCTOR", "ADMIN"]:
         raise HTTPException(
@@ -1319,6 +1452,18 @@ def get_current_student(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> UserDB:
+    """
+    Enforces Student role authorization for protected endpoints.
+
+    Args:
+        current_user: UserDB record from get_current_user.
+
+    Returns:
+        UserDB record if role is Student.
+
+    Error handling:
+        Raises HTTP 403 Forbidden if user is not a Student.
+    """
     user = get_current_user(token=token, authorization=authorization, db=db)
     if user.role.upper() != "STUDENT":
         raise HTTPException(
@@ -1503,6 +1648,12 @@ class PaymentCancelPayload(BaseModel):
 # --- HEALTH ---
 @app.get("/health")
 def health_check():
+    """
+    Service health diagnostic endpoint.
+
+    Returns:
+        Dictionary indicating status 'ok' and backend database connectivity.
+    """
     return {"status": "ok", "app": "SmartLearn", "version": "3.0"}
 
 # --- NOTIFICATIONS ROUTER & WEBSOCKET ---
@@ -1527,8 +1678,60 @@ except Exception:
     except Exception as _cr_err:
         print(f"[SmartLearn] Could not include chat_router: {_cr_err}")
 
+# --- CHATBOT ROUTER ---
+try:
+    from app.routers.chatbot import router as chatbot_router
+    app.include_router(chatbot_router)
+except Exception:
+    try:
+        from routers.chatbot import router as chatbot_router
+        app.include_router(chatbot_router)
+    except Exception as _cbr_err:
+        print(f"[SmartLearn] Could not include chatbot_router: {_cbr_err}")
+
+@app.get("/groups/{group_id}/members")
+def get_group_members_root_alias(group_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Root-level endpoint alias for retrieving members of a specific chat group.
+
+    Args:
+        group_id: ID of the group whose members are requested.
+        user: Authenticated user model.
+        db: Active database session.
+
+    Returns:
+        The group member records.
+
+    Purpose:
+        Used by the group chat interface to display actual participants.
+
+    Error handling:
+        Raises HTTP 403 if user not in group; HTTP 404 if group missing.
+    """
+    try:
+        from app.services.chat_service import ChatService
+    except ImportError:
+        from services.chat_service import ChatService
+    try:
+        return ChatService.get_group_members(db, user, group_id)
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
 @app.websocket("/ws/notifications")
 async def websocket_notifications_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
+    """
+    WebSocket endpoint for real-time user notifications.
+
+    Args:
+        websocket: Incoming WebSocket client connection.
+        token: User JWT authentication token.
+
+    Purpose:
+        Registers socket in NotificationConnectionManager, listens for heartbeat pings,
+        and streams pushed notifications to active browser tabs.
+    """
     if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
@@ -1566,6 +1769,23 @@ async def websocket_notifications_endpoint(websocket: WebSocket, token: Optional
 
 @app.post("/auth/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
+    """
+    Registers a new student or instructor account.
+
+    Args:
+        user: Pydantic UserRegister model containing full_name, email, password, and role.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary with created user id, access token, bearer token type, role, and email.
+
+    Purpose:
+        Validates account parameters, prevents public admin registrations, enforces password length,
+        hashes credentials with bcrypt, initializes empty profile, and dispatches welcome notifications.
+
+    Error handling:
+        Raises HTTP 400 if email is already registered, password is too short, or role is invalid.
+    """
     role_clean = user.role.strip().capitalize()
     clean_email = user.email.strip().lower()
     
@@ -1625,6 +1845,23 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
 @app.post("/auth/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
+    """
+    Authenticates a user with email and password credentials.
+
+    Args:
+        user: Pydantic UserLogin model containing email and password.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        JSON response with either a JWT access token or a 2FA challenge payload (pre_auth_token).
+
+    Purpose:
+        Validates user credentials against stored bcrypt hash, checks account active status,
+        and triggers two-factor verification code dispatch via email if 2FA is enabled.
+
+    Error handling:
+        Raises HTTP 401 for invalid email/password; HTTP 403 if account is deactivated.
+    """
     clean_email = user.email.strip().lower()
     clean_pass = user.password.strip()
     
@@ -1724,6 +1961,23 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 @app.post("/auth/verify-2fa")
 def verify_2fa(payload: Verify2FAPayload, db: Session = Depends(get_db)):
+    """
+    Verifies a 6-digit one-time password during two-factor authentication.
+
+    Args:
+        payload: Pydantic TwoFactorVerify model with pre_auth_token and otp_code.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary containing access_token, token_type, role, and user email.
+
+    Purpose:
+        Validates pre-auth token expiry, checks attempt limits, verifies bcrypt OTP hash,
+        marks code as used, and issues a full-access JWT session token.
+
+    Error handling:
+        Raises HTTP 400 for expired or incorrect OTP codes; HTTP 401 for invalid pre-auth tokens.
+    """
     clean_otp = (payload.otp_code or "").strip()
     if not clean_otp:
         raise HTTPException(status_code=400, detail="Verification code is required.")
@@ -1786,6 +2040,19 @@ def verify_2fa(payload: Verify2FAPayload, db: Session = Depends(get_db)):
 
 @app.post("/auth/resend-2fa")
 def resend_2fa(payload: Resend2FAPayload, db: Session = Depends(get_db)):
+    """
+    Dispatches a fresh 6-digit 2FA OTP code to the user's registered email address.
+
+    Args:
+        payload: Pre-auth token payload.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Confirmation message.
+
+    Error handling:
+        Raises HTTP 400 if pre-auth token is expired or user is not found.
+    """
     try:
         token_data = jwt.decode(payload.pre_auth_token, SECRET_KEY, algorithms=[ALGORITHM])
         if token_data.get("type") != "2fa_pending":
@@ -1842,6 +2109,15 @@ def resend_2fa(payload: Resend2FAPayload, db: Session = Depends(get_db)):
 
 @app.get("/auth/security-settings")
 def get_security_settings(user: UserDB = Depends(get_current_user)):
+    """
+    Retrieves the current security configuration (2FA status, password status) for the user.
+
+    Args:
+        current_user: Authenticated UserDB record.
+
+    Returns:
+        Dictionary containing two_factor_enabled and user security metadata.
+    """
     return {
         "email": user.email,
         "full_name": user.full_name,
@@ -1852,6 +2128,17 @@ def get_security_settings(user: UserDB = Depends(get_current_user)):
 
 @app.post("/auth/2fa/toggle")
 def toggle_2fa(payload: Toggle2FAPayload, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Enables or disables Two-Factor Authentication on the user's account.
+
+    Args:
+        payload: Toggle request containing boolean enabled flag.
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated 2FA status response.
+    """
     if not payload.enabled and payload.current_password:
         if not verify_password(payload.current_password, user.hashed_password):
             raise HTTPException(status_code=400, detail="Current password is required to disable 2FA.")
@@ -1865,6 +2152,20 @@ def toggle_2fa(payload: Toggle2FAPayload, user: UserDB = Depends(get_current_use
 
 @app.post("/auth/change-password")
 def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Updates the authenticated user's account password after verifying current password.
+
+    Args:
+        payload: ChangePasswordPayload containing current_password and new_password.
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Confirmation message.
+
+    Error handling:
+        Raises HTTP 400 if current password is incorrect or new password does not meet requirements.
+    """
     if not verify_password(payload.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect current password.")
 
@@ -1877,6 +2178,16 @@ def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_c
 
 @app.post("/auth/forgot-password")
 def forgot_password(payload: ForgotPasswordPayload, db: Session = Depends(get_db)):
+    """
+    Generates and emails a cryptographically signed password reset link.
+
+    Args:
+        payload: Request payload containing user email.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Confirmation response and reset token for development testing.
+    """
     clean_email = payload.email.strip().lower()
     user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
     if not user:
@@ -1932,6 +2243,19 @@ def forgot_password(payload: ForgotPasswordPayload, db: Session = Depends(get_db
 
 @app.post("/auth/reset-password")
 def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends(get_db)):
+    """
+    Updates user password using a verified password reset token.
+
+    Args:
+        payload: ResetPasswordPayload containing token and new password.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Success message.
+
+    Error handling:
+        Raises HTTP 400 for expired or corrupted reset tokens.
+    """
     if len(payload.new_password) < 8:
         raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
 
@@ -1961,6 +2285,12 @@ def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends
 @app.get("/auth/firebase-config")
 @app.get("/config/firebase")
 def get_firebase_config():
+    """
+    Returns public Firebase configuration keys for frontend Google OAuth initialization.
+
+    Returns:
+        Dictionary with apiKey, authDomain, projectId, and appId.
+    """
     return {
         "apiKey": os.getenv("FIREBASE_API_KEY", ""),
         "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "smartlearn-auth.firebaseapp.com"),
@@ -1972,6 +2302,16 @@ def get_firebase_config():
 
 @app.post("/auth/google-login")
 def google_login(payload: GoogleLoginPayload, db: Session = Depends(get_db)):
+    """
+    Exchanges Firebase Google OAuth id_token for a platform JWT access token.
+
+    Args:
+        payload: GoogleLoginPayload containing id_token and requested role.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Authenticated session dictionary with access token and user identity.
+    """
     try:
         from app.services.firebase_service import FirebaseService
     except ImportError:
@@ -2061,6 +2401,15 @@ def google_login(payload: GoogleLoginPayload, db: Session = Depends(get_db)):
 
 @app.get("/users/me/notification-preferences")
 def get_notification_preferences(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves notification channels and delivery preferences for current user.
+
+    Args:
+        current_user: Authenticated UserDB record.
+
+    Returns:
+        Dictionary of notification settings.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     defaults = {
         "course_progress": True,
@@ -2079,6 +2428,17 @@ def update_notification_preferences(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Saves notification delivery settings (email alerts, desktop push, chat alerts).
+
+    Args:
+        payload: Notification preference dictionary.
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated preferences confirmation.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     if not profile:
         profile = ProfileDB(user_id=user.id)
@@ -2102,6 +2462,19 @@ def update_notification_preferences(
 
 @app.post("/auth/reset-password")
 def reset_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
+    """
+    Updates user password using a verified password reset token.
+
+    Args:
+        payload: ResetPasswordPayload containing token and new password.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Success message.
+
+    Error handling:
+        Raises HTTP 400 for expired or corrupted reset tokens.
+    """
     clean_email = req.email.strip().lower()
     if len(req.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
@@ -2116,6 +2489,16 @@ def reset_password(req: PasswordResetRequest, db: Session = Depends(get_db)):
 @app.post("/auth/send-test-email")
 @app.post("/admin/test-email")
 def send_test_email(payload: TestEmailPayload):
+    """
+    Dispatches a diagnostic test email to verify SMTP mailer configuration.
+
+    Args:
+        payload: Email request model.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Status response with mailer logs.
+    """
     try:
         from app.services.email_service import EmailService
         from app.services.email_templates import EmailTemplates
@@ -2162,12 +2545,31 @@ def send_test_email(payload: TestEmailPayload):
 
 @app.get("/users/me", response_model=UserResponse)
 def get_me(user: UserDB = Depends(get_current_user)):
+    """
+    Returns the current authenticated user's profile and active role from the database.
+
+    Args:
+        current_user: Authenticated UserDB record.
+
+    Returns:
+        User record dictionary { id, email, full_name, role, is_active }.
+    """
     return user
 
 # --- PROFILE ROUTES ---
 
 @app.get("/profile")
 def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves the complete profile data for the currently authenticated user.
+
+    Args:
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Profile dictionary containing personal info, skills, interests, and career goals.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     if not profile:
         return {
@@ -2224,6 +2626,17 @@ def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(
 @app.put("/student/profile")
 def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     # Update Full Name if provided
+    """
+    Updates profile attributes, headline, bio, and associated skills/goals.
+
+    Args:
+        payload: Profile update request model.
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated profile dictionary.
+    """
     if profile_data.full_name is not None and profile_data.full_name.strip():
         user.full_name = profile_data.full_name.strip()
 
@@ -2313,6 +2726,20 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
 
 @app.post("/profile/avatar")
 async def upload_avatar(file: UploadFile = File(...), user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Uploads and saves a user avatar image file to disk.
+
+    Args:
+        avatar: Uploaded image file (JPG, PNG, WEBP).
+        current_user: Authenticated UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary with avatar URL and success status.
+
+    Error handling:
+        Raises HTTP 400 for unsupported file types or oversized files.
+    """
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"]
     if file.content_type not in allowed_types:
         raise HTTPException(
@@ -2350,6 +2777,15 @@ async def upload_avatar(file: UploadFile = File(...), user: UserDB = Depends(get
 
 # --- DURATION HELPER ---
 def parse_duration_hours(dur_str: Optional[str]) -> float:
+    """
+    Parses human-friendly duration strings (e.g. '12 hours', '4.5 hrs') into float numeric hours.
+
+    Args:
+        duration_str: Text representation of course length.
+
+    Returns:
+        Numeric float hours.
+    """
     if not dur_str:
         return 0.0
     s = str(dur_str).lower().strip()
@@ -2390,6 +2826,19 @@ def list_courses(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
+    """
+    Queries the public course catalog with optional search, category, level, and price filters.
+
+    Args:
+        category: Optional category filter string.
+        level: Optional difficulty level filter ('Beginner', 'Intermediate', 'Advanced').
+        search: Optional search term matching title or description.
+        sort_by: Optional sort order ('popular', 'rating', 'newest', 'price_low', 'price_high').
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of matching CourseDB records.
+    """
     query = db.query(CourseDB)
     
     # 1. Status Filter (defaults to published for public/student view)
@@ -2690,6 +3139,20 @@ def get_course_details(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves comprehensive course details including syllabus modules, lessons, and instructor info.
+
+    Args:
+        course_id: Primary key of requested course.
+        db: Active SQLAlchemy database session.
+        current_user: Optional authenticated UserDB record to check enrollment status.
+
+    Returns:
+        Detailed course dictionary.
+
+    Error handling:
+        Raises HTTP 404 if course ID does not exist.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -2788,6 +3251,17 @@ def create_course(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Creates a new draft course authored by the authenticated instructor.
+
+    Args:
+        course: CourseCreate request model with title, description, category, and pricing.
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Newly created CourseDB record.
+    """
     if user.role.upper() == "STUDENT":
         raise HTTPException(status_code=403, detail="Students are not permitted to create courses.")
 
@@ -2877,6 +3351,21 @@ def update_course(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Updates metadata, description, or pricing for an existing course.
+
+    Args:
+        course_id: Primary key of course to update.
+        course: CourseUpdate model.
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated CourseDB record.
+
+    Error handling:
+        Raises HTTP 404 if course not found; HTTP 403 if instructor does not own the course.
+    """
     if user.role.upper() == "STUDENT":
         raise HTTPException(status_code=403, detail="Students are not permitted to edit courses.")
 
@@ -2952,6 +3441,16 @@ async def upload_course_video(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Uploads a video file (MP4, WEBM) for course curriculum lectures.
+
+    Args:
+        file: Video file from multipart form upload.
+        course_id: Associated course primary key.
+
+    Returns:
+        Upload response { video_url, filename, size }.
+    """
     allowed_exts = ["mp4", "webm", "mov", "mkv", "avi"]
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else "mp4"
     if ext not in allowed_exts:
@@ -2985,6 +3484,16 @@ async def upload_course_material(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Uploads downloadable study material (PDF, ZIP, DOCX) for lesson resources.
+
+    Args:
+        file: Document file from multipart upload.
+        course_id: Associated course primary key.
+
+    Returns:
+        Upload response { material_url, filename, size }.
+    """
     allowed_exts = ["pdf", "ppt", "pptx", "doc", "docx", "txt", "zip", "png", "jpg", "jpeg", "webp"]
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else "pdf"
     if ext not in allowed_exts:
@@ -3018,6 +3527,16 @@ async def upload_course_thumbnail(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Uploads and saves a promotional banner image for a course card.
+
+    Args:
+        file: Thumbnail image file.
+        course_id: Target course ID.
+
+    Returns:
+        Upload response { thumbnail_url }.
+    """
     allowed_exts = ["jpg", "jpeg", "png", "webp", "gif", "svg"]
     ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
     if ext not in allowed_exts:
@@ -3057,6 +3576,17 @@ def get_course_content(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves curriculum structure (modules, lessons, quizzes) for course authoring.
+
+    Args:
+        course_id: Course primary key.
+        db: Active SQLAlchemy database session.
+        current_user: Authenticated instructor UserDB record.
+
+    Returns:
+        Curriculum hierarchy dictionary.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3096,6 +3626,18 @@ def update_course_content(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Saves or updates complete curriculum structure for a course.
+
+    Args:
+        course_id: Course primary key.
+        payload: Course curriculum payload.
+        db: Active SQLAlchemy database session.
+        current_user: Authenticated instructor UserDB record.
+
+    Returns:
+        Confirmation response.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3136,6 +3678,20 @@ def get_course_player(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves player curriculum data and video lecture URLs for an enrolled student.
+
+    Args:
+        course_id: Primary key of course.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Player payload with modules, lessons, completion flags, and last watched lesson.
+
+    Error handling:
+        Raises HTTP 403 if student is not actively enrolled in the course.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3233,6 +3789,18 @@ def complete_course_lesson(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Marks a lesson as completed for the current student and updates overall course progress percentage.
+
+    Args:
+        course_id: Course primary key.
+        lesson_id: Lesson primary key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated progress dictionary with completed_lessons and progress_percentage.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3340,6 +3908,19 @@ def submit_course_lesson_quiz(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Grades student answers for an end-of-lesson assessment quiz.
+
+    Args:
+        course_id: Course primary key.
+        lesson_id: Lesson primary key.
+        payload: Student answers dictionary { question_id: choice }.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Grading results { score, passed, feedback }.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3439,6 +4020,17 @@ def get_preview_lesson(
     lesson_id: str,
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves sample lesson content available for public preview without enrollment.
+
+    Args:
+        course_id: Course primary key.
+        lesson_id: Lesson primary key.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Preview lesson data and streaming video URL.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3481,6 +4073,16 @@ def get_preview_lesson(
 
 @app.get("/courses/{course_id}/reviews")
 def get_course_reviews(course_id: int, db: Session = Depends(get_db)):
+    """
+    Fetches published ratings and reviews for a course.
+
+    Args:
+        course_id: Course primary key.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of review records with star ratings and reviewer names.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3513,6 +4115,18 @@ def submit_course_review(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Submits a student review and rating for an enrolled course.
+
+    Args:
+        course_id: Course primary key.
+        payload: Review submission payload { rating, comment }.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Created review record.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3572,6 +4186,16 @@ def get_instructor_courses_list(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves all courses authored by the authenticated instructor.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of instructor courses.
+    """
     query = db.query(CourseDB).filter(CourseDB.instructor_id == user.id)
     if status and status.lower() != "all":
         query = query.filter(CourseDB.status == status.lower())
@@ -3658,6 +4282,18 @@ def set_course_status(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Toggles course publication state ('published', 'draft', 'archived').
+
+    Args:
+        course_id: Course primary key.
+        payload: Status update payload { status: str }.
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated course record.
+    """
     if user.role.upper() == "STUDENT":
         raise HTTPException(status_code=403, detail="Students are not permitted to change course status.")
 
@@ -3702,6 +4338,17 @@ def delete_course(
     user: UserDB = Depends(get_current_instructor),
     db: Session = Depends(get_db)
 ):
+    """
+    Deletes a course and associated curriculum items from the platform.
+
+    Args:
+        course_id: Course primary key.
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Success message.
+    """
     if user.role.upper() == "STUDENT":
         raise HTTPException(status_code=403, detail="Students are not permitted to delete or deactivate courses.")
 
@@ -3733,6 +4380,16 @@ def get_admin_courses(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves courses for administrative moderation and review.
+
+    Args:
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        List of all platform courses with instructor and enrollment statistics.
+    """
     query = db.query(CourseDB)
     if status and status.lower() != "all":
         query = query.filter(CourseDB.status == status.lower())
@@ -3836,6 +4493,17 @@ def admin_create_course(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Admin-level course creation endpoint bypassing instructor ownership constraints.
+
+    Args:
+        course: CourseCreate payload.
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Newly created CourseDB record.
+    """
     return create_course(payload=payload, user=user, db=db)
 
 @app.put("/admin/courses/{course_id}")
@@ -3845,6 +4513,18 @@ def admin_update_course(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Admin-level course editing endpoint to update any course on the platform.
+
+    Args:
+        course_id: Target course ID.
+        course: CourseUpdate model.
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Updated CourseDB record.
+    """
     return update_course(course_id=course_id, payload=payload, user=user, db=db)
 
 @app.patch("/admin/courses/{course_id}/status")
@@ -3854,6 +4534,18 @@ def admin_set_course_status(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Sets publication or approval status of a course from the admin portal.
+
+    Args:
+        course_id: Target course ID.
+        payload: Status dictionary { status: str }.
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Status update confirmation.
+    """
     return set_course_status(course_id=course_id, payload=payload, user=user, db=db)
 
 @app.delete("/admin/courses/{course_id}")
@@ -3862,12 +4554,34 @@ def admin_delete_course(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Administrative deletion of a course and its associated lessons and reviews.
+
+    Args:
+        course_id: Course primary key.
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Deletion confirmation response.
+    """
     return delete_course(course_id=course_id, user=user, db=db)
 
 # --- ENROLLMENT & PROGRESS ROUTES ---
 
 @app.post("/courses/{course_id}/enroll")
 def enroll_course(course_id: int, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Enrolls the current student into a free course directly.
+
+    Args:
+        course_id: Course primary key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Enrollment confirmation record.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -3944,6 +4658,16 @@ def enroll_course(course_id: int, user: UserDB = Depends(get_current_user), db: 
 
 @app.get("/my-courses")
 def get_my_courses(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves all courses enrolled by the active student.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of enrolled courses with progress metrics.
+    """
     enrollments = db.query(EnrollmentDB).filter(EnrollmentDB.user_id == user.id).all()
     res = []
     for enr in enrollments:
@@ -3980,6 +4704,18 @@ def update_course_progress(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Updates student video timestamp and overall course progress marks.
+
+    Args:
+        course_id: Course primary key.
+        payload: Progress payload with timestamp and completed lessons.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated progress record.
+    """
     enrollment = db.query(EnrollmentDB).filter(
         EnrollmentDB.user_id == user.id,
         EnrollmentDB.course_id == course_id
@@ -4026,6 +4762,17 @@ def update_course_progress(
 
 @app.post("/courses/{course_id}/wishlist")
 def toggle_wishlist(course_id: int, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Adds or removes a course from the student's personal wishlist.
+
+    Args:
+        course_id: Course primary key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary with in_wishlist boolean flag.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -4051,6 +4798,16 @@ def toggle_wishlist(course_id: int, user: UserDB = Depends(get_current_user), db
 
 @app.get("/wishlist")
 def get_wishlist(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves all courses saved in the student's wishlist.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of bookmarked courses.
+    """
     items = db.query(WishlistDB).filter(WishlistDB.user_id == user.id).all()
     res = []
     for item in items:
@@ -4072,6 +4829,15 @@ def get_wishlist(user: UserDB = Depends(get_current_user), db: Session = Depends
 # --- RECOMMENDATION, SKILL GAP & LEARNING PATH ---
 
 def get_db_course_dicts(db: Session) -> List[Dict[str, Any]]:
+    """
+    Queries courses from the database and serializes them into dictionaries compatible with CourseScorer.
+
+    Args:
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of course dictionary payloads.
+    """
     courses = db.query(CourseDB).filter(CourseDB.status == "published").all()
     res = []
     for c in courses:
@@ -4109,6 +4875,18 @@ def get_recommendations(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Generates personalized course recommendations for the current student based on skill gaps and goals.
+
+    Args:
+        category: Optional category filter.
+        limit: Number of recommendations to return.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Ranked list of recommended courses with match scores and explanation rationales.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     attempts_db = db.query(AssessmentAttemptDB).filter(AssessmentAttemptDB.user_id == user.id).all()
     attempts = []
@@ -4154,6 +4932,16 @@ def get_recommendations(
 
 @app.get("/skill-gaps")
 def get_skill_gaps(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Performs skill-gap analysis comparing student acquired skills against target career goal skills.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Skill gap analysis dictionary with missing skills, proficiency percentages, and recommended courses.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     career_goal = profile.career_goal if profile and profile.career_goal else "Full Stack Web Developer"
     student_skills = profile.skills if profile and profile.skills else []
@@ -4173,6 +4961,16 @@ def get_skill_gaps(user: UserDB = Depends(get_current_user), db: Session = Depen
 
 @app.get("/learning-path")
 def get_learning_path(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Generates a sequential multi-step course learning path to bridge identified student skill gaps.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Learning roadmap dictionary containing ordered courses, milestones, and estimated completion times.
+    """
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     career_goal = profile.career_goal if profile and profile.career_goal else "Full Stack Web Developer"
     secondary_career_goal = profile.secondary_career_goal if profile and profile.secondary_career_goal else None
@@ -4234,6 +5032,15 @@ def get_learning_path(user: UserDB = Depends(get_current_user), db: Session = De
 
 @app.get("/assessments")
 def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves catalog of diagnostic skill assessments.
+
+    Args:
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of assessment papers with question counts and target skills.
+    """
     assessments = db.query(AssessmentDB).all()
     res = []
     for a in assessments:
@@ -4251,6 +5058,16 @@ def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Dep
 
 @app.get("/assessments/my-results")
 def get_my_assessment_results(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves historical skill assessment scores and proficiency badges for current student.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of past assessment results.
+    """
     return AssessmentService.get_user_history(
         db=db,
         AttemptModel=AssessmentAttemptDB,
@@ -4260,6 +5077,17 @@ def get_my_assessment_results(user: UserDB = Depends(get_current_user), db: Sess
 
 @app.get("/assessments/{assessment_id}")
 def get_assessment(assessment_id: int, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves questions and multiple-choice options for a diagnostic assessment.
+
+    Args:
+        assessment_id: Assessment primary key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Assessment test paper payload.
+    """
     assessment, questions = AssessmentService.get_by_id(db, AssessmentDB, AssessmentQuestionDB, assessment_id)
     public_questions = []
     for q in questions:
@@ -4287,6 +5115,18 @@ def submit_assessment(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Submits student answers, computes percentage score, and determines skill proficiency level.
+
+    Args:
+        assessment_id: Assessment primary key.
+        payload: Assessment submit payload with answer key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Grading results with score percentage and proficiency badge.
+    """
     res = AssessmentService.submit(
         db=db,
         AssessmentModel=AssessmentDB,
@@ -4334,6 +5174,17 @@ def submit_assessment(
 
 @app.get("/assessments/{assessment_id}/result")
 def get_latest_assessment_result(assessment_id: int, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Retrieves the most recent quiz or assessment score for a specific assessment ID.
+
+    Args:
+        assessment_id: Assessment primary key.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Latest assessment result record.
+    """
     attempt = db.query(AssessmentAttemptDB).filter(
         AssessmentAttemptDB.user_id == user.id,
         AssessmentAttemptDB.assessment_id == assessment_id
@@ -4360,6 +5211,16 @@ def get_latest_assessment_result(assessment_id: int, user: UserDB = Depends(get_
 
 @app.get("/instructor/stats")
 def get_instructor_stats(user: UserDB = Depends(get_current_instructor), db: Session = Depends(get_db)):
+    """
+    Computes key performance indicators for the instructor portal overview.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary of course counts, student enrollments, and average rating.
+    """
     my_courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).all()
     course_ids = [c.id for c in my_courses]
     
@@ -4399,6 +5260,16 @@ def get_instructor_stats(user: UserDB = Depends(get_current_instructor), db: Ses
 
 @app.get("/instructor/courses")
 def get_instructor_courses(user: UserDB = Depends(get_current_instructor), db: Session = Depends(get_db)):
+    """
+    Retrieves list of courses authored by the active instructor.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of instructor CourseDB records.
+    """
     courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).order_by(CourseDB.id.desc()).all()
     res = []
     for c in courses:
@@ -4437,6 +5308,16 @@ def get_instructor_courses(user: UserDB = Depends(get_current_instructor), db: S
 
 @app.get("/admin/stats")
 def get_admin_stats(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Computes system-level overview statistics for administrative reporting.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary of platform counts (students, instructors, courses, revenue).
+    """
     total_students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).count()
     total_instructors = db.query(UserDB).filter(UserDB.role.in_(["Instructor", "INSTRUCTOR", "instructor"])).count()
     total_courses = db.query(CourseDB).count()
@@ -4496,6 +5377,18 @@ def get_admin_users(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Queries users across all roles with search and pagination support.
+
+    Args:
+        search: Optional search term.
+        role: Optional role filter.
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        List of user records.
+    """
     query = db.query(UserDB)
     if role and role.lower() != "all":
         query = query.filter(UserDB.role.ilike(role))
@@ -4542,6 +5435,16 @@ def get_admin_students(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Queries student directory with enrollment counts and progress statistics.
+
+    Args:
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Student roster list.
+    """
     target_cid = None
     if course_id is not None and str(course_id).strip().lower() not in ("all", "none", "", "null", "undefined"):
         try:
@@ -4651,6 +5554,17 @@ def get_admin_student_detail(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves comprehensive profile and progress details for a specific student.
+
+    Args:
+        student_id: Target student user ID.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Student detail dictionary including enrollments and quiz scores.
+    """
     student_user = db.query(UserDB).filter(UserDB.id == student_id, UserDB.role.ilike("student")).first()
     if not student_user:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -4720,6 +5634,16 @@ def get_admin_instructors(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Queries instructor directory with course counts and performance ratings.
+
+    Args:
+        db: Active SQLAlchemy database session.
+        user: Authenticated admin UserDB record.
+
+    Returns:
+        Instructor roster list.
+    """
     query = db.query(UserDB).filter(UserDB.role.ilike("instructor"))
     if search:
         s = f"%{search.strip()}%"
@@ -4795,6 +5719,17 @@ def get_admin_instructor_detail(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves profile, authored courses, and student feedback for an instructor.
+
+    Args:
+        instructor_id: Target instructor user ID.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Instructor detail dictionary.
+    """
     inst_user = db.query(UserDB).filter(UserDB.id == instructor_id, UserDB.role.ilike("instructor")).first()
     if not inst_user:
         raise HTTPException(status_code=404, detail="Instructor not found")
@@ -4908,6 +5843,18 @@ def get_admin_instructor_detail(
 
 @app.put("/admin/users/{user_id}/status")
 def toggle_user_status(user_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Activates or deactivates a user account.
+
+    Args:
+        user_id: Target user ID.
+        payload: Status payload { is_active: int }.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Updated user status confirmation.
+    """
     target_user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -4926,6 +5873,15 @@ def toggle_user_status(user_id: int, user: UserDB = Depends(get_current_admin), 
 @app.get("/categories")
 @app.get("/admin/categories")
 def get_categories(db: Session = Depends(get_db)):
+    """
+    Retrieves all available academic categories and subject domains.
+
+    Args:
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of CategoryDB records.
+    """
     cats = db.query(CategoryDB).all()
     res = []
     for c in cats:
@@ -4935,6 +5891,17 @@ def get_categories(db: Session = Depends(get_db)):
 
 @app.post("/admin/categories")
 def create_category(payload: CategoryPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Creates a new academic category in the platform taxonomy.
+
+    Args:
+        payload: Category creation payload { name, description, icon }.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Created CategoryDB record.
+    """
     cat = CategoryDB(name=payload.name, description=payload.description, icon=payload.icon)
     db.add(cat)
     db.commit()
@@ -4943,6 +5910,17 @@ def create_category(payload: CategoryPayload, user: UserDB = Depends(get_current
 
 @app.delete("/admin/categories/{category_id}")
 def delete_category(category_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Removes a category from the system taxonomy.
+
+    Args:
+        category_id: Category primary key.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Deletion confirmation message.
+    """
     cat = db.query(CategoryDB).filter(CategoryDB.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -4953,6 +5931,16 @@ def delete_category(category_id: int, user: UserDB = Depends(get_current_admin),
 @app.get("/skills")
 @app.get("/admin/skills")
 def get_skills(category: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    Retrieves standardized skills, optionally filtered by category.
+
+    Args:
+        category: Optional category name filter.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of SkillDB records.
+    """
     query = db.query(SkillDB)
     if category and category.lower() != "all":
         query = query.filter(SkillDB.category.ilike(f"%{category.strip()}%"))
@@ -4960,6 +5948,17 @@ def get_skills(category: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.post("/admin/skills")
 def create_skill(payload: SkillPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Adds a new standardized skill to the platform skills taxonomy.
+
+    Args:
+        payload: Skill payload { name, category, description }.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Created SkillDB record.
+    """
     skill = SkillDB(name=payload.name, category=payload.category, description=payload.description, proficiency_levels=["Beginner", "Intermediate", "Advanced", "Expert"])
     db.add(skill)
     db.commit()
@@ -4968,6 +5967,17 @@ def create_skill(payload: SkillPayload, user: UserDB = Depends(get_current_admin
 
 @app.delete("/admin/skills/{skill_id}")
 def delete_skill(skill_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Deletes a skill record from the platform taxonomy.
+
+    Args:
+        skill_id: Skill primary key.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Deletion confirmation message.
+    """
     skill = db.query(SkillDB).filter(SkillDB.id == skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
@@ -4978,10 +5988,30 @@ def delete_skill(skill_id: int, user: UserDB = Depends(get_current_admin), db: S
 @app.get("/career-goals")
 @app.get("/admin/career-goals")
 def get_career_goals(db: Session = Depends(get_db)):
+    """
+    Retrieves standard career goal definitions available for students.
+
+    Args:
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of CareerGoalDB records.
+    """
     return db.query(CareerGoalDB).all()
 
 @app.post("/admin/career-goals")
 def create_career_goal(payload: CareerGoalPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Adds a new career goal definition with required skills list.
+
+    Args:
+        payload: CareerGoal creation model.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Created CareerGoalDB record.
+    """
     goal = CareerGoalDB(
         title=payload.title,
         description=payload.description,
@@ -4995,6 +6025,17 @@ def create_career_goal(payload: CareerGoalPayload, user: UserDB = Depends(get_cu
 
 @app.delete("/admin/career-goals/{goal_id}")
 def delete_career_goal(goal_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Deletes a career goal definition.
+
+    Args:
+        goal_id: Career goal primary key.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Deletion confirmation message.
+    """
     goal = db.query(CareerGoalDB).filter(CareerGoalDB.id == goal_id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Career goal not found")
@@ -5005,6 +6046,16 @@ def delete_career_goal(goal_id: int, user: UserDB = Depends(get_current_admin), 
 @app.get("/admin/reports")
 @app.get("/admin/reports/overview")
 def get_admin_reports_overview(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Aggregates high-level metrics for administrative report generation.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Comprehensive reports summary dictionary.
+    """
     total_users = db.query(UserDB).count()
     total_students = db.query(UserDB).filter(func.lower(UserDB.role) == "student").count()
     total_instructors = db.query(UserDB).filter(func.lower(UserDB.role) == "instructor").count()
@@ -5070,6 +6121,16 @@ def get_admin_reports_overview(user: UserDB = Depends(get_current_admin), db: Se
 
 @app.get("/admin/reports/popular-courses")
 def get_admin_popular_courses(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Returns ranking of the most enrolled and highest rated courses for admin reports.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of popular course metrics.
+    """
     courses = db.query(CourseDB).all()
     enrollments = db.query(EnrollmentDB).all()
     payments = db.query(PaymentDB).filter(func.lower(PaymentDB.status) == "successful").all()
@@ -5127,6 +6188,16 @@ def get_admin_enrollments_report(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Generates historical enrollment audit report with course, student, and date filters.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Paginated enrollment records.
+    """
     query = db.query(EnrollmentDB)
     
     if course_id and str(course_id).lower() != "all":
@@ -5203,6 +6274,16 @@ def get_admin_enrollments_report(
 
 @app.get("/admin/reports/course-performance")
 def get_admin_course_performance(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Calculates completion rates, dropout statistics, and rating averages across courses.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Course performance metric list.
+    """
     courses = db.query(CourseDB).all()
     enrollments = db.query(EnrollmentDB).all()
     
@@ -5244,6 +6325,16 @@ def get_admin_course_performance(user: UserDB = Depends(get_current_admin), db: 
 
 @app.get("/admin/reports/student-progress")
 def get_admin_student_progress_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Aggregates student study hours, completed modules, and active learning days.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Student progress audit dataset.
+    """
     students = db.query(UserDB).filter(func.lower(UserDB.role) == "student").all()
     profiles = {p.user_id: p for p in db.query(ProfileDB).all()}
     enrollments = db.query(EnrollmentDB).all()
@@ -5284,6 +6375,16 @@ def get_admin_student_progress_report(user: UserDB = Depends(get_current_admin),
 
 @app.get("/admin/reports/instructors")
 def get_admin_instructors_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Generates instructor productivity report with total courses, students, and ratings.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Instructor performance dataset.
+    """
     instructors = db.query(UserDB).filter(func.lower(UserDB.role) == "instructor").all()
     courses = db.query(CourseDB).all()
     enrollments = db.query(EnrollmentDB).all()
@@ -5326,6 +6427,16 @@ def get_admin_instructors_report(user: UserDB = Depends(get_current_admin), db: 
 
 @app.get("/admin/reports/payments")
 def get_admin_payments_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Generates financial transaction report with gross sales, refunds, and net volume.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Financial ledger report payload.
+    """
     payments = db.query(PaymentDB).order_by(PaymentDB.id.desc()).all()
     users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
     courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
@@ -5364,6 +6475,16 @@ def get_admin_payments_report(user: UserDB = Depends(get_current_admin), db: Ses
 
 @app.get("/admin/reports/recommendations")
 def get_admin_recommendations_report(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Audits recommendation engine click-through, enrollment conversion, and algorithm accuracy.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Recommendation analytics report.
+    """
     recs = db.query(RecommendationDB).order_by(RecommendationDB.id.desc()).all()
     users_dict = {u.id: u.full_name for u in db.query(UserDB).all()}
     courses_dict = {c.id: c.title for c in db.query(CourseDB).all()}
@@ -5399,6 +6520,16 @@ def get_admin_recommendations_report(user: UserDB = Depends(get_current_admin), 
 @app.get("/admin/analytics/overview")
 def get_admin_analytics_overview(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
     # Active students: Students who have enrolled in courses or updated progress
+    """
+    Aggregates top-level KPI analytics for charts and graphs.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        System analytics overview dataset.
+    """
     student_ids_with_enrollment = db.query(EnrollmentDB.user_id).distinct().all()
     active_student_ids = {sid[0] for sid in student_ids_with_enrollment}
     active_students_count = len(active_student_ids)
@@ -5456,6 +6587,16 @@ def get_admin_analytics_overview(user: UserDB = Depends(get_current_admin), db: 
 
 @app.get("/admin/analytics/charts")
 def get_admin_analytics_charts(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    """
+    Returns formatted time-series chart data for Chart.js rendering on admin analytics dashboard.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Chart dataset dictionary containing line, bar, and doughnut datasets.
+    """
     courses = db.query(CourseDB).all()
     enrollments = db.query(EnrollmentDB).all()
     users = db.query(UserDB).all()
@@ -5585,6 +6726,17 @@ def export_admin_report_csv(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Exports administrative reports in CSV spreadsheet format for external analysis.
+
+    Args:
+        report_type: Identifier of report to export ('enrollments', 'payments', 'courses').
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        StreamingResponse with text/csv content and attachment filename.
+    """
     from fastapi.responses import Response
     import csv
     import io
@@ -5646,6 +6798,16 @@ def get_student_dashboard_summary(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Aggregates dashboard metrics for the student home page.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Summary dictionary with enrolled_courses, progress_stats, recommendations, and recent notifications.
+    """
     if user.role.upper() != "STUDENT":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -6060,6 +7222,16 @@ def get_admin_dashboard_summary(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Aggregates platform-wide administrator KPIs, user distributions, revenue, and system activity.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Comprehensive system overview dictionary.
+    """
     total_students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).count()
     total_instructors = db.query(UserDB).filter(UserDB.role.in_(["Instructor", "INSTRUCTOR", "instructor"])).count()
     total_courses = db.query(CourseDB).count()
@@ -6186,6 +7358,16 @@ def get_admin_recommendations(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Lists system recommendations with match score filtering and student lookups.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Recommendation entries list.
+    """
     query = db.query(RecommendationDB, UserDB, CourseDB)\
         .join(UserDB, RecommendationDB.student_id == UserDB.id)\
         .join(CourseDB, RecommendationDB.course_id == CourseDB.id)
@@ -6261,6 +7443,16 @@ def get_admin_recommendations_stats(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Returns aggregate recommendation statistics (total generated, average match score).
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Stats dictionary.
+    """
     total_records = db.query(func.count(RecommendationDB.id)).scalar() or 0
     students_with_recs = db.query(func.count(func.distinct(RecommendationDB.student_id))).scalar() or 0
     recommended_courses_count = db.query(func.count(func.distinct(RecommendationDB.course_id))).scalar() or 0
@@ -6288,6 +7480,16 @@ def get_admin_recommendations_analytics(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Returns algorithm accuracy analytics and category distribution charts for recommendations.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Analytics chart datasets.
+    """
     course_stats = db.query(
         CourseDB.id, CourseDB.title, CourseDB.category, CourseDB.level,
         func.count(RecommendationDB.id).label("rec_count"),
@@ -6381,6 +7583,16 @@ def export_admin_recommendations_csv(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Exports recommendation match score ledger in CSV format.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        CSV file response.
+    """
     from fastapi.responses import Response
     import csv
     import io
@@ -6432,6 +7644,17 @@ def get_admin_student_recommendations(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves personalized course recommendation list for a specific student ID.
+
+    Args:
+        student_id: Target student ID.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of recommendations for the student.
+    """
     student = db.query(UserDB).filter(UserDB.id == student_id).first()
     if not student or (student.role or '').capitalize() != "Student":
         raise HTTPException(status_code=404, detail="Student user not found.")
@@ -6478,6 +7701,17 @@ def regenerate_admin_recommendations_for_student(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Forces immediate regeneration of course recommendations for a single student.
+
+    Args:
+        student_id: Target student ID.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Confirmation message and regenerated recommendations count.
+    """
     student = db.query(UserDB).filter(UserDB.id == student_id).first()
     if not student or (student.role or '').capitalize() != "Student":
         raise HTTPException(status_code=404, detail="Student user not found.")
@@ -6496,6 +7730,16 @@ def regenerate_admin_recommendations_all(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Batch regenerates recommendation cache across all active students on the platform.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Batch regeneration completion summary.
+    """
     if payload and payload.student_ids and len(payload.student_ids) > 0:
         students = db.query(UserDB).filter(UserDB.id.in_(payload.student_ids), UserDB.role.in_(["Student", "STUDENT", "student"])).all()
     else:
@@ -6519,6 +7763,17 @@ def get_admin_recommendation_details(
     admin: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves granular score breakdown (content match, skill match, popularity) for a recommendation.
+
+    Args:
+        recommendation_id: Recommendation primary key.
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Detailed recommendation scoring breakdown.
+    """
     rec = db.query(RecommendationDB).filter(RecommendationDB.id == recommendation_id).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Recommendation record not found.")
@@ -6601,6 +7856,16 @@ def get_instructor_dashboard_summary(
     db: Session = Depends(get_db)
 ):
     # Retrieve courses belonging strictly to this authenticated instructor
+    """
+    Aggregates instructor KPI metrics: total students, active courses, gross revenue, and ratings.
+
+    Args:
+        user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Instructor dashboard summary dictionary.
+    """
     courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).all()
     
     # If instructor is newly registered or has no courses yet, courses is empty list
@@ -6733,6 +7998,12 @@ def get_instructor_dashboard_summary(
 @app.post("/auth/logout")
 def auth_logout():
     # Stateless JWT logout acknowledged
+    """
+    Terminates user session and dispatches logout cleanup.
+
+    Returns:
+        Success message.
+    """
     return {"status": "ok", "message": "Successfully logged out"}
 
 @app.get("/instructor/students")
@@ -6743,6 +8014,16 @@ def get_instructor_students(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves student roster across instructor's courses.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of enrolled students with course progress.
+    """
     if course_id:
         courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id, CourseDB.id == course_id).all()
     else:
@@ -6808,6 +8089,16 @@ def get_instructor_reviews(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves student feedback and ratings across instructor's authored courses.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of reviews.
+    """
     courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).all()
     course_ids = [c.id for c in courses]
     course_map = {c.id: c for c in courses}
@@ -6864,6 +8155,16 @@ def get_instructor_analytics(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves enrollment trends, completion rates, and revenue charts for instructor portal.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Analytics chart datasets.
+    """
     courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).all()
     course_ids = [c.id for c in courses]
     
@@ -6956,6 +8257,18 @@ def get_instructor_analytics(
 # ==================================================
 
 def verify_razorpay_signature(order_id: str, payment_id: str, signature: str, secret: str) -> bool:
+    """
+    Verifies HMAC SHA-256 signature for Razorpay checkout transactions.
+
+    Args:
+        order_id: Razorpay order ID.
+        payment_id: Razorpay payment ID.
+        signature: Received signature hash.
+        secret: Razorpay API key secret.
+
+    Returns:
+        True if signature matches computed HMAC, False otherwise.
+    """
     if not order_id or not payment_id or not signature:
         return False
     try:
@@ -6993,6 +8306,17 @@ def create_payment_order(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Initializes a payment order through Razorpay gateway for course enrollment.
+
+    Args:
+        payload: PaymentOrderCreate model containing course_id and payment_method.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Dictionary with order_id, amount, currency, and razorpay key_id.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == payload.course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -7109,6 +8433,20 @@ def verify_payment(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Verifies Razorpay cryptographic signature and activates student course enrollment.
+
+    Args:
+        payload: PaymentVerify model with razorpay_order_id, razorpay_payment_id, and signature.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Payment confirmation dictionary with enrollment status.
+
+    Error handling:
+        Raises HTTP 400 if HMAC signature verification fails.
+    """
     course = db.query(CourseDB).filter(CourseDB.id == payload.course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -7261,6 +8599,17 @@ def record_payment_failed(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Logs a failed payment attempt for auditing and customer support tracking.
+
+    Args:
+        payload: Payment failure details payload.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Failure recording confirmation.
+    """
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     payment = None
     if payload.razorpay_order_id:
@@ -7303,6 +8652,17 @@ def record_payment_cancelled(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Records a user-cancelled payment checkout attempt.
+
+    Args:
+        payload: Cancellation details.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Cancellation acknowledgment.
+    """
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     payment = None
     if payload.razorpay_order_id:
@@ -7323,6 +8683,16 @@ def get_my_payment_history(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves payment transaction history and receipt records for current student.
+
+    Args:
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of payment transactions.
+    """
     payments = db.query(PaymentDB).filter(PaymentDB.user_id == user.id).order_by(PaymentDB.id.desc()).all()
     res = []
     for p in payments:
@@ -7359,6 +8729,17 @@ def get_payment_details(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves full transaction receipt details for a specific payment ID.
+
+    Args:
+        payment_id: Primary key of payment record.
+        current_user: Authenticated student UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        Payment transaction record dictionary.
+    """
     payment = db.query(PaymentDB).filter(PaymentDB.id == payment_id).first()
     if not payment:
         raise HTTPException(status_code=404, detail="Payment record not found")
@@ -7401,6 +8782,16 @@ def get_admin_payments(
     user: UserDB = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    """
+    Retrieves platform-wide transaction ledger for administrative financial auditing.
+
+    Args:
+        user: Authenticated admin UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of all payment transaction records.
+    """
     payments = db.query(PaymentDB).order_by(PaymentDB.id.desc()).all()
     successful = [p for p in payments if p.status == "Successful"]
     failed = [p for p in payments if p.status == "Failed"]
@@ -7441,6 +8832,16 @@ def get_instructor_payments(
     db: Session = Depends(get_db)
 ):
     # Find all courses authored by this instructor
+    """
+    Retrieves earnings and payout history for instructor's authored courses.
+
+    Args:
+        current_user: Authenticated instructor UserDB record.
+        db: Active SQLAlchemy database session.
+
+    Returns:
+        List of payment transaction records attributed to the instructor.
+    """
     my_courses = db.query(CourseDB).filter(CourseDB.instructor_id == user.id).all()
     my_course_ids = [c.id for c in my_courses]
     course_map = {c.id: c.title for c in my_courses}

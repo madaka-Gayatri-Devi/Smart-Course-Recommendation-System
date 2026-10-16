@@ -1,6 +1,19 @@
-/* ========================================================
-   AUTHENTICATION PAGES (Login, Register, Profile Setup)
-======================================================== */
+/* ==============================================================================
+   SMARTLEARN AUTHENTICATION & ONBOARDING STYLES (auth.css)
+   Controls login, registration, password recovery, 2FA modals, and Google OAuth styling.
+   Includes responsive grid splits, floating input labels, and dark-theme tokens.
+============================================================================== */
+
+/* ==========================================
+   BUTTON POINTER EVENTS & BASE RESETS
+   ========================================== */
+.auth-btn *, .google-btn * {
+    pointer-events: none !important;
+}
+
+/* ==========================================
+   AUTH COLOR TOKENS & DESIGN VARIABLES
+   ========================================== */
 :root {
     --primary-purple: #5B3FE8;
     --primary-violet: #8B4AD9;
@@ -12,7 +25,7 @@
     --dark-text: #172033;
     --secondary-text: #64748B;
     --border: #E2E8F0;
-    --gradient-primary: linear-gradient(135deg, #5B3FE8, #8B4AD9, #E83FA5);
+    --gradient-primary: var(--color-gradient-primary);
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 20px; /* Reduced from 24px */
@@ -330,7 +343,7 @@
 .input-wrapper input:focus, .form-control:focus {
     outline: none;
     border-color: var(--primary-purple);
-    box-shadow: 0 0 0 3px rgba(91, 63, 232, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-alpha);
 }
 
 .form-control {
@@ -401,12 +414,12 @@ textarea.form-control {
     background: var(--gradient-primary);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.15); /* Softer */
+    box-shadow: 0 4px 15px var(--color-primary-alpha); /* Softer */
 }
 
 .btn-primary.auth-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(91, 63, 232, 0.25);
+    box-shadow: 0 8px 20px var(--color-primary-alpha);
 }
 
 .btn-google {
@@ -602,7 +615,7 @@ textarea.form-control {
     background: var(--gradient-primary);
     color: var(--white);
     border-color: transparent;
-    box-shadow: 0 4px 10px rgba(91, 63, 232, 0.2);
+    box-shadow: 0 4px 10px var(--color-primary-alpha);
 }
 
 .selected-skills {
@@ -646,7 +659,7 @@ textarea.form-control {
     background: var(--gradient-primary);
     color: var(--white);
     border-color: transparent;
-    box-shadow: 0 4px 15px rgba(91, 63, 232, 0.2);
+    box-shadow: 0 4px 15px var(--color-primary-alpha);
 }
 
 /* Radios */

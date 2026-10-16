@@ -1,3 +1,7 @@
+// ==========================================
+// SMARTLEARN RECOMMENDATIONS CLIENT MODULE
+// Legacy helper module for recommendation views and match score rendering.
+// ==========================================
 /**
  * Dedicated Recommendation Governance & Analytics JavaScript Module
  * Connects frontend view to real backend APIs & RecommendationEngine.

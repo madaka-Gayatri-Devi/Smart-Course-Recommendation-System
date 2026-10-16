@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Communication & Group Management - SmartLearn</title>
@@ -11,8 +14,8 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css?v=20260928_redesign">
-    <link rel="stylesheet" href="../css/dashboard.css?v=20260928_redesign">
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
     <link rel="stylesheet" href="../css/chat.css?v=20260928_redesign">
 </head>
 <body class="dashboard-body">
@@ -70,6 +73,7 @@
                 </div>
                 
                 <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
                     <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
                         <i class="fa-solid fa-bell"></i>
                         <span id="topNotificationBadge" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;"></span>
@@ -185,5 +189,7 @@
     <script src="../js/api.js?v=20260928_redesign"></script>
     <script src="../js/auth.js?v=20260928_redesign"></script>
     <script src="../js/chat.js?v=20260928_redesign"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
+
 </html>

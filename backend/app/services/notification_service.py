@@ -13,7 +13,22 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 
+# ============================================================================
+# DATABASE MODEL & SERVICE DEPENDENCY RESOLVERS
+# ============================================================================
 def _get_models():
+    """
+    Dynamically loads and resolves core SQLAlchemy database models.
+
+    Returns:
+        Tuple of (UserDB, ProfileDB, CourseDB, EnrollmentDB, NotificationDB, AssessmentResultDB).
+
+    Purpose:
+        Decouples notifications from direct module imports, eliminating circular dependency loops.
+
+    Dependencies:
+        app.main / main / backend.app.main.
+    """
     try:
         from app.main import (
             UserDB, ProfileDB, CourseDB, EnrollmentDB,
@@ -34,6 +49,15 @@ def _get_models():
 
 
 def _get_rec_engine():
+    """
+    Dynamically loads and initializes the course recommendation scoring engine.
+
+    Returns:
+        RecommendationEngine instance.
+
+    Purpose:
+        Provides personalized course recommendations for student notification alerts.
+    """
     try:
         from app.recommendation.recommendation_engine import RecommendationEngine
     except ImportError:
@@ -45,6 +69,15 @@ def _get_rec_engine():
 
 
 def _get_email_service():
+    """
+    Dynamically loads the background transactional email dispatch service.
+
+    Returns:
+        EmailService instance.
+
+    Purpose:
+        Supplies outbound email capability for milestone and digest notifications.
+    """
     try:
         from app.services.email_service import EmailService
         import app.services.email_templates as email_templates
@@ -62,14 +95,40 @@ class ConnectionManager:
     """In-memory WebSocket manager tracking active user websocket connections."""
 
     def __init__(self):
+        """
+        Initialize the in-memory WebSocket notification connection manager.
+
+        Purpose:
+            Tracks active user WebSocket connections for immediate real-time toast alerts.
+        """
         self.active_connections: Dict[int, List[WebSocket]] = defaultdict(list)
 
     async def connect(self, user_id: int, websocket: WebSocket):
+        """
+        Register a newly connected WebSocket connection for real-time notifications.
+
+        Args:
+            user_id: Database ID of the connecting user.
+            websocket: Active FastAPI WebSocket instance.
+
+        Returns:
+            None. Accepts socket and records connection.
+        """
         await websocket.accept()
         self.active_connections[user_id].append(websocket)
         print(f"[WebSocket] User {user_id} connected. Total connections for user: {len(self.active_connections[user_id])}")
 
     def disconnect(self, user_id: int, websocket: WebSocket):
+        """
+        Deregister a closed or terminating WebSocket notification connection.
+
+        Args:
+            user_id: Database ID of the disconnecting user.
+            websocket: Closed FastAPI WebSocket instance.
+
+        Returns:
+            None. Prunes inactive connection from tracking dictionary.
+        """
         if websocket in self.active_connections[user_id]:
             self.active_connections[user_id].remove(websocket)
             if not self.active_connections[user_id]:
@@ -77,6 +136,19 @@ class ConnectionManager:
         print(f"[WebSocket] User {user_id} disconnected.")
 
     async def send_personal_message(self, user_id: int, message: dict):
+        """
+        Send a real-time JSON message payload directly to a specific user's connected sockets.
+
+        Args:
+            message: Dictionary containing the notification payload.
+            user_id: Database ID of the target recipient.
+
+        Returns:
+            None. Dispatches payload to all active client sockets for that user.
+
+        Error handling:
+            Prunes failed or disconnected sockets automatically.
+        """
         if user_id in self.active_connections:
             dead_sockets = []
             for websocket in list(self.active_connections[user_id]):
@@ -89,7 +161,22 @@ class ConnectionManager:
                 self.disconnect(user_id, ds)
 
     def push_notification_to_user_sync(self, user_id: int, notification_data: dict):
-        """Helper to send push notifications from synchronous DB operations."""
+        """
+        Thread-safe synchronous bridge for pushing real-time notification alerts via WebSocket.
+
+        Args:
+            user_id: Database ID of the target user.
+            notification_data: Serialized notification dictionary.
+
+        Returns:
+            None.
+
+        Purpose:
+            Allows synchronous database event handlers to broadcast real-time alerts.
+
+        Dependencies:
+            asyncio event loop dispatch, ws_manager.send_personal_message.
+        """
         if user_id in self.active_connections:
             try:
                 try:
@@ -121,6 +208,9 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 
+# ============================================================================
+# NOTIFICATION SERVICE & DISPATCH ENGINE
+# ============================================================================
 class NotificationService:
     """Core Service handling database notification creation, duplicate checks, and push triggers."""
 
@@ -134,7 +224,26 @@ class NotificationService:
         related_course_id: Optional[int] = None,
         reference_id: Optional[str] = None
     ):
-        """Create a new notification record in the database and push via WebSocket."""
+        """
+        Persist a notification to the database and broadcast it in real time.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of recipient user.
+            type: Notification category (e.g., 'SYSTEM', 'RECOMMENDATION', 'MILESTONE', 'ENROLLMENT').
+            title: Short headline or subject string.
+            message: Detailed message body.
+            link: Optional frontend navigation URL for action click.
+
+        Returns:
+            NotificationDB: Persisted notification database record.
+
+        Purpose:
+            Creates database record, triggers real-time WebSocket push, and updates counters.
+
+        Dependencies:
+            NotificationDB, push_notification_to_user_sync.
+        """
         _, _, _, _, _, _, _, NotificationDB = _get_models()
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -173,11 +282,27 @@ class NotificationService:
         ws_manager.push_notification_to_user_sync(user_id, notif_dict)
         return notification
 
+# ----------------------------------------------------------------------------
+# Student Milestone, Recommendation & Enrollment Triggers
+# ----------------------------------------------------------------------------
     @staticmethod
     def generate_personalized_recommendation_notifications(db: Session, user_id: int, db_courses: List[Dict[str, Any]], db_goals: Dict[str, List[str]]):
         """
-        Generate non-duplicate personalized course recommendation notifications for a specific student.
-        Uses RecommendationEngine to identify top matches based on student's profile and sends an email.
+        Generate AI-driven course recommendation notifications tailored to student profile and goals.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the student.
+
+        Returns:
+            int: Number of new recommendation notifications created.
+
+        Purpose:
+            Queries the recommendation engine, filters previously notified courses,
+            and pushes tailored course recommendations with personalized rationale.
+
+        Dependencies:
+            RecommendationEngine, create_notification.
         """
         UserDB, ProfileDB, _, EnrollmentDB, AssessmentAttemptDB, AssessmentDB, _, NotificationDB = _get_models()
         RecommendationEngine = _get_rec_engine()
@@ -297,8 +422,17 @@ class NotificationService:
     @staticmethod
     def notify_eligible_students_for_new_course(db: Session, course_db):
         """
-        When an Instructor or Admin publishes a new course:
-        Evaluate all active students and notify eligible students based on matching interests, skills, or career goals.
+        Broadcast notification to students matching skills or interests when a new course is published.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            course_id: Database ID of the newly published course.
+
+        Returns:
+            int: Count of notified students.
+
+        Purpose:
+            Alerts learners whose career goals or target skills match the newly available course.
         """
         UserDB, ProfileDB, _, _, _, _, _, NotificationDB = _get_models()
 
@@ -362,6 +496,18 @@ class NotificationService:
 
     @staticmethod
     def notify_enrollment_success(db: Session, user_id: int, course_id: int, course_title: str):
+        """
+        Dispatch enrollment confirmation notification and welcome message to student.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the enrolled student.
+            course_title: Title of the course enrolled into.
+            course_id: ID of the course.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         _, _, _, _, _, _, _, NotificationDB = _get_models()
         existing = db.query(NotificationDB).filter(
             NotificationDB.user_id == user_id,
@@ -381,6 +527,19 @@ class NotificationService:
 
     @staticmethod
     def notify_payment_success(db: Session, user_id: int, course_id: int, course_title: str, amount: float, transaction_id: str):
+        """
+        Dispatch payment receipt notification upon verified transaction.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the paying student.
+            amount: Paid currency amount string.
+            course_title: Associated course title.
+            payment_id: Gateway transaction ID.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         NotificationService.create_notification(
             db=db,
             user_id=user_id,
@@ -393,6 +552,19 @@ class NotificationService:
 
     @staticmethod
     def notify_course_progress_milestone(db: Session, user_id: int, course_id: int, progress_pct: int, completed_lessons: int, total_lessons: int):
+        """
+        Trigger celebratory milestone notification (e.g. 25%, 50%, 75%) and milestone email.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the student.
+            course_title: Name of the course.
+            progress_percent: Calculated progress percentage.
+            course_id: Database ID of the course.
+
+        Returns:
+            Optional[NotificationDB]: Created notification record if milestone crossed.
+        """
         UserDB, _, CourseDB, _, _, _, _, NotificationDB = _get_models()
         EmailService, email_templates = _get_email_service()
 
@@ -461,6 +633,18 @@ class NotificationService:
 
     @staticmethod
     def notify_course_completion(db: Session, user_id: int, course_id: int, course_title: str):
+        """
+        Dispatch certificate and completion notifications when a course reaches 100%.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the graduating student.
+            course_title: Name of completed course.
+            course_id: Database ID of the course.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         UserDB, _, _, _, _, _, _, NotificationDB = _get_models()
         EmailService, email_templates = _get_email_service()
 
@@ -514,6 +698,19 @@ class NotificationService:
         recommended_courses: List[Dict[str, Any]],
         assessment_id: Optional[int] = None
     ):
+        """
+        Dispatch congratulations notification and diagnostic study tips when assessment score increases.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the student.
+            skill_name: Name of assessed skill or subject.
+            score: Achieved assessment percentage score.
+            previous_score: Prior recorded percentage score.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         UserDB, _, _, _, _, _, _, NotificationDB = _get_models()
         EmailService, email_templates = _get_email_service()
 
@@ -554,6 +751,17 @@ class NotificationService:
 
     @staticmethod
     def notify_system_welcome(db: Session, user_id: int, full_name: str, role: str = "Student"):
+        """
+        Dispatch initial onboarding notification to freshly registered platform users.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of newly registered user.
+            full_name: User display name.
+
+        Returns:
+            NotificationDB: Welcome notification record.
+        """
         _, _, _, _, _, _, _, NotificationDB = _get_models()
         existing = db.query(NotificationDB).filter(
             NotificationDB.user_id == user_id,
@@ -578,8 +786,23 @@ class NotificationService:
 
     # --- INSTRUCTOR & ADMIN NOTIFICATION TRIGGERS ---
 
+# ----------------------------------------------------------------------------
+# Instructor & Administrator Platform Triggers
+# ----------------------------------------------------------------------------
     @staticmethod
     def notify_instructor_course_published(db: Session, instructor_id: int, course_id: int, course_title: str):
+        """
+        Notify instructor that their course has been reviewed, approved, and published.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            instructor_id: Database ID of the course author.
+            course_title: Title of the published course.
+            course_id: Database ID of the course.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         if not instructor_id:
             return
         NotificationService.create_notification(
@@ -593,6 +816,18 @@ class NotificationService:
 
     @staticmethod
     def notify_instructor_new_enrollment(db: Session, instructor_id: int, student_name: str, course_id: int, course_title: str):
+        """
+        Notify course instructor whenever a new student joins their course.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            instructor_id: Database ID of the instructor.
+            student_name: Full name of enrolled student.
+            course_title: Title of the course.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         if not instructor_id:
             return
         NotificationService.create_notification(
@@ -606,6 +841,18 @@ class NotificationService:
 
     @staticmethod
     def notify_instructor_payment_received(db: Session, instructor_id: int, amount: float, course_id: int, course_title: str):
+        """
+        Notify instructor of new earnings from a course enrollment.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            instructor_id: Database ID of the instructor.
+            amount: Earned payment amount string.
+            course_title: Title of the course purchased.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         if not instructor_id:
             return
         NotificationService.create_notification(
@@ -619,6 +866,19 @@ class NotificationService:
 
     @staticmethod
     def notify_instructor_new_review(db: Session, instructor_id: int, rating: int, student_name: str, course_id: int, course_title: str):
+        """
+        Notify instructor when a student submits a new rating and review for their course.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            instructor_id: Database ID of the instructor.
+            course_title: Name of the reviewed course.
+            rating: Numeric star rating.
+            reviewer_name: Name of reviewing student.
+
+        Returns:
+            NotificationDB: Created notification record.
+        """
         if not instructor_id:
             return
         NotificationService.create_notification(
@@ -632,6 +892,18 @@ class NotificationService:
 
     @staticmethod
     def notify_admin_platform_event(db: Session, title: str, message: str, notification_type: str = "SYSTEM", related_course_id: Optional[int] = None, reference_id: Optional[str] = None):
+        """
+        Send system notification to platform administrators regarding key system events.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            title: Headline of administrative event.
+            message: Details of platform action or metric.
+            link: Optional navigation link to admin view.
+
+        Returns:
+            List[NotificationDB]: Created notifications for all active admin users.
+        """
         UserDB, _, _, _, _, _, _, _ = _get_models()
         admins = db.query(UserDB).filter(UserDB.role.in_(["Admin", "admin", "ADMIN"])).all()
         for admin in admins:
@@ -647,6 +919,16 @@ class NotificationService:
 
     @staticmethod
     def ensure_admin_notifications(db: Session, admin_id: int, full_name: Optional[str] = None):
+        """
+        Verify and initialize default administrative dashboard notifications if empty.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            admin_id: Database ID of admin user.
+
+        Returns:
+            None. Populates baseline admin activity feed.
+        """
         UserDB, _, CourseDB, EnrollmentDB, _, _, _, NotificationDB = _get_models()
         name = full_name or "Administrator"
 
@@ -673,6 +955,16 @@ class NotificationService:
 
     @staticmethod
     def ensure_instructor_notifications(db: Session, instructor_id: int, full_name: Optional[str] = None):
+        """
+        Verify and initialize default instructor dashboard activity notifications if empty.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            instructor_id: Database ID of instructor user.
+
+        Returns:
+            None. Populates baseline instructor activity feed.
+        """
         UserDB, _, CourseDB, EnrollmentDB, _, _, _, NotificationDB = _get_models()
         name = full_name or "Instructor"
 

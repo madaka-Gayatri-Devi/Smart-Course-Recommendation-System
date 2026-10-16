@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learning Path - SmartLearn</title>
@@ -11,8 +14,8 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
 </head>
 <body class="dashboard-body">
 
@@ -72,6 +75,7 @@
             </div>
             
             <div class="topbar-right">
+                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>>
                 <div class="profile-dropdown">
                     <div class="avatar" id="topAvatar">ST</div>
                     <span class="profile-name" id="topName">Student</span>
@@ -141,6 +145,7 @@
 
     <script src="../js/api.js"></script>
     <script src="../js/notifications.js"></script>
+    <script src="../js/chatbot.js"></script>
     <script src="../js/learning-path.js"></script>
 </body>
 </html>

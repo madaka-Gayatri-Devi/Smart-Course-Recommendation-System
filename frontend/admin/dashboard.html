@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - SmartLearn</title>
@@ -11,8 +14,8 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
-    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
     <link rel="stylesheet" href="../css/admin.css?v=20260915_indigo_theme">
 </head>
 <body class="dashboard-body">
@@ -74,6 +77,13 @@
             </div>
             
             <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="theme-control">
+                        <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal data-action="open-theme" aria-label="Theme Settings" aria-haspopup="menu" aria-expanded="false" title="Theme Settings">
+                            <i class="fa-solid fa-palette theme-btn-icon"></i>
+                            <span class="theme-btn-text">Theme</span>
+                            <i class="fa-solid fa-chevron-down theme-btn-arrow"></i>
+                        </button>
+                    </div>
                 <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
                     <i class="fa-solid fa-bell"></i>
                     <span id="topNotificationBadge" style="display: none;"></span>
@@ -355,6 +365,58 @@
                         </div>
                     </div>
 
+                    <!-- Theme & Appearance Customization -->
+                    <div class="smartlearn-theme-section" style="border: 1px solid var(--theme-border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <h4 style="font-size: 14px; margin-bottom: 0.5rem; color: var(--theme-text-primary);"><i class="fa-solid fa-palette" style="color: var(--theme-primary);"></i> Appearance & Theme Customization</h4>
+                        <p style="font-size: 12.5px; color: var(--theme-text-secondary); margin-bottom: 1rem;">Customize interface appearance mode and brand color scheme for your session.</p>
+
+                        <!-- APPEARANCE MODE -->
+                        <div class="theme-group-label" style="font-size: 12px; margin-bottom: 0.5rem;">
+                            <i class="fa-solid fa-sun-moon"></i> APPEARANCE MODE
+                        </div>
+                        <div class="appearance-options-grid" style="margin-bottom: 1rem;">
+                            <button type="button" class="theme-option-card" data-appearance-option="light">
+                                <i class="fa-solid fa-sun" style="color: #F59E0B;"></i>
+                                <span>Light</span>
+                            </button>
+                            <button type="button" class="theme-option-card" data-appearance-option="dark">
+                                <i class="fa-solid fa-moon" style="color: #8B5CF6;"></i>
+                                <span>Dark</span>
+                            </button>
+                            <button type="button" class="theme-option-card" data-appearance-option="system">
+                                <i class="fa-solid fa-desktop" style="color: #3B82F6;"></i>
+                                <span>System</span>
+                            </button>
+                        </div>
+
+                        <!-- COLOR THEME -->
+                        <div class="theme-group-label" style="font-size: 12px; margin-bottom: 0.5rem;">
+                            <i class="fa-solid fa-droplet"></i> COLOR THEME
+                        </div>
+                        <div class="color-options-grid">
+                            <button type="button" class="color-option-card" data-color-option="purple" title="Purple - Default SmartLearn Branding">
+                                <span class="color-dot" style="background: #5B3FE8;"></span>
+                                <span>Purple</span>
+                            </button>
+                            <button type="button" class="color-option-card" data-color-option="pink" title="Pink / Magenta Theme">
+                                <span class="color-dot" style="background: #E83FA5;"></span>
+                                <span>Pink</span>
+                            </button>
+                            <button type="button" class="color-option-card" data-color-option="orange" title="Orange / Amber Theme">
+                                <span class="color-dot" style="background: #F97316;"></span>
+                                <span>Orange</span>
+                            </button>
+                            <button type="button" class="color-option-card" data-color-option="blue" title="Blue Theme">
+                                <span class="color-dot" style="background: #2563EB;"></span>
+                                <span>Blue</span>
+                            </button>
+                            <button type="button" class="color-option-card" data-color-option="green" title="Green / Teal Theme">
+                                <span class="color-dot" style="background: #059669;"></span>
+                                <span>Green</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Admin Change Password Form -->
                     <form id="adminChangePasswordForm">
                         <h4 style="font-size: 13.5px; color: var(--dark-navy); margin-bottom: 0.75rem;"><i class="fa-solid fa-lock mr-1" style="color: #4F46E5;"></i> Change Admin Password</h4>
@@ -378,6 +440,7 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js?v=20260924_banner_fix"></script>
     <script src="../js/notifications.js"></script>
+    <script src="../js/chatbot.js"></script>
     <script src="../js/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {

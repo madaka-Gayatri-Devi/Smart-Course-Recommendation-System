@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSidebarAndLogout();
 });
 
+// ==========================================
+// LEARNER HEADER & KPI METRICS
+// ==========================================
 function renderStudentHeader(user, profile) {
     const fullName = user.full_name || user.name || 'Student';
     const roleName = 'Student';
@@ -75,6 +78,10 @@ function renderStudentHeader(user, profile) {
     }
 }
 
+/**
+ * Renders high-level academic progress indicators (total hours, overall completion %, certificates).
+ * @param {Array<Object>} enrollments - Enrolled course records.
+ */
 function renderProgressSummary(profile, courses, attempts) {
     const enrolledCount = (courses && courses.length) || (profile.courses && profile.courses.length) || 0;
     const completedCourses = courses ? courses.filter(c => c.progress_percentage === 100 || c.status === 'completed').length : 0;
@@ -88,6 +95,13 @@ function renderProgressSummary(profile, courses, attempts) {
     document.getElementById('progHours') && (document.getElementById('progHours').textContent = `${studyHours}h`);
 }
 
+/**
+ * Renders individual course progress cards with detailed lesson completion ratios and resume links.
+ * @param {Array<Object>} enrollments - Student enrollments array.
+ */
+// ==========================================
+// ENROLLED COURSES PROGRESS BREAKDOWN
+// ==========================================
 function renderActiveCourseProgress(courses) {
     const container = document.getElementById('activeCoursesProgressList');
     if (!container) return;
@@ -135,6 +149,10 @@ function renderActiveCourseProgress(courses) {
     }).join('');
 }
 
+/**
+ * Renders recent diagnostic assessment performance trend cards.
+ * @param {Array<Object>} history - Assessment attempt records.
+ */
 function renderAssessmentHistory(attempts) {
     const listEl = document.getElementById('progressAssessmentsList');
     if (!listEl) return;

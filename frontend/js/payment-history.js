@@ -71,7 +71,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusFilter.addEventListener('change', () => renderPaymentsTable());
     }
 
-    function renderPaymentStats() {
+    /**
+ * Renders total expenditure, completed transaction count, and active subscription counters.
+ * @param {Array<Object>} payments - Payment transactions array.
+ */
+// ==========================================
+// PAYMENT METRICS & INVOICE TABLE
+// ==========================================
+function renderPaymentStats() {
         const total = allPayments.length;
         const successful = allPayments.filter(p => (p.status || '').toLowerCase() === 'successful');
         const totalAmountSpent = successful.reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -81,7 +88,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (statSpent) statSpent.textContent = `₹${totalAmountSpent.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
-    function renderPaymentsTable() {
+    /**
+ * Generates formatted invoice records table with payment IDs, dates, course titles, amounts, and receipt buttons.
+ * @param {Array<Object>} payments - Transactions list.
+ */
+function renderPaymentsTable() {
         if (!tableBody) return;
 
         const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
@@ -160,7 +171,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Modal View Handler
-    window.viewPaymentReceiptModal = async function(paymentId) {
+    /**
+ * Opens detailed modal showing official printable tax invoice and transaction receipt.
+ * @param {string|number} paymentId - Unique payment transaction identifier.
+ */
+// ==========================================
+// INVOICE RECEIPT MODAL DIALOG
+// ==========================================
+window.viewPaymentReceiptModal = async function(paymentId) {
         const modal = document.getElementById('paymentDetailsModal');
         const bodyEl = document.getElementById('modalReceiptBody');
         const courseBtn = document.getElementById('modalCourseLinkBtn');
@@ -253,7 +271,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    window.closePaymentDetailsModal = function() {
+    /**
+ * Closes the invoice receipt modal dialog.
+ */
+window.closePaymentDetailsModal = function() {
         const modal = document.getElementById('paymentDetailsModal');
         if (modal) modal.style.display = 'none';
     };

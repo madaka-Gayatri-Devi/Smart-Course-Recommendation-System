@@ -22,7 +22,19 @@ if str(BASE_DIR) not in sys.path:
 load_dotenv(BASE_DIR / ".env")
 
 # --- ENVIRONMENT CONFIG ---
+# ============================================================================
+# ENVIRONMENT CONFIGURATION & MODEL RESOLUTION
+# ============================================================================
 def _clean_env(key: str, default: str = "") -> str:
+    """
+    Sanitize environment variable strings, stripping leading/trailing quotes and whitespace.
+
+    Args:
+        val: Raw string from os.getenv.
+
+    Returns:
+        str: Cleaned configuration string.
+    """
     val = os.getenv(key, default)
     if val:
         val = val.strip().strip('"').strip("'")
@@ -42,6 +54,15 @@ SMTP_TLS = _clean_env("SMTP_TLS", "true").lower() in ["true", "1", "yes"]
 APP_URL = _clean_env("APP_URL", "http://127.0.0.1:8080")
 
 def _get_models():
+    """
+    Dynamically loads and resolves database models used for email delivery and logging.
+
+    Returns:
+        Tuple of (SentEmailLogDB, UserDB, ProfileDB).
+
+    Purpose:
+        Prevents circular dependencies between the email subsystem and database models.
+    """
     try:
         from app.main import UserDB, ProfileDB, EmailLogDB
     except ImportError:
@@ -51,14 +72,28 @@ def _get_models():
             from backend.app.main import UserDB, ProfileDB, EmailLogDB
     return UserDB, ProfileDB, EmailLogDB
 
+# ============================================================================
+# EMAIL SERVICE & TRANSACTIONAL DISPATCH ENGINE
+# ============================================================================
 class EmailService:
     """Core SMTP Email Dispatcher and Duplicate Prevention Manager."""
 
     @staticmethod
     def is_email_configured() -> bool:
-        """Check if SMTP credentials are provided in environment configuration."""
+        """
+        Verify whether outbound SMTP server credentials and endpoints are fully configured.
+
+        Returns:
+            bool: True if SMTP_SERVER, SMTP_PORT, and SMTP_USERNAME are set.
+
+        Purpose:
+            Guards mail dispatch operations to avoid unconfigured socket crashes.
+        """
         return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
 
+# ----------------------------------------------------------------------------
+# Spam Prevention & Preference Verification
+# ----------------------------------------------------------------------------
     @staticmethod
     def is_duplicate_email(
         db: Session,
@@ -68,8 +103,20 @@ class EmailService:
         event_milestone: Optional[str] = None
     ) -> bool:
         """
-        Check if an email of the given type, course_id, and milestone
-        has already been successfully sent to this student.
+        Check if an identical notification was recently dispatched within a rate-limit window.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of recipient user.
+            email_type: Categorical notification type (e.g. 'INACTIVITY', 'MILESTONE').
+            reference_id: Optional entity ID (e.g., course_id) linked to this email.
+            window_hours: Cooldown window duration in hours (default: 24h).
+
+        Returns:
+            bool: True if duplicate email exists within window; False if dispatch is allowed.
+
+        Purpose:
+            Protects users against repetitive notification spam.
         """
         _, _, EmailLogDB = _get_models()
         query = db.query(EmailLogDB).filter(
@@ -87,7 +134,15 @@ class EmailService:
     @staticmethod
     def is_email_preference_enabled(db: Session, user_id: int, preference_key: str) -> bool:
         """
-        Check user notification preferences. Defaults to True if user hasn't explicitly disabled it.
+        Check whether the user has opted in to receive emails for a given notification category.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Target user database ID.
+            email_type: Categorical notification type.
+
+        Returns:
+            bool: True if user preferences permit dispatch, False if opted out.
         """
         _, ProfileDB, _ = _get_models()
         profile = db.query(ProfileDB).filter(ProfileDB.user_id == user_id).first()
@@ -109,7 +164,22 @@ class EmailService:
         event_milestone: Optional[str] = None,
         failure_reason: Optional[str] = None
     ):
-        """Record email delivery status into database log table."""
+        """
+        Record an outbound email attempt into the persistent audit log table.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Recipient user ID.
+            email_type: Categorical notification type.
+            recipient_email: Recipient destination email address.
+            subject: Email subject headline.
+            reference_id: Optional related entity identifier.
+            status: Delivery status string ('SENT' or 'FAILED').
+            error_message: Optional error message trace if failed.
+
+        Returns:
+            SentEmailLogDB: Created log database record.
+        """
         _, _, EmailLogDB = _get_models()
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = EmailLogDB(
@@ -127,6 +197,9 @@ class EmailService:
         db.refresh(log_entry)
         return log_entry
 
+# ----------------------------------------------------------------------------
+# Low-Level SMTP & High-Level Dispatch Logic
+# ----------------------------------------------------------------------------
     @staticmethod
     def send_raw_email(
         to_email: str,
@@ -135,8 +208,25 @@ class EmailService:
         text_content: str
     ) -> bool:
         """
-        Connect to SMTP server and send MIME multipart email.
-        Returns True if successful, raises exception if SMTP fails.
+        Dispatch an email message via SMTP with STARTTLS encryption.
+
+        Args:
+            recipient_email: Destination email address.
+            subject: Email subject text.
+            html_body: Formatted HTML message body.
+            text_body: Plain-text fallback message content.
+
+        Returns:
+            Tuple[bool, Optional[str]]: (success_boolean, error_message_or_none).
+
+        Purpose:
+            Connects to the configured SMTP host, authenticates, and transmits multipart message.
+
+        Dependencies:
+            smtplib.SMTP, email.mime.multipart.MIMEMultipart.
+
+        Error handling:
+            Catches SMTPAuthenticationError, socket timeouts, and SMTPException, returning clean diagnostics.
         """
         if not EmailService.is_email_configured():
             raise ValueError("SMTP credentials (SMTP_USERNAME / SMTP_PASSWORD) are not configured in backend/.env")
@@ -182,11 +272,23 @@ class EmailService:
         preference_key: Optional[str] = None
     ) -> bool:
         """
-        Safely dispatches a personalized email to a specific student:
-        1. Fetches user email from DB.
-        2. Checks email notification preferences.
-        3. Verifies duplicate email prevention.
-        4. Sends email and records log entry in DB.
+        High-level personalized email dispatcher enforcing preferences, spam suppression, and logging.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Recipient user database ID.
+            email_type: Category identifier ('MILESTONE', 'COMPLETION', 'INACTIVITY', 'RECOMMENDATION').
+            subject: Email subject string.
+            html_body: Branded HTML content body.
+            text_body: Plaintext alternative content.
+            reference_id: Optional entity reference ID (e.g. course_id).
+            force: If True, bypasses frequency capping and duplicate checks.
+
+        Returns:
+            dict: Result summary dictionary indicating dispatch status and details.
+
+        Purpose:
+            Coordinates all outbound transactional email workflows for the SmartLearn platform.
         """
         UserDB, _, _ = _get_models()
         user = db.query(UserDB).filter(UserDB.id == user_id).first()

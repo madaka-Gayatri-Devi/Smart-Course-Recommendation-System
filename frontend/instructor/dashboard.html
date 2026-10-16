@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Dashboard - SmartLearn</title>
@@ -11,8 +14,8 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css?v=20260915_indigo_theme">
-    <link rel="stylesheet" href="../css/dashboard.css?v=20260915_indigo_theme">
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
 </head>
 <body class="dashboard-body">
 
@@ -71,6 +74,13 @@
             </div>
             
             <div class="topbar-right" style="display: flex; align-items: center; gap: 1.25rem;">
+                    <div class="theme-control">
+                        <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal data-action="open-theme" aria-label="Theme Settings" aria-haspopup="menu" aria-expanded="false" title="Theme Settings">
+                            <i class="fa-solid fa-palette theme-btn-icon"></i>
+                            <span class="theme-btn-text">Theme</span>
+                            <i class="fa-solid fa-chevron-down theme-btn-arrow"></i>
+                        </button>
+                    </div>
                 <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
                     <i class="fa-solid fa-bell"></i>
                     <span id="topNotificationBadge" style="display: none;"></span>
@@ -234,6 +244,7 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js?v=20260924_banner_fix"></script>
     <script src="../js/notifications.js"></script>
+    <script src="../js/chatbot.js"></script>
     <script src="../js/instructor.js"></script>
 </body>
 </html>

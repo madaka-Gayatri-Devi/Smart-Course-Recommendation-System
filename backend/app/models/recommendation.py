@@ -1,29 +1,26 @@
-"""Recommendation model for SmartLearn."""
-from sqlalchemy import Column, Integer, String, Float, JSON, ForeignKey
-from app.config.database import Base if hasattr(__import__('app.config.database', fromlist=['Base']), 'Base') else None
+"""
+SmartLearn Persistent Recommendation Snapshot Database Model
+Caches personalized course recommendations and match score rationale per student.
+"""
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, JSON
+from sqlalchemy.orm import relationship
 
-# Standalone definition for model imports
 try:
     from app.main import Base
-except Exception:
+except ImportError:
     try:
         from main import Base
-    except Exception:
-        from sqlalchemy.orm import declarative_base
-        Base = declarative_base()
+    except ImportError:
+        from backend.app.main import Base
+
 
 class RecommendationDB(Base):
+    """Stores calculated course recommendations, compatibility scores, and rationale for a user."""
     __tablename__ = "recommendations"
+
     id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("users.id"), index=True)
-    course_id = Column(Integer, ForeignKey("courses.id"), index=True)
-    recommendation_score = Column(Float, default=0.0)
-    scores_breakdown = Column(JSON, nullable=True)
-    recommendation_reason = Column(String, nullable=True)
-    matching_skills = Column(JSON, nullable=True)
-    missing_skills = Column(JSON, nullable=True)
-    matching_interests = Column(JSON, nullable=True)
-    matching_career_goals = Column(JSON, nullable=True)
-    status = Column(String, default="Recommended")  # Recommended, Viewed, Wishlisted, Enrolled, Completed, Dismissed
-    generated_at = Column(String, nullable=True)
-    updated_at = Column(String, nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False, index=True)
+    score = Column(Float, nullable=False)
+    reasons = Column(JSON, nullable=True)
+    created_at = Column(String(50), nullable=True)

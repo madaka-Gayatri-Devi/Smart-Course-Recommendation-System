@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Theme Manager & Core API/Auth -->
+    <script src="js/theme.js?v=20261008_v9"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SmartLearn</title>
@@ -11,7 +16,7 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20261008_v9">
     <link rel="stylesheet" href="css/auth.css">
 </head>
 <body class="auth-page">
@@ -65,7 +70,7 @@
                         <p>Log in to continue your learning journey.</p>
                     </div>
 
-                    <form id="loginForm" class="auth-form" novalidate>
+                    <form id="loginForm" class="auth-form" novalidate onsubmit="event.preventDefault(); if(window.SmartLearnAuth && window.SmartLearnAuth.handleLoginSubmit){ window.SmartLearnAuth.handleLoginSubmit(event); }">
                         <div class="form-group">
                             <label for="loginEmail">Email Address</label>
                             <div class="input-wrapper">
@@ -94,7 +99,7 @@
                             <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary auth-btn" id="loginSubmitBtn">Log In</button>
+                        <button type="button" class="btn btn-primary auth-btn" id="loginSubmitBtn" onclick="event.preventDefault(); if(window.SmartLearnAuth && window.SmartLearnAuth.handleLoginSubmit){ window.SmartLearnAuth.handleLoginSubmit(event); }">Log In</button>
 
                         <div class="auth-divider" style="display: flex; align-items: center; margin: 1.25rem 0; color: #888; font-size: 0.85rem;">
                             <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
@@ -102,7 +107,7 @@
                             <span style="flex: 1; border-bottom: 1px solid #e2e8f0;"></span>
                         </div>
 
-                        <button type="button" class="btn btn-secondary auth-btn google-btn" id="googleLoginBtn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; font-weight: 600; padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                        <button type="button" class="btn btn-secondary auth-btn google-btn" id="googleLoginBtn" onclick="event.preventDefault(); if(window.SmartLearnAuth && window.SmartLearnAuth.handleGoogleLogin){ window.SmartLearnAuth.handleGoogleLogin(event); }" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background-color: #ffffff; color: #374151; border: 1px solid #d1d5db; font-weight: 600; padding: 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
                             <i class="fa-brands fa-google" style="color: #4285F4; font-size: 1.1rem;"></i>
                             <span>Continue with Google</span>
                         </button>

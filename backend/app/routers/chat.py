@@ -53,7 +53,16 @@ except ImportError:
 router = APIRouter(prefix="/chat", tags=["Chat & Communication"])
 
 
+# ============================================================================
+# AUTHENTICATION & DATABASE DEPENDENCY INJECTION
+# ============================================================================
 def _get_main_deps():
+    """
+    Dynamically resolves get_db and get_current_user dependencies from core application.
+
+    Returns:
+        Tuple of (get_db, get_current_user).
+    """
     try:
         from app.main import get_db, get_current_user, UserDB, SessionLocal, SECRET_KEY, ALGORITHM, BASE_DIR
     except ImportError:
@@ -65,6 +74,12 @@ def _get_main_deps():
 
 
 def get_db_session():
+    """
+    FastAPI dependency providing an active SQLAlchemy database session.
+
+    Yields:
+        Session: Active database session.
+    """
     get_db, _, _, SessionLocal, _, _, _ = _get_main_deps()
     db = SessionLocal()
     try:
@@ -74,17 +89,35 @@ def get_db_session():
 
 
 def authenticate_user(token: Optional[str] = Query(None), authorization: Optional[str] = Header(None), db: Session = Depends(get_db_session)):
+    """
+    FastAPI dependency verifying JWT Bearer token and retrieving authenticated user record.
+
+    Returns:
+        UserDB: Authenticated user database model instance.
+
+    Error handling:
+        Raises HTTPException(401) if token is invalid or user record not found.
+    """
     _, get_current_user_fn, _, _, _, _, _ = _get_main_deps()
     return get_current_user_fn(token=token, authorization=authorization, db=db)
 
 
 # --- CONVERSATIONS ---
 
+# ============================================================================
+# CONVERSATION MANAGEMENT ENDPOINTS
+# ============================================================================
 @router.get("/conversations", response_model=List[ConversationResponse])
 def list_user_conversations(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations - Retrieve all active chat conversations for the authenticated user.
+
+    Returns:
+        List[ConversationResponse]: Sorted list of conversations with unread counts and recent messages.
+    """
     return ChatService.get_user_conversations(db, user)
 
 
@@ -94,6 +127,18 @@ def create_or_get_conversation(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations - Initialize or retrieve a direct, self, or group conversation.
+
+    Args:
+        payload: ConversationCreate request body (type, target_user_id, course_id, group_name).
+
+    Returns:
+        ConversationResponse: Details of created or retrieved conversation.
+
+    Error handling:
+        Raises HTTPException(400) if messaging permission is denied.
+    """
     if payload.type == "PERSONAL":
         if not payload.target_user_id:
             raise HTTPException(status_code=400, detail="Target user ID required for personal chat.")
@@ -150,6 +195,18 @@ def get_conversation_details(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations/{conversation_id} - Retrieve metadata for a specific conversation.
+
+    Args:
+        conversation_id: Unique database identifier of the conversation.
+
+    Returns:
+        ConversationResponse: Conversation metadata and participants.
+
+    Error handling:
+        Raises HTTPException(403) if user is not a participant, or 404 if not found.
+    """
     if not ChatService.can_access_conversation(db, user, conversation_id):
         raise HTTPException(status_code=403, detail="Access denied.")
     convs = ChatService.get_user_conversations(db, user)
@@ -166,6 +223,12 @@ def get_conversation_shared_content(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations/{conversation_id}/shared-content - Retrieve shared media, documents, and links.
+
+    Returns:
+        SharedContentResponse: Categorized media items, documents, and extracted links.
+    """
     try:
         return ChatService.get_shared_content(db, user, conversation_id, q=q)
     except PermissionError as pe:
@@ -178,6 +241,12 @@ def get_conversation_contact_info(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations/{conversation_id}/contact-info - Retrieve contact details of conversation partner.
+
+    Returns:
+        ContactInfoResponse: Profile summary, role, mutual courses, and availability.
+    """
     try:
         return ChatService.get_contact_info(db, user, conversation_id)
     except PermissionError as pe:
@@ -192,6 +261,12 @@ def clear_conversation_history(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/clear - Clear message history for the requesting user.
+
+    Returns:
+        dict: Success status message.
+    """
     try:
         return ChatService.clear_conversation_messages(db, user, conversation_id)
     except PermissionError as pe:
@@ -204,6 +279,12 @@ def leave_or_archive_conversation(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/leave - Leave a group or archive a chat conversation.
+
+    Returns:
+        dict: Confirmation status.
+    """
     if not ChatService.can_access_conversation(db, user, conversation_id):
         raise HTTPException(status_code=403, detail="Access denied.")
 
@@ -221,6 +302,9 @@ def leave_or_archive_conversation(
 
 # --- MESSAGES ---
 
+# ============================================================================
+# MESSAGE CRUD, REACTIONS & FORWARDING ENDPOINTS
+# ============================================================================
 @router.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
 def get_messages(
     conversation_id: int,
@@ -229,6 +313,17 @@ def get_messages(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations/{conversation_id}/messages - Retrieve paginated chronological message history.
+
+    Args:
+        conversation_id: Target conversation ID.
+        limit: Max number of messages (default: 50).
+        before_id: Optional pagination cursor message ID.
+
+    Returns:
+        List[MessageResponse]: Message records with attachments, reactions, and forward metadata.
+    """
     try:
         return ChatService.get_messages(db, user, conversation_id, limit=limit, before_id=before_id)
     except PermissionError as pe:
@@ -241,6 +336,16 @@ def send_message(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/messages - Send a new message within a conversation.
+
+    Args:
+        conversation_id: Target conversation ID.
+        payload: MessageCreate request body (content, reply_to_id, attachments).
+
+    Returns:
+        MessageResponse: Created message record.
+    """
     if not payload.content and not payload.attachment_ids:
         raise HTTPException(status_code=400, detail="Message must contain text content or attachments.")
 
@@ -266,6 +371,16 @@ def edit_message(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint PUT /messages/{message_id} - Edit the text content of a previously sent message.
+
+    Args:
+        message_id: ID of the message to update.
+        payload: MessageEdit request body.
+
+    Returns:
+        MessageResponse: Updated message record.
+    """
     if not payload.content.strip():
         raise HTTPException(status_code=400, detail="Content cannot be empty.")
     try:
@@ -283,6 +398,16 @@ def delete_message(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint DELETE /messages/{message_id} - Delete a message for requesting user or everyone.
+
+    Args:
+        message_id: ID of the message to delete.
+        for_everyone: Boolean flag indicating global deletion.
+
+    Returns:
+        dict: Deletion confirmation status.
+    """
     try:
         ChatService.delete_message(db, user, message_id, for_everyone=for_everyone)
         return {"status": "success", "message": "Message deleted."}
@@ -298,6 +423,12 @@ def delete_message_for_me(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /messages/{message_id}/delete-for-me - Hide message view for requesting user only.
+
+    Returns:
+        dict: Confirmation status.
+    """
     try:
         ChatService.delete_message(db, user, message_id, for_everyone=False)
         return {"status": "success", "message": "Message deleted for me."}
@@ -313,6 +444,12 @@ def delete_message_for_everyone(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /messages/{message_id}/delete-for-everyone - Soft-delete message globally for all members.
+
+    Returns:
+        dict: Confirmation status.
+    """
     try:
         ChatService.delete_message(db, user, message_id, for_everyone=True)
         return {"status": "success", "message": "Message deleted for everyone."}
@@ -329,12 +466,74 @@ def toggle_reaction(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /messages/{message_id}/reactions - Add or remove an emoji reaction on a message.
+
+    Args:
+        message_id: ID of target message.
+        payload: ReactionToggle request body (emoji).
+
+    Returns:
+        dict: Updated emoji reaction counts and participant statuses.
+    """
     allowed_emojis = ["👍", "❤️", "😂", "😮", "😢", "👏", "🔥", "🎉"]
     if payload.emoji not in allowed_emojis:
         raise HTTPException(status_code=400, detail="Unsupported emoji reaction.")
     try:
         ChatService.toggle_reaction(db, user, message_id, payload.emoji)
         return {"status": "success"}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/forward-targets")
+def get_forward_targets(
+    user=Depends(authenticate_user),
+    db: Session = Depends(get_db_session)
+):
+    """
+    Endpoint GET /forward-targets - Retrieve list of conversations and contacts eligible for forwarding.
+
+    Returns:
+        dict: Grouped recipients (recent chats, allowed direct contacts, groups).
+    """
+    try:
+        return ChatService.get_forward_targets(db, user)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/messages/forward")
+def batch_forward_messages(
+    payload: ForwardMessagePayload,
+    user=Depends(authenticate_user),
+    db: Session = Depends(get_db_session)
+):
+    """
+    Endpoint POST /messages/batch-forward - Forward multiple messages simultaneously to multiple target conversations.
+
+    Args:
+        payload: BatchForwardRequest (message_ids, target_conversation_ids).
+
+    Returns:
+        dict: Forwarding operation result metrics.
+    """
+    if not payload.target_conversation_ids and not getattr(payload, "target_user_ids", None):
+        raise HTTPException(status_code=400, detail="At least one target conversation or user required.")
+    if not payload.message_ids:
+        raise HTTPException(status_code=400, detail="Message IDs required for forwarding.")
+
+    try:
+        result = ChatService.forward_message(
+            db=db,
+            current_user=user,
+            target_conversation_ids=payload.target_conversation_ids,
+            target_user_ids=getattr(payload, "target_user_ids", None),
+            message_ids=payload.message_ids
+        )
+        return result
     except PermissionError as pe:
         raise HTTPException(status_code=403, detail=str(pe))
     except ValueError as ve:
@@ -348,11 +547,33 @@ def forward_message(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
-    if not payload.target_conversation_ids:
-        raise HTTPException(status_code=400, detail="Target conversation IDs required.")
+    """
+    Endpoint POST /messages/{message_id}/forward - Forward a single message to target conversations.
+
+    Args:
+        message_id: ID of the message to forward.
+        payload: ForwardRequest (target_conversation_ids).
+
+    Returns:
+        List[MessageResponse]: Newly created forwarded message records.
+    """
+    if not payload.target_conversation_ids and not getattr(payload, "target_user_ids", None):
+        raise HTTPException(status_code=400, detail="Target conversation or user IDs required.")
+
+    msg_ids = payload.message_ids or [message_id]
+
     try:
-        ChatService.forward_message(db, user, message_id, payload.target_conversation_ids)
-        return {"status": "success", "message": "Message forwarded successfully."}
+        result = ChatService.forward_message(
+            db=db,
+            current_user=user,
+            message_id=message_id,
+            target_conversation_ids=payload.target_conversation_ids,
+            target_user_ids=getattr(payload, "target_user_ids", None),
+            message_ids=msg_ids
+        )
+        return result
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
 
@@ -363,6 +584,12 @@ def mark_conversation_read(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/read - Mark conversation as read to clear unread counters.
+
+    Returns:
+        dict: Success status.
+    """
     if not ChatService.can_access_conversation(db, user, conversation_id):
         raise HTTPException(status_code=403, detail="Access denied.")
     ChatService.mark_conversation_read(db, user, conversation_id)
@@ -370,11 +597,18 @@ def mark_conversation_read(
 
 
 @router.get("/conversations/{group_id}/members")
+@router.get("/groups/{group_id}/members")
 def get_group_members(
     group_id: int,
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /conversations/{conversation_id}/members - Retrieve participant roster for a group chat.
+
+    Returns:
+        dict: Member list with roles, avatars, and online status.
+    """
     try:
         return ChatService.get_group_members(db, user, group_id)
     except PermissionError as pe:
@@ -383,14 +617,30 @@ def get_group_members(
         raise HTTPException(status_code=404, detail=str(ve))
 
 
+
 # --- FILE UPLOADS & ATTACHMENTS ---
 
+# ============================================================================
+# FILE ATTACHMENTS & SEARCH ENDPOINTS
+# ============================================================================
 @router.post("/upload", response_model=MessageAttachmentSchema)
 async def upload_chat_file(
     file: UploadFile = File(...),
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /upload - Upload a file attachment for chat messages (images, PDFs, documents).
+
+    Args:
+        file: Uploaded file multipart payload.
+
+    Returns:
+        dict: Attachment metadata (file_url, file_name, file_size, file_type).
+
+    Error handling:
+        Validates file extensions and size limit (max 25MB). Raises HTTPException(400) on violations.
+    """
     _, _, _, _, _, _, BASE_DIR = _get_main_deps()
 
     # Safe validation
@@ -456,6 +706,15 @@ def download_chat_file(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /attachments/{attachment_id}/download - Stream a secure attachment file to authorized users.
+
+    Args:
+        attachment_id: ID of the attachment record.
+
+    Returns:
+        FileResponse: File stream with proper Content-Disposition header.
+    """
     _, get_current_user_fn, _, _, _, _, BASE_DIR = _get_main_deps()
     user = get_current_user_fn(token=token, authorization=authorization, db=db)
 
@@ -491,6 +750,12 @@ def get_allowed_contacts(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /allowed-contacts - Retrieve role-filtered list of users that can be direct messaged.
+
+    Returns:
+        List[AllowedContact]: Catalog of eligible messaging contacts.
+    """
     return ChatService.get_allowed_contacts(db, user)
 
 
@@ -500,6 +765,12 @@ def toggle_pin_conversation(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/pin - Pin or unpin a conversation to top of inbox.
+
+    Returns:
+        dict: Updated pin status.
+    """
     mem = db.query(ConversationMemberDB).filter(
         ConversationMemberDB.conversation_id == conversation_id,
         ConversationMemberDB.user_id == user.id
@@ -519,6 +790,12 @@ def toggle_mute_conversation(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint POST /conversations/{conversation_id}/mute - Mute or unmute notification sounds for a conversation.
+
+    Returns:
+        dict: Updated mute status.
+    """
     mem = db.query(ConversationMemberDB).filter(
         ConversationMemberDB.conversation_id == conversation_id,
         ConversationMemberDB.user_id == user.id
@@ -538,6 +815,15 @@ def search_chat(
     user=Depends(authenticate_user),
     db: Session = Depends(get_db_session)
 ):
+    """
+    Endpoint GET /search - Search messages and conversation titles matching query string.
+
+    Args:
+        q: Search query keyword string.
+
+    Returns:
+        dict: Search results grouped by messages and conversations.
+    """
     query_str = f"%{q.strip()}%"
 
     # User's accessible conversations
@@ -586,6 +872,16 @@ def search_chat(
 
 @router.websocket("/ws")
 async def websocket_chat_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
+    """
+    WebSocket endpoint /ws/{user_id} - Real-time bidirectional messaging and presence connection.
+
+    Args:
+        websocket: FastAPI WebSocket instance.
+        user_id: ID of connecting user.
+
+    Purpose:
+        Handles instant message delivery, typing indicators, read receipts, and presence updates.
+    """
     if not token:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return

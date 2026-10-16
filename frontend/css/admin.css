@@ -1,4 +1,12 @@
-/* Admin Command Center Specialized Styles */
+/* ==============================================================================
+   SMARTLEARN ADMINISTRATOR COMMAND CENTER STYLES (admin.css)
+   Controls platform KPI cards, moderation queues, user tables, and analytical charts.
+   Provides dedicated high-contrast slate theme tokens and responsive data tables.
+============================================================================== */
+
+/* ==========================================
+   ADMIN THEME COLOR TOKENS & SYSTEM VARIABLES
+   ========================================== */
 :root {
   --admin-primary: #0f172a;
   --admin-primary-accent: #2563eb;

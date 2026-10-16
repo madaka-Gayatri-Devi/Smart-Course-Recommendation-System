@@ -11,6 +11,13 @@ let activeFirebaseConfig = {
     appId: "1:102938475610:web:abc123def456789"
 };
 
+/**
+ * Fetches Firebase client credentials dynamically from the backend configuration endpoint.
+ * @returns {Promise<Object|null>} Firebase configuration object.
+ */
+// ==========================================
+// FIREBASE CLIENT CONFIGURATION & GOOGLE SIGN-IN
+// ==========================================
 async function loadFirebaseConfigFromBackend() {
     try {
         const apiUrl = (window.api && window.api.API_URL) ? window.api.API_URL : "http://127.0.0.1:8080";
@@ -24,6 +31,10 @@ async function loadFirebaseConfigFromBackend() {
     } catch (_) {}
 }
 
+/**
+ * Initializes client-side Firebase application instance for Google OAuth sign-in.
+ * @returns {Promise<boolean>} True if Firebase initialized successfully, False otherwise.
+ */
 async function initFirebase() {
     if (typeof firebase !== 'undefined' && firebase.apps && !firebase.apps.length) {
         await loadFirebaseConfigFromBackend();
@@ -42,6 +53,10 @@ async function initFirebase() {
     }
 }
 
+/**
+ * Triggers Google Sign-In popup via Firebase Authentication and verifies token with backend.
+ * @returns {Promise<Object>} Decoded user credential payload from backend verification.
+ */
 async function signInWithGooglePopup() {
     if (typeof firebase === 'undefined' || !firebase.auth) {
         throw new Error("Firebase Auth SDK is loading. Please check your internet connection.");

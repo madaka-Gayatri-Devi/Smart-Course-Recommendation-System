@@ -44,7 +44,29 @@ except ImportError:
 
 
 
+# ============================================================================
+# ASYNC DISPATCH & ORM MODEL HELPERS
+# ============================================================================
 def safe_dispatch_coroutine(coro):
+    """
+    Safely dispatches an asynchronous coroutine from either sync or async context.
+
+    Args:
+        coro: The async coroutine object to execute.
+
+    Returns:
+        None. Dispatches execution to the event loop.
+
+    Purpose:
+        Enables synchronous database handlers to trigger real-time WebSocket broadcasts
+        without blocking request execution or failing if no loop is running.
+
+    Dependencies:
+        asyncio.get_running_loop, asyncio.new_event_loop.
+
+    Error handling:
+        Catches and logs any dispatch warnings without interrupting caller execution.
+    """
     try:
         try:
             loop = asyncio.get_running_loop()
@@ -62,6 +84,21 @@ def safe_dispatch_coroutine(coro):
 
 
 def _get_core_models():
+    """
+    Dynamically imports and retrieves core SQLAlchemy ORM models.
+
+    Returns:
+        Tuple of (UserDB, ProfileDB, CourseDB, EnrollmentDB).
+
+    Purpose:
+        Prevents circular import dependencies between chat services and core database models.
+
+    Dependencies:
+        app.main / main / backend.app.main.
+
+    Error handling:
+        Falls back across various relative and absolute package import paths.
+    """
     try:
         from app.main import UserDB, ProfileDB, CourseDB, EnrollmentDB
     except ImportError:
@@ -72,14 +109,42 @@ def _get_core_models():
     return UserDB, ProfileDB, CourseDB, EnrollmentDB
 
 
+# ============================================================================
+# REAL-TIME WEBSOCKET CONNECTION & EVENT BROADCASTER
+# ============================================================================
 class ChatWebSocketManager:
     """Manages WebSocket connections and real-time event routing for chat."""
 
     def __init__(self):
+        """
+        Initialize the WebSocket connection manager.
+
+        Purpose:
+            Maintains the registry of active WebSocket sockets and online user states.
+        """
         self.active_connections: Dict[int, List[WebSocket]] = defaultdict(list)
         self.online_users: Set[int] = set()
 
     async def connect(self, user_id: int, websocket: WebSocket):
+        """
+        Register an incoming WebSocket connection for an authenticated user.
+
+        Args:
+            user_id: Unique database ID of the user connecting.
+            websocket: Active FastAPI WebSocket instance.
+
+        Returns:
+            None. Accepts the connection and updates active tracking.
+
+        Purpose:
+            Registers new socket instances and broadcasts online presence to connected peers.
+
+        Dependencies:
+            self.broadcast_presence, self.active_connections.
+
+        Error handling:
+            Propagates connection handshake exceptions to caller.
+        """
         await websocket.accept()
         self.active_connections[user_id].append(websocket)
         self.online_users.add(user_id)
@@ -87,6 +152,22 @@ class ChatWebSocketManager:
         await self.broadcast_presence(user_id, is_online=True)
 
     def disconnect(self, user_id: int, websocket: WebSocket):
+        """
+        Deregister a terminating WebSocket connection.
+
+        Args:
+            user_id: Unique database ID of the user disconnecting.
+            websocket: Terminating FastAPI WebSocket instance.
+
+        Returns:
+            None. Removes socket and broadcasts offline presence if no active connections remain.
+
+        Purpose:
+            Cleans up dead socket handles and manages real-time user presence state.
+
+        Dependencies:
+            self.broadcast_presence, safe_dispatch_coroutine.
+        """
         if websocket in self.active_connections[user_id]:
             self.active_connections[user_id].remove(websocket)
             if not self.active_connections[user_id]:
@@ -96,9 +177,37 @@ class ChatWebSocketManager:
                 safe_dispatch_coroutine(self.broadcast_presence(user_id, is_online=False))
 
     def is_user_online(self, user_id: int) -> bool:
+        """
+        Check whether a specific user currently has an active WebSocket session.
+
+        Args:
+            user_id: Unique database ID of the target user.
+
+        Returns:
+            bool: True if user has at least one active socket connection, False otherwise.
+        """
         return user_id in self.online_users and len(self.active_connections.get(user_id, [])) > 0
 
     async def broadcast_to_users(self, user_ids: List[int], event_payload: dict):
+        """
+        Broadcast a real-time JSON event payload to a list of target user IDs.
+
+        Args:
+            user_ids: List of target user database IDs to receive the payload.
+            event_payload: Dictionary containing the event type and message data.
+
+        Returns:
+            None. Dispatches messages asynchronously.
+
+        Purpose:
+            Delivers instant message alerts, read receipts, and status updates to online users.
+
+        Dependencies:
+            WebSocket.send_json, self.disconnect.
+
+        Error handling:
+            Detects dead or disconnected sockets, automatically pruning them from the pool.
+        """
         for uid in user_ids:
             if uid in self.active_connections:
                 dead_sockets = []
@@ -112,6 +221,19 @@ class ChatWebSocketManager:
                     self.disconnect(uid, ds)
 
     async def broadcast_presence(self, user_id: int, is_online: bool):
+        """
+        Broadcast user online/offline status transition to all connected peers.
+
+        Args:
+            user_id: Database ID of the user whose status changed.
+            is_online: Boolean flag indicating online (True) or offline (False) status.
+
+        Returns:
+            None.
+
+        Purpose:
+            Keeps peer contact lists and conversation headers updated with live availability.
+        """
         payload = {
             "type": "USER_PRESENCE",
             "data": {
@@ -124,6 +246,22 @@ class ChatWebSocketManager:
         await self.broadcast_to_users(all_connected, payload)
 
     async def send_typing_indicator(self, conversation_id: int, member_user_ids: List[int], sender_id: int, sender_name: str, is_typing: bool):
+        """
+        Broadcast a typing indicator status event to conversation participants.
+
+        Args:
+            conversation_id: ID of the active conversation.
+            member_user_ids: List of participant user IDs.
+            sender_id: ID of the user who is typing.
+            sender_name: Display name of the typing user.
+            is_typing: Boolean flag indicating typing activity state.
+
+        Returns:
+            None.
+
+        Purpose:
+            Provides real-time feedback when a peer starts or stops typing.
+        """
         recipients = [uid for uid in member_user_ids if uid != sender_id]
         payload = {
             "type": "TYPING_STATUS",
@@ -140,14 +278,44 @@ class ChatWebSocketManager:
 chat_ws_manager = ChatWebSocketManager()
 
 
+# ============================================================================
+# CORE CHAT SERVICE & BUSINESS LOGIC
+# ============================================================================
 class ChatService:
     @staticmethod
     def now_str() -> str:
+        """
+        Get current UTC timestamp formatted as an ISO standard string (YYYY-MM-DD HH:MM:SS).
+
+        Returns:
+            str: UTC timestamp string.
+        """
         return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
+# ----------------------------------------------------------------------------
+# Access Control & Group Membership Management
+# ----------------------------------------------------------------------------
     @staticmethod
     def ensure_course_groups(db: Session):
-        """Auto-create course group conversations for all published/existing courses and auto-enroll members."""
+        """
+        Auto-create course group conversations for all published/existing courses and auto-enroll members.
+
+        Args:
+            db: Active SQLAlchemy database session.
+
+        Returns:
+            None. Synchronizes database conversation groups.
+
+        Purpose:
+            Ensures every course has a corresponding COURSE_GROUP conversation with instructors,
+            enrolled students, and system administrators as members.
+
+        Dependencies:
+            CourseDB, EnrollmentDB, ConversationDB, ConversationMemberDB.
+
+        Error handling:
+            Logs group synchronization errors and allows database transaction management.
+        """
         UserDB, _, CourseDB, EnrollmentDB = _get_core_models()
         now_str = ChatService.now_str()
 
@@ -207,6 +375,8 @@ class ChatService:
             # Ensure Enrolled Students are members
             enrollments = db.query(EnrollmentDB).filter(EnrollmentDB.course_id == course.id).all()
             for enr in enrollments:
+                if enr.user_id == course.instructor_id or enr.user_id in admin_ids:
+                    continue
                 st_mem = db.query(ConversationMemberDB).filter(
                     ConversationMemberDB.conversation_id == conv.id,
                     ConversationMemberDB.user_id == enr.user_id
@@ -219,11 +389,28 @@ class ChatService:
                         joined_at=now_str
                     ))
 
+
         db.commit()
 
     @staticmethod
     def sync_student_enrollment_group(db: Session, user_id: int, course_id: int):
-        """Called when a student enrolls in a course."""
+        """
+        Add a student to the course chat group upon course enrollment.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            student_id: Database ID of the enrolling student.
+            course_id: Database ID of the enrolled course.
+
+        Returns:
+            None.
+
+        Purpose:
+            Maintains group membership consistency whenever a student enrolls in a course.
+
+        Dependencies:
+            ConversationDB, ConversationMemberDB, EnrollmentDB.
+        """
         UserDB, _, CourseDB, _ = _get_core_models()
         now_str = ChatService.now_str()
 
@@ -266,7 +453,27 @@ class ChatService:
 
     @staticmethod
     def can_user_message_target(db: Session, current_user, target_user) -> bool:
-        """Strict backend permission verification for 1-on-1 chats."""
+        """
+        Verify role-based messaging permissions between two users.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: ID of the requesting user.
+            user_role: Role of the requesting user ('Student', 'Instructor', 'Admin').
+            target_user_id: ID of the intended recipient.
+
+        Returns:
+            Tuple[bool, str]: (is_allowed, reason_message).
+
+        Purpose:
+            Enforces platform communication policies:
+            - Admins can message anyone.
+            - Instructors can message enrolled students and admins.
+            - Students can only message instructors of courses they are enrolled in, and admins.
+
+        Dependencies:
+            EnrollmentDB, CourseDB, UserDB.
+        """
         UserDB, _, CourseDB, EnrollmentDB = _get_core_models()
         my_role = (current_user.role or "").upper()
         target_role = (target_user.role or "").upper()
@@ -289,33 +496,91 @@ class ChatService:
             ).count()
             return enr_count > 0
 
-        # Student messaging Student: MUST share at least one active course enrollment
+        # Student messaging Student: MUST share at least one active course enrollment OR common group
         if my_role == "STUDENT" and target_role == "STUDENT":
             my_enrollments = db.query(EnrollmentDB.course_id).filter(EnrollmentDB.user_id == current_user.id).all()
             my_cids = set([e[0] for e in my_enrollments])
-            if not my_cids:
-                return False
-            target_enrollments = db.query(EnrollmentDB.course_id).filter(EnrollmentDB.user_id == target_user.id).all()
-            target_cids = set([e[0] for e in target_enrollments])
-            return len(my_cids.intersection(target_cids)) > 0
+            if my_cids:
+                target_enrollments = db.query(EnrollmentDB.course_id).filter(EnrollmentDB.user_id == target_user.id).all()
+                target_cids = set([e[0] for e in target_enrollments])
+                if len(my_cids.intersection(target_cids)) > 0:
+                    return True
+
+            # Also verify if they share any common group conversation
+            shared_group = db.query(ConversationMemberDB.conversation_id).filter(
+                ConversationMemberDB.user_id == current_user.id
+            ).filter(
+                ConversationMemberDB.conversation_id.in_(
+                    db.query(ConversationMemberDB.conversation_id).filter(
+                        ConversationMemberDB.user_id == target_user.id
+                    )
+                )
+            ).first()
+            if shared_group:
+                return True
+
+            return False
 
         # Instructor messaging Student: instructor MUST teach at least one course the student is enrolled in
         if my_role == "INSTRUCTOR" and target_role == "STUDENT":
             my_courses = db.query(CourseDB.id).filter(CourseDB.instructor_id == current_user.id).all()
             my_course_ids = [c[0] for c in my_courses]
-            if not my_course_ids:
-                return False
-            enr_count = db.query(EnrollmentDB).filter(
-                EnrollmentDB.user_id == target_user.id,
-                EnrollmentDB.course_id.in_(my_course_ids)
-            ).count()
-            return enr_count > 0
+            if my_course_ids:
+                enr_count = db.query(EnrollmentDB).filter(
+                    EnrollmentDB.user_id == target_user.id,
+                    EnrollmentDB.course_id.in_(my_course_ids)
+                ).count()
+                if enr_count > 0:
+                    return True
+
+            shared_group = db.query(ConversationMemberDB.conversation_id).filter(
+                ConversationMemberDB.user_id == current_user.id
+            ).filter(
+                ConversationMemberDB.conversation_id.in_(
+                    db.query(ConversationMemberDB.conversation_id).filter(
+                        ConversationMemberDB.user_id == target_user.id
+                    )
+                )
+            ).first()
+            if shared_group:
+                return True
+
+            return False
+
+        # General shared group member check (e.g. Instructor/Instructor or Custom Group)
+        shared_group = db.query(ConversationMemberDB.conversation_id).filter(
+            ConversationMemberDB.user_id == current_user.id
+        ).filter(
+            ConversationMemberDB.conversation_id.in_(
+                db.query(ConversationMemberDB.conversation_id).filter(
+                    ConversationMemberDB.user_id == target_user.id
+                )
+            )
+        ).first()
+        if shared_group:
+            return True
 
         return False
 
     @staticmethod
     def can_access_conversation(db: Session, current_user, conversation_id: int) -> bool:
-        """Strict backend authorization check for accessing conversation."""
+        """
+        Verify whether a user is an authorized participant of a conversation.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of the user requesting access.
+            conversation_id: Target conversation ID.
+
+        Returns:
+            bool: True if authorized, False otherwise.
+
+        Purpose:
+            Guards conversation endpoints against unauthorized viewing or message injection.
+
+        Dependencies:
+            ConversationMemberDB.
+        """
         UserDB, _, CourseDB, EnrollmentDB = _get_core_models()
         my_role = (current_user.role or "").upper()
 
@@ -352,7 +617,23 @@ class ChatService:
 
     @staticmethod
     def get_allowed_contacts(db: Session, current_user) -> List[AllowedContact]:
-        """Returns list of users that current_user is permitted to message 1-on-1."""
+        """
+        Retrieve list of users that the current user is permitted to direct-message.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            current_user_id: ID of the user requesting contacts.
+            current_user_role: Role of the user requesting contacts.
+
+        Returns:
+            List[AllowedContact]: Catalog of eligible contacts with role, avatar, and course context.
+
+        Purpose:
+            Populates the 'New Direct Chat' contact selection modal based on role rules.
+
+        Dependencies:
+            UserDB, ProfileDB, CourseDB, EnrollmentDB.
+        """
         UserDB, ProfileDB, CourseDB, EnrollmentDB = _get_core_models()
         my_role = (current_user.role or "").upper()
         res = []
@@ -478,8 +759,98 @@ class ChatService:
                 unique_contacts[c.id] = c
         return list(unique_contacts.values())
 
+# ----------------------------------------------------------------------------
+# Conversation Lifecycle & Retrieval
+# ----------------------------------------------------------------------------
+    @staticmethod
+    def get_or_create_self_conversation(db: Session, current_user) -> ConversationDB:
+        """
+        Retrieve or initialize a private 'Notes to Self' / Saved Messages conversation.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of the user.
+
+        Returns:
+            ConversationDB: Active self-chat conversation record.
+
+        Purpose:
+            Allows users to take personal learning notes, bookmark links, and draft messages.
+
+        Dependencies:
+            ConversationDB, ConversationMemberDB.
+        """
+        now_str = ChatService.now_str()
+
+        # Find existing PERSONAL conversation where current_user is the sole member
+        my_mems = db.query(ConversationMemberDB.conversation_id).filter(
+            ConversationMemberDB.user_id == current_user.id
+        ).all()
+        my_conv_ids = [m[0] for m in my_mems]
+
+        if my_conv_ids:
+            personal_convs = db.query(ConversationDB).filter(
+                ConversationDB.id.in_(my_conv_ids),
+                ConversationDB.type == "PERSONAL"
+            ).all()
+
+            for conv in personal_convs:
+                mems = db.query(ConversationMemberDB.user_id).filter(
+                    ConversationMemberDB.conversation_id == conv.id
+                ).all()
+                mem_uids = [m[0] for m in mems]
+                if set(mem_uids) == {current_user.id}:
+                    return conv
+
+        # Create new self conversation
+        conv = ConversationDB(
+            type="PERSONAL",
+            title="Myself",
+            description="Message yourself • Saved Messages",
+            icon="fa-solid fa-user-gear",
+            created_by=current_user.id,
+            created_at=now_str,
+            updated_at=now_str
+        )
+        db.add(conv)
+        db.commit()
+        db.refresh(conv)
+
+        db.add(ConversationMemberDB(
+            conversation_id=conv.id,
+            user_id=current_user.id,
+            role="member",
+            joined_at=now_str
+        ))
+        db.commit()
+
+        return conv
+
     @staticmethod
     def get_or_create_personal_conversation(db: Session, current_user, target_user_id: int) -> ConversationDB:
+        """
+        Retrieve or initialize a direct 1-on-1 personal conversation between two users.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            current_user: UserDB model instance of the initiating user.
+            target_user_id: ID of the recipient user.
+
+        Returns:
+            ConversationDB: Persistent direct conversation record.
+
+        Purpose:
+            Checks permissions and finds existing direct conversation or initializes a new one.
+
+        Dependencies:
+            can_user_message_target, ConversationDB, ConversationMemberDB.
+
+        Error handling:
+            Raises ValueError if messaging policy is violated.
+        """
+        if target_user_id == current_user.id:
+            return ChatService.get_or_create_self_conversation(db, current_user)
+
         UserDB, _, _, _ = _get_core_models()
         target_user = db.query(UserDB).filter(UserDB.id == target_user_id).first()
         if not target_user:
@@ -491,17 +862,18 @@ class ChatService:
         now_str = ChatService.now_str()
 
         # Find existing PERSONAL conversation containing both users
-        my_conv_ids = [m.conversation_id for m in db.query(ConversationMemberDB).filter(ConversationMemberDB.user_id == current_user.id).all()]
-        target_conv_ids = [m.conversation_id for m in db.query(ConversationMemberDB).filter(ConversationMemberDB.user_id == target_user_id).all()]
-        common_ids = list(set(my_conv_ids).intersection(set(target_conv_ids)))
+        my_mems = db.query(ConversationMemberDB.conversation_id).filter(ConversationMemberDB.user_id == current_user.id).all()
+        target_mems = db.query(ConversationMemberDB.conversation_id).filter(ConversationMemberDB.user_id == target_user_id).all()
+        common_ids = list(set([m[0] for m in my_mems]).intersection(set([m[0] for m in target_mems])))
 
         if common_ids:
-            existing = db.query(ConversationDB).filter(
-                ConversationDB.id.in_(common_ids),
-                ConversationDB.type == "PERSONAL"
-            ).first()
-            if existing:
-                return existing
+            for cid in common_ids:
+                conv = db.query(ConversationDB).filter(ConversationDB.id == cid, ConversationDB.type == "PERSONAL").first()
+                if conv:
+                    mems = db.query(ConversationMemberDB.user_id).filter(ConversationMemberDB.conversation_id == conv.id).all()
+                    mem_uids = set([m[0] for m in mems])
+                    if mem_uids == {current_user.id, target_user_id}:
+                        return conv
 
         # Create new personal conversation
         conv = ConversationDB(
@@ -523,6 +895,22 @@ class ChatService:
 
     @staticmethod
     def get_user_conversations(db: Session, current_user) -> List[ConversationResponse]:
+        """
+        Retrieve all active conversations for a user with unread counts and last message details.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: Database ID of the requesting user.
+
+        Returns:
+            List[ConversationResponse]: Sorted list of conversations (pinned first, then recent).
+
+        Purpose:
+            Powers the chat sidebar inbox interface with avatars, snippet previews, and counters.
+
+        Dependencies:
+            ConversationMemberDB, MessageDB, MessageReactionDB, chat_ws_manager.
+        """
         ChatService.ensure_course_groups(db)
         UserDB, ProfileDB, CourseDB, _ = _get_core_models()
 
@@ -647,6 +1035,18 @@ class ChatService:
                             profile_image=prof.profile_image if prof else None,
                             is_online=chat_ws_manager.is_user_online(other_u.id)
                         )
+                else:
+                    prof = db.query(ProfileDB).filter(ProfileDB.user_id == current_user.id).first()
+                    conv_title = "Myself"
+                    conv_desc = "Message yourself • Saved Messages"
+                    other_user_summary = UserSummary(
+                        id=current_user.id,
+                        full_name=f"{current_user.full_name} (You)",
+                        email=current_user.email,
+                        role=current_user.role,
+                        profile_image=prof.profile_image if prof else None,
+                        is_online=True
+                    )
 
             res.append(ConversationResponse(
                 id=conv.id,
@@ -672,8 +1072,30 @@ class ChatService:
         res.sort(key=lambda c: (1 if c.is_pinned else 0, c.updated_at or ""), reverse=True)
         return res
 
+# ----------------------------------------------------------------------------
+# Message Transmission, Editing & Deletion
+# ----------------------------------------------------------------------------
     @staticmethod
     def get_messages(db: Session, current_user, conversation_id: int, limit: int = 50, before_id: Optional[int] = None) -> List[MessageResponse]:
+        """
+        Retrieve paginated messages for a conversation with attachments, reactions, and forward history.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            user_id: ID of the viewing user.
+            limit: Maximum number of messages to return (default: 50).
+            before_id: Optional message ID for pagination cursor.
+
+        Returns:
+            List[MessageResponse]: Chronological message history.
+
+        Purpose:
+            Renders message history in the conversation pane, filtering out soft-deleted items.
+
+        Dependencies:
+            MessageDB, MessageAttachmentDB, MessageReactionDB, MessageForwardDB.
+        """
         if not ChatService.can_access_conversation(db, current_user, conversation_id):
             raise PermissionError("Access denied to conversation.")
 
@@ -794,6 +1216,30 @@ class ChatService:
         is_announcement: bool = False,
         attachment_ids: Optional[List[int]] = None
     ) -> MessageResponse:
+        """
+        Create, persist, and broadcast a new message within a conversation.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            sender_id: Database ID of the sending user.
+            content: Text body of the message.
+            reply_to_id: Optional ID of the parent message being replied to.
+            attachments: Optional list of attachment descriptor dicts.
+
+        Returns:
+            MessageResponse: Serialized message model ready for API response and socket broadcast.
+
+        Purpose:
+            Validates content, creates database records, generates notifications,
+            and pushes real-time WebSocket payloads to all active conversation members.
+
+        Dependencies:
+            MessageDB, MessageAttachmentDB, ConversationMemberDB, chat_ws_manager, NotificationService.
+
+        Error handling:
+            Raises ValueError if conversation not found or access denied.
+        """
         if not ChatService.can_access_conversation(db, current_user, conversation_id):
             raise PermissionError("Access denied to conversation.")
 
@@ -912,6 +1358,27 @@ class ChatService:
 
     @staticmethod
     def edit_message(db: Session, current_user, message_id: int, new_content: str) -> MessageResponse:
+        """
+        Edit the text content of an existing message.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            message_id: ID of the message to update.
+            user_id: ID of the user requesting the edit (must be the original author).
+            new_content: Updated message body text.
+
+        Returns:
+            MessageResponse: Updated message data.
+
+        Purpose:
+            Allows authors to correct typos, marking the message as edited.
+
+        Dependencies:
+            MessageDB, chat_ws_manager.
+
+        Error handling:
+            Raises ValueError if message not found, permission denied, or message is deleted.
+        """
         msg = db.query(MessageDB).filter(MessageDB.id == message_id).first()
         if not msg:
             raise ValueError("Message not found.")
@@ -948,6 +1415,24 @@ class ChatService:
 
     @staticmethod
     def delete_message(db: Session, current_user, message_id: int, for_everyone: bool = True):
+        """
+        Delete a message either for the requesting user only or for all participants.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            message_id: ID of the message to delete.
+            user_id: ID of the requesting user.
+            delete_for_everyone: Boolean flag indicating global deletion.
+
+        Returns:
+            dict: Operation status summary.
+
+        Purpose:
+            Supports private clear-for-me or global soft-deletion with real-time UI synchronization.
+
+        Dependencies:
+            MessageDB, MessageUserDeletionDB, chat_ws_manager.
+        """
         msg = db.query(MessageDB).filter(MessageDB.id == message_id).first()
         if not msg:
             raise ValueError("Message not found.")
@@ -1007,8 +1492,29 @@ class ChatService:
             }
             safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users([current_user.id], event_payload))
 
+# ----------------------------------------------------------------------------
+# Reactions, Forwarding & Message Utilities
+# ----------------------------------------------------------------------------
     @staticmethod
     def toggle_reaction(db: Session, current_user, message_id: int, emoji: str):
+        """
+        Add or remove an emoji reaction on a message.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            message_id: Target message ID.
+            user_id: Database ID of the reacting user.
+            emoji: Emoji character or shortcode (e.g., '👍', '❤️').
+
+        Returns:
+            dict: Updated reaction counts and active user states.
+
+        Purpose:
+            Provides interactive feedback and broadcasts reaction updates via WebSocket.
+
+        Dependencies:
+            MessageReactionDB, chat_ws_manager.
+        """
         msg = db.query(MessageDB).filter(MessageDB.id == message_id).first()
         if not msg:
             raise ValueError("Message not found.")
@@ -1054,64 +1560,280 @@ class ChatService:
         safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users(member_uids, event_payload))
 
     @staticmethod
-    def forward_message(db: Session, current_user, message_id: int, target_conversation_ids: List[int]):
-        orig_msg = db.query(MessageDB).filter(MessageDB.id == message_id).first()
-        if not orig_msg:
-            raise ValueError("Original message not found.")
+    def get_forward_targets(db: Session, current_user) -> dict:
+        """
+        Retrieve eligible recipient conversations and contacts for forwarding a message.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            user_id: ID of the forwarding user.
+            user_role: Role of the forwarding user.
+
+        Returns:
+            dict: Grouped forward targets (recent chats, allowed direct contacts, groups).
+
+        Purpose:
+            Powers the forward message picker dialog.
+        """
+        UserDB, ProfileDB, CourseDB, _ = _get_core_models()
+        ChatService.ensure_course_groups(db)
+
+        # 1. Myself (Self chat)
+        self_conv = ChatService.get_or_create_self_conversation(db, current_user)
+        self_prof = db.query(ProfileDB).filter(ProfileDB.user_id == current_user.id).first()
+        myself_data = {
+            "conversation_id": self_conv.id,
+            "title": "Myself",
+            "subtitle": "Message yourself • Saved Messages",
+            "icon": "fa-solid fa-user-gear",
+            "type": "PERSONAL",
+            "profile_image": self_prof.profile_image if self_prof else None,
+            "role": "Self"
+        }
+
+        # 2. All user's accessible conversations formatted
+        user_convs = ChatService.get_user_conversations(db, current_user)
+
+        # Recent chats (top active, excluding self chat)
+        recent_chats = []
+        for c in user_convs:
+            if c.id == self_conv.id:
+                continue
+            recent_chats.append({
+                "conversation_id": c.id,
+                "title": c.title,
+                "subtitle": c.description or (c.course_title if c.course_title else (c.other_user.role if c.other_user else c.type)),
+                "icon": c.icon or "fa-solid fa-comments",
+                "type": c.type,
+                "profile_image": c.other_user.profile_image if c.other_user else None,
+                "unread_count": c.unread_count
+            })
+
+        # Personal chats & Allowed Contacts
+        personal_chats = []
+        existing_personal_user_ids = set()
+
+        for c in user_convs:
+            if c.type == "PERSONAL" and c.id != self_conv.id and c.other_user:
+                existing_personal_user_ids.add(c.other_user.id)
+                personal_chats.append({
+                    "conversation_id": c.id,
+                    "target_user_id": c.other_user.id,
+                    "title": c.other_user.full_name,
+                    "subtitle": f"{c.other_user.role} • {c.other_user.email}",
+                    "icon": "fa-solid fa-user",
+                    "type": "PERSONAL",
+                    "profile_image": c.other_user.profile_image,
+                    "role": c.other_user.role
+                })
+
+        # Include allowed contacts that don't have an active conversation yet
+        allowed_contacts = ChatService.get_allowed_contacts(db, current_user)
+        for ac in allowed_contacts:
+            if ac.id not in existing_personal_user_ids and ac.id != current_user.id:
+                personal_chats.append({
+                    "conversation_id": None,
+                    "target_user_id": ac.id,
+                    "title": ac.full_name,
+                    "subtitle": f"{ac.role} • {ac.course_title or ac.email}",
+                    "icon": "fa-solid fa-user-plus",
+                    "type": "PERSONAL",
+                    "profile_image": ac.profile_image,
+                    "role": ac.role
+                })
+
+        # Course Groups
+        course_groups = []
+        for c in user_convs:
+            if c.type in ["COURSE_GROUP", "CUSTOM_GROUP"]:
+                course_groups.append({
+                    "conversation_id": c.id,
+                    "title": c.title,
+                    "subtitle": f"{c.members_count} members" + (f" • {c.course_title}" if c.course_title else ""),
+                    "icon": c.icon or "fa-solid fa-graduation-cap",
+                    "type": c.type,
+                    "members_count": c.members_count
+                })
+
+        return {
+            "myself": myself_data,
+            "recent": recent_chats,
+            "personal": personal_chats,
+            "groups": course_groups
+        }
+
+    @staticmethod
+    def forward_message(
+        db: Session,
+        current_user,
+        message_id: Optional[int] = None,
+        target_conversation_ids: Optional[List[int]] = None,
+        target_user_ids: Optional[List[int]] = None,
+        message_ids: Optional[List[int]] = None
+    ) -> dict:
+        """
+        Forward an existing message to one or more destination conversations.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            message_id: ID of the original message.
+            sender_id: ID of the forwarding user.
+            target_conversation_ids: List of destination conversation IDs.
+
+        Returns:
+            List[MessageResponse]: Created forward messages.
+
+        Purpose:
+            Duplicates message text and attachments into target conversations with provenance attribution.
+
+        Dependencies:
+            MessageDB, MessageForwardDB, MessageAttachmentDB, chat_ws_manager.
+        """
+        target_conv_ids = set(target_conversation_ids or [])
+
+        # If target_user_ids provided, resolve to 1-on-1 personal conversation IDs
+        if target_user_ids:
+            for uid in target_user_ids:
+                try:
+                    conv = ChatService.get_or_create_personal_conversation(db, current_user, uid)
+                    target_conv_ids.add(conv.id)
+                except Exception as e:
+                    print(f"[ForwardMessage] Could not get/create personal conv for user {uid}: {e}")
+
+        if not target_conv_ids:
+            raise ValueError("No valid destination conversations specified.")
+
+        # Resolve list of messages to forward
+        raw_msg_ids = message_ids or ([message_id] if message_id is not None else [])
+        if not raw_msg_ids:
+            raise ValueError("No message selected for forwarding.")
+
+        msgs_to_forward = []
+        for mid in raw_msg_ids:
+            orig_msg = db.query(MessageDB).filter(MessageDB.id == mid).first()
+            if not orig_msg:
+                continue
+            if orig_msg.is_deleted or orig_msg.deleted_for_everyone:
+                continue
+            # Verify user has access to source conversation
+            if not ChatService.can_access_conversation(db, current_user, orig_msg.conversation_id):
+                continue
+            msgs_to_forward.append(orig_msg)
+
+        if not msgs_to_forward:
+            raise ValueError("Original message not found or you do not have permission to access it.")
 
         now_str = ChatService.now_str()
-        for conv_id in target_conversation_ids:
+        successful_destinations = set()
+        failed_destinations = set()
+
+        for conv_id in target_conv_ids:
             if not ChatService.can_access_conversation(db, current_user, conv_id):
+                failed_destinations.add(conv_id)
                 continue
 
-            fwd_msg = MessageDB(
-                conversation_id=conv_id,
-                sender_id=current_user.id,
-                sender_name=current_user.full_name,
-                sender_role=current_user.role,
-                message_type=orig_msg.message_type,
-                content=orig_msg.content,
-                created_at=now_str,
-                updated_at=now_str
-            )
-            db.add(fwd_msg)
-            db.commit()
-            db.refresh(fwd_msg)
+            for orig_msg in msgs_to_forward:
+                fwd_msg = MessageDB(
+                    conversation_id=conv_id,
+                    sender_id=current_user.id,
+                    sender_name=current_user.full_name,
+                    sender_role=current_user.role,
+                    message_type=orig_msg.message_type,
+                    content=orig_msg.content,
+                    is_forwarded=1,
+                    forwarded_from_message_id=orig_msg.id,
+                    created_at=now_str,
+                    updated_at=now_str
+                )
+                db.add(fwd_msg)
+                db.commit()
+                db.refresh(fwd_msg)
 
-            db.add(MessageForwardDB(
-                original_message_id=orig_msg.id,
-                forwarded_message_id=fwd_msg.id,
-                sender_id=current_user.id,
-                created_at=now_str
-            ))
-            db.commit()
-
-            # Copy attachments if any
-            orig_att = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id == orig_msg.id).all()
-            for a in orig_att:
-                db.add(MessageAttachmentDB(
-                    message_id=fwd_msg.id,
-                    file_name=a.file_name,
-                    file_path=a.file_path,
-                    file_type=a.file_type,
-                    file_size=a.file_size,
+                db.add(MessageForwardDB(
+                    original_message_id=orig_msg.id,
+                    forwarded_message_id=fwd_msg.id,
+                    sender_id=current_user.id,
                     created_at=now_str
                 ))
-            db.commit()
+                db.commit()
 
-            # Notify conversation members via WebSocket
-            all_members = db.query(ConversationMemberDB.user_id).filter(ConversationMemberDB.conversation_id == conv_id).all()
-            member_uids = [m[0] for m in all_members]
+                # Re-use existing stored attachments safely
+                orig_atts = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id == orig_msg.id).all()
+                for a in orig_atts:
+                    db.add(MessageAttachmentDB(
+                        message_id=fwd_msg.id,
+                        file_name=a.file_name,
+                        file_path=a.file_path,
+                        file_type=a.file_type,
+                        file_size=a.file_size,
+                        created_at=now_str
+                    ))
+                db.commit()
 
-            msg_res = ChatService.get_messages(db, current_user, conv_id, limit=1, before_id=fwd_msg.id + 1)[0]
-            event_payload = {
-                "type": "NEW_MESSAGE",
-                "data": msg_res.model_dump()
-            }
-            safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users(member_uids, event_payload))
+                # Update target conversation timestamp
+                conv = db.query(ConversationDB).filter(ConversationDB.id == conv_id).first()
+                if conv:
+                    conv.updated_at = now_str
+                    db.commit()
+
+                # Broadcast live WS event
+                all_members = db.query(ConversationMemberDB.user_id).filter(ConversationMemberDB.conversation_id == conv_id).all()
+                member_uids = [m[0] for m in all_members]
+
+                msg_res = ChatService.get_messages(db, current_user, conv_id, limit=1, before_id=fwd_msg.id + 1)[0]
+                event_payload = {
+                    "type": "NEW_MESSAGE",
+                    "data": msg_res.model_dump()
+                }
+                safe_dispatch_coroutine(chat_ws_manager.broadcast_to_users(member_uids, event_payload))
+
+                # Notifications
+                for recipient_id in member_uids:
+                    if recipient_id != current_user.id:
+                        notif_title = f"Forwarded message from {current_user.full_name}"
+                        if conv and conv.type != "PERSONAL":
+                            notif_title = f"New message in {conv.title}"
+                        NotificationService.create_notification(
+                            db=db,
+                            user_id=recipient_id,
+                            title=notif_title,
+                            message=(fwd_msg.content[:80] + "...") if fwd_msg.content and len(fwd_msg.content) > 80 else (fwd_msg.content or "Forwarded an attachment"),
+                            notification_type="CHAT_MESSAGE",
+                            reference_id=str(fwd_msg.id)
+                        )
+
+            successful_destinations.add(conv_id)
+
+        if not successful_destinations:
+            raise PermissionError("Could not forward to selected conversations (Access denied).")
+
+        return {
+            "status": "success",
+            "forwarded_count": len(msgs_to_forward),
+            "destination_count": len(successful_destinations),
+            "failed_count": len(failed_destinations),
+            "message": f"Message forwarded to {len(successful_destinations)} chat(s)."
+        }
 
     @staticmethod
     def mark_conversation_read(db: Session, current_user, conversation_id: int):
+        """
+        Update the user's last-read timestamp for a conversation to clear unread counts.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            user_id: ID of the user reading messages.
+
+        Returns:
+            None.
+
+        Purpose:
+            Resets unread message badges and updates conversation delivery status.
+
+        Dependencies:
+            ConversationMemberDB.
+        """
         last_msg = db.query(MessageDB).filter(
             MessageDB.conversation_id == conversation_id
         ).order_by(MessageDB.id.desc()).first()
@@ -1127,6 +1849,23 @@ class ChatService:
 
     @staticmethod
     def get_group_members(db: Session, current_user, group_id: int):
+        """
+        Retrieve participant list and role details for a course group conversation.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            group_id: ID of the group conversation.
+            requesting_user_id: ID of the user requesting the member list.
+
+        Returns:
+            dict: Group metadata including instructor, members list, and online status.
+
+        Purpose:
+            Powers the group participant info panel and modal in the chat UI.
+
+        Dependencies:
+            ConversationDB, ConversationMemberDB, UserDB, ProfileDB, chat_ws_manager.
+        """
         if not ChatService.can_access_conversation(db, current_user, group_id):
             raise PermissionError("Access denied to conversation members.")
 
@@ -1136,10 +1875,21 @@ class ChatService:
             raise ValueError("Group conversation not found.")
 
         member_records = db.query(ConversationMemberDB).filter(ConversationMemberDB.conversation_id == group_id).all()
-        m_uids = [m.user_id for m in member_records]
-        mem_role_map = {m.user_id: m.role for m in member_records}
+        
+        # Deduplicate records by user_id, resolving highest privilege role
+        role_priority = {"instructor": 4, "admin": 3, "moderator": 2, "member": 1}
+        seen_roles = {}
+        for m in member_records:
+            cur_role = (m.role or "member").lower()
+            if m.user_id not in seen_roles:
+                seen_roles[m.user_id] = m.role or "member"
+            else:
+                existing_role = seen_roles[m.user_id].lower()
+                if role_priority.get(cur_role, 1) > role_priority.get(existing_role, 1):
+                    seen_roles[m.user_id] = m.role or "member"
 
-        members = db.query(UserDB).filter(UserDB.id.in_(m_uids)).all() if m_uids else []
+        unique_uids = list(seen_roles.keys())
+        members = db.query(UserDB).filter(UserDB.id.in_(unique_uids)).all() if unique_uids else []
         
         instructor_info = None
         course_title = None
@@ -1159,15 +1909,34 @@ class ChatService:
         res_members = []
         for u in members:
             prof = db.query(ProfileDB).filter(ProfileDB.user_id == u.id).first()
+            assigned_group_role = seen_roles.get(u.id, "member")
+            # If the user is the course instructor, reflect that in group_role
+            if conv.course_id and instructor_info and u.id == instructor_info["id"]:
+                assigned_group_role = "instructor"
+
             res_members.append({
                 "id": u.id,
                 "full_name": u.full_name,
                 "email": u.email,
-                "role": u.role,
-                "group_role": mem_role_map.get(u.id, "member"),
+                "role": u.role or "Student",
+                "group_role": assigned_group_role,
                 "profile_image": prof.profile_image if prof else None,
                 "is_online": chat_ws_manager.is_user_online(u.id)
             })
+
+        # Sort members: Instructor first, then Admins, then Students alphabetically
+        def _sort_key(m):
+            gr = (m.get("group_role") or "").lower()
+            ur = (m.get("role") or "").lower()
+            if "instructor" in gr or "instructor" in ur:
+                tier = 0
+            elif "admin" in gr or "admin" in ur:
+                tier = 1
+            else:
+                tier = 2
+            return (tier, (m.get("full_name") or "").lower())
+
+        res_members.sort(key=_sort_key)
 
         return {
             "group_id": conv.id,
@@ -1180,8 +1949,29 @@ class ChatService:
             "members": res_members
         }
 
+
+# ----------------------------------------------------------------------------
+# Shared Media, Docs, Links & Contact Metadata
+# ----------------------------------------------------------------------------
     @staticmethod
     def get_shared_content(db: Session, current_user, conversation_id: int, q: Optional[str] = None):
+        """
+        Retrieve media, documents, and shared links categorized from a conversation's history.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            user_id: ID of the requesting user.
+
+        Returns:
+            SharedContentResponse: Categorized media, documents, and extracted URL links.
+
+        Purpose:
+            Powers the 'Shared Media, Docs & Links' inspection sidebar.
+
+        Dependencies:
+            MessageDB, MessageAttachmentDB.
+        """
         if not ChatService.can_access_conversation(db, current_user, conversation_id):
             raise PermissionError("Access denied to conversation shared content.")
 
@@ -1291,6 +2081,23 @@ class ChatService:
 
     @staticmethod
     def get_contact_info(db: Session, current_user, conversation_id: int):
+        """
+        Retrieve profile details, enrolled courses, and bio of a conversation partner.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            requesting_user_id: ID of the requesting user.
+
+        Returns:
+            ContactInfoResponse: Profile summary, role, email, avatar, and mutual course context.
+
+        Purpose:
+            Powers the contact information header and sidebar in direct conversations.
+
+        Dependencies:
+            ConversationDB, ConversationMemberDB, UserDB, ProfileDB.
+        """
         if not ChatService.can_access_conversation(db, current_user, conversation_id):
             raise PermissionError("Access denied to contact info.")
 
@@ -1361,6 +2168,23 @@ class ChatService:
 
     @staticmethod
     def clear_conversation_messages(db: Session, current_user, conversation_id: int):
+        """
+        Clear all message history in a conversation for the requesting user.
+
+        Args:
+            db: Active SQLAlchemy database session.
+            conversation_id: Target conversation ID.
+            user_id: ID of the requesting user.
+
+        Returns:
+            dict: Confirmation status.
+
+        Purpose:
+            Soft-clears the conversation view for a user without affecting other participants.
+
+        Dependencies:
+            MessageUserDeletionDB.
+        """
         if not ChatService.can_access_conversation(db, current_user, conversation_id):
             raise PermissionError("Access denied.")
 
