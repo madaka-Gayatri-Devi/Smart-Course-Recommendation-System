@@ -321,7 +321,8 @@ window.updateDemoPreview = function(url) {
     }
 
     // Direct video stream or embedded
-    const videoUrl = trimmed.startsWith('/uploads/') ? `http://127.0.0.1:8080${trimmed}` : trimmed;
+    const base = (window.API_URL || (window.api && window.api.API_URL) || '');
+    const videoUrl = trimmed.startsWith('/uploads/') ? `${base}${trimmed}` : trimmed;
     container.innerHTML = `
         <video controls style="width: 100%; max-height: 240px; border-radius: 6px; background: #000;" src="${escapeHtml(videoUrl)}">
             Your browser does not support video preview.

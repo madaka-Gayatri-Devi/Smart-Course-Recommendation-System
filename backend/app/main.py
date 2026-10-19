@@ -50,6 +50,7 @@ except ImportError:
         from backend.app.services.notification_service import NotificationService, ws_manager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse, FileResponse
 from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text, func
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
@@ -92,6 +93,14 @@ if BACKEND_DB_PATH.exists() and ROOT_DB_PATH.exists():
 
 DB_PATH = BACKEND_DB_PATH if BACKEND_DB_PATH.exists() else ROOT_DB_PATH
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH.as_posix()}")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# --- DB SETUP ---
+connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 UPLOAD_DIR = BASE_DIR / "uploads"
 AVATAR_DIR = UPLOAD_DIR / "avatars"
@@ -102,11 +111,6 @@ AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 MATERIAL_DIR.mkdir(parents=True, exist_ok=True)
 THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
-
-# --- DB SETUP ---
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
 # --- DATABASE MODELS ---
 
@@ -8895,6 +8899,18 @@ if FRONTEND_DIR.exists():
     if (FRONTEND_DIR / "admin").exists():
         app.mount("/admin", StaticFiles(directory=str(FRONTEND_DIR / "admin"), html=True), name="admin_static")
 
+    @app.get("/login", include_in_schema=False)
+    def redirect_login():
+        return RedirectResponse(url="/login.html")
+
+    @app.get("/register", include_in_schema=False)
+    def redirect_register():
+        return RedirectResponse(url="/register.html")
+
+    # Mount frontend directory at root so all pages (index.html, login.html, etc.) are accessible directly
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend_root")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)

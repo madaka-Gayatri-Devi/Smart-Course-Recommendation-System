@@ -229,7 +229,8 @@ function parseVideoEmbed(url) {
     }
 
     // Direct uploaded or absolute video file
-    const resolvedUrl = cleanUrl.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + cleanUrl : cleanUrl;
+    const base = (window.API_URL || (window.api && window.api.API_URL) || '');
+    const resolvedUrl = cleanUrl.startsWith('/uploads/') ? base + cleanUrl : cleanUrl;
     return `<video controls autoplay style="width:100%; max-height:480px; aspect-ratio:16/9; border-radius:10px; background:#000; display:block;" src="${escapeHtml(resolvedUrl)}"></video>`;
 }
 
@@ -299,8 +300,9 @@ function renderLessonViewer(lesson) {
             </div>
         `;
     } else if (type === 'document') {
+        const base = (window.API_URL || (window.api && window.api.API_URL) || '');
         const docUrl = lesson.document_url 
-            ? (lesson.document_url.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + lesson.document_url : lesson.document_url)
+            ? (lesson.document_url.startsWith('/uploads/') ? base + lesson.document_url : lesson.document_url)
             : '';
 
         contentHtml = `
@@ -445,8 +447,9 @@ function renderLessonMaterialsSection(lesson) {
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:0.6rem;">
                 ${items.map(item => {
+                    const base = (window.API_URL || (window.api && window.api.API_URL) || '');
                     const url = item.url || item;
-                    const fullUrl = url.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + url : url;
+                    const fullUrl = url.startsWith('/uploads/') ? base + url : url;
                     const name = item.name || 'Download Resource';
                     let icon = 'fa-solid fa-file-arrow-down';
                     if (item.type === 'github' || url.includes('github.com')) icon = 'fa-brands fa-github';

@@ -20,6 +20,15 @@ if str(ROOT_DIR) not in sys.path:
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+# Expose app at top level for ASGI servers (uvicorn main:app / gunicorn)
+try:
+    from backend.app.main import app
+except ImportError:
+    try:
+        from app.main import app
+    except ImportError:
+        pass
+
 FRONTEND_PORT = 5500
 BACKEND_PORT = 8080
 DIRECTORY = str(FRONTEND_DIR)
@@ -61,6 +70,13 @@ def open_browser():
         pass
 
 if __name__ == "__main__":
+    # If running on Render or any cloud container with PORT environment variable
+    if "PORT" in os.environ or os.environ.get("RENDER") == "true":
+        port = int(os.environ.get("PORT", 8080))
+        print(f"[SmartLearn] Running in cloud/production mode on 0.0.0.0:{port} ...")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+        sys.exit(0)
+
     if not os.path.exists(DIRECTORY):
         print(f"Error: The '{DIRECTORY}' directory was not found!")
         sys.exit(1)

@@ -202,7 +202,7 @@
             const token = window.api.getToken();
             if (!token) return;
 
-            let apiHost = window.api.API_URL || 'http://127.0.0.1:8080';
+            let apiHost = (window.api && window.api.API_URL) ? window.api.API_URL : (window.API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8080'));
             let wsProto = apiHost.startsWith('https') ? 'wss:' : 'ws:';
             let hostClean = apiHost.replace(/^https?:\/\//, '');
 

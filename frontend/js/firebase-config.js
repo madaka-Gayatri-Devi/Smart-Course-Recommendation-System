@@ -20,7 +20,7 @@ let activeFirebaseConfig = {
 // ==========================================
 async function loadFirebaseConfigFromBackend() {
     try {
-        const apiUrl = (window.api && window.api.API_URL) ? window.api.API_URL : "http://127.0.0.1:8080";
+        const apiUrl = (window.api && window.api.API_URL) ? window.api.API_URL : (window.API_URL || (typeof window !== 'undefined' ? window.location.origin : "http://127.0.0.1:8080"));
         const res = await fetch(`${apiUrl}/auth/firebase-config`);
         if (res.ok) {
             const data = await res.json();

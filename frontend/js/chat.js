@@ -113,7 +113,11 @@
     function connectWebSocket() {
         const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname || '127.0.0.1';
-        const wsUrl = `${proto}//${host}:8080/chat/ws?token=${encodeURIComponent(currentToken)}`;
+        let wsHost = window.location.host;
+        if ((host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') && window.location.port !== '8080') {
+            wsHost = `${host}:8080`;
+        }
+        const wsUrl = `${proto}//${wsHost}/chat/ws?token=${encodeURIComponent(currentToken)}`;
 
         try {
             ws = new WebSocket(wsUrl);

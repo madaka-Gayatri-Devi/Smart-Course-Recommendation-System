@@ -4,12 +4,18 @@ if (typeof window !== 'undefined' && window.location) {
     const proto = window.location.protocol;
     const httpProto = (proto && (proto === 'http:' || proto === 'https:')) ? proto : 'http:';
     if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
-        API_URL = `${httpProto}//127.0.0.1:8080`;
+        if (window.location.port !== '8080' && window.location.port !== '') {
+            API_URL = `${httpProto}//127.0.0.1:8080`;
+        } else {
+            API_URL = window.location.origin;
+        }
     } else if (host && host !== '') {
-        API_URL = `${httpProto}//${host}:8080`;
+        // In cloud deployment (Render, etc.), API is served on standard ports (80/443) on same origin
+        API_URL = window.location.origin;
     } else {
         API_URL = 'http://127.0.0.1:8080';
     }
+    window.API_URL = API_URL;
 }
 
 /**

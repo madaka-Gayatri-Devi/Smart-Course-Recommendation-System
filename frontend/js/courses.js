@@ -1099,7 +1099,8 @@ window.openLessonPreviewModal = async function(courseId, lessonId) {
                     </div>
                 `;
             } else {
-                const fullUrl = vidUrl.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + vidUrl : vidUrl;
+                const base = (window.API_URL || (window.api && window.api.API_URL) || '');
+                const fullUrl = vidUrl.startsWith('/uploads/') ? base + vidUrl : vidUrl;
                 playerHtml = `
                     <div style="background:#0F172A; border-radius:10px; overflow:hidden; margin-bottom:1rem;">
                         <video controls autoplay style="width:100%; max-height:420px; display:block;" src="${escapeHtml(fullUrl)}"></video>
@@ -1121,7 +1122,8 @@ window.openLessonPreviewModal = async function(courseId, lessonId) {
                 </div>
             `;
         } else if (type === 'document' || type === 'pdf') {
-            const docUrl = data.document_url?.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + data.document_url : (data.document_url || '#');
+            const base = (window.API_URL || (window.api && window.api.API_URL) || '');
+            const docUrl = data.document_url?.startsWith('/uploads/') ? base + data.document_url : (data.document_url || '#');
             bodyEl.innerHTML = `
                 <div style="text-align:center; padding:2rem; background:#F8FAFC; border-radius:8px;">
                     <i class="fa-solid fa-file-pdf" style="font-size:3rem; color:#EF4444; margin-bottom:1rem;"></i>
@@ -1173,7 +1175,8 @@ function parseVideoEmbed(url) {
     }
 
     // Direct uploaded or absolute video file
-    const resolvedUrl = cleanUrl.startsWith('/uploads/') ? 'http://127.0.0.1:8080' + cleanUrl : cleanUrl;
+    const base = (window.API_URL || (window.api && window.api.API_URL) || '');
+    const resolvedUrl = cleanUrl.startsWith('/uploads/') ? base + cleanUrl : cleanUrl;
     return `<video controls style="width:100%; max-height:420px; aspect-ratio:16/9; border-radius:10px; background:#000; display:block;" src="${escapeHtml(resolvedUrl)}"></video>`;
 }
 
