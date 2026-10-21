@@ -759,7 +759,36 @@ def seed_initial_data():
                 db.merge(ReviewDB(**r))
             db.commit()
 
-        # 11. AUTOMATIC DATA REPAIR: Sanitize any existing stringified JSON columns in the database
+        # 11. Chat & Conversations (Preserve persistent message history across deployments)
+        try:
+            try:
+                from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB
+            except ImportError:
+                try:
+                    from models.chat import ConversationDB, ConversationMemberDB, MessageDB
+                except ImportError:
+                    from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB
+
+            if db.query(ConversationDB).count() == 0:
+                for c in seed_data.get("conversations", []):
+                    db.merge(ConversationDB(**c))
+                db.commit()
+                db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('conversations', []))} chat conversations.")
+
+            if db.query(ConversationMemberDB).count() == 0:
+                for cm in seed_data.get("conversation_members", []):
+                    db.merge(ConversationMemberDB(**cm))
+                db.commit()
+
+            if db.query(MessageDB).count() == 0:
+                for m in seed_data.get("messages", []):
+                    db.merge(MessageDB(**m))
+                db.commit()
+                db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('messages', []))} chat messages.")
+        except Exception as _chat_seed_err:
+            db_logger.warning(f"[DB Seed] Chat seeding notice: {_chat_seed_err}")
+
+        # 12. AUTOMATIC DATA REPAIR: Sanitize any existing stringified JSON columns in the database
         course_repaired = 0
         for c_rec in db.query(CourseDB).all():
             changed = False

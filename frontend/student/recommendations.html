@@ -16,7 +16,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
     <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
-    <link rel="stylesheet" href="../css/recommendations.css">
+    <link rel="stylesheet" href="../css/recommendations.css?v=20261008_v9">
 </head>
 <body class="dashboard-body">
 
@@ -24,7 +24,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Sidebar -->
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
 
@@ -46,10 +46,13 @@
             <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
             <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
             
+            <div class="nav-label">COMMUNICATION</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
+            
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
             <a href="payment-history.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Payment History</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
         <div class="sidebar-footer">
@@ -57,7 +60,7 @@
                 <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
                 <div class="sidebar-user-info">
                     <span class="sidebar-user-name" id="sidebarName">Student</span>
-                    <span class="sidebar-user-role" id="sidebarRole">Student</span>
+                    <span class="sidebar-user-role" id="sidebarRole">STUDENT</span>
                 </div>
             </div>
             <div class="sidebar-footer-links">
@@ -78,7 +81,7 @@
             </div>
             
             <div class="topbar-right">
-                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>>
+                <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
                 <div class="search-box">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="recSearchInput" placeholder="Search recommended courses...">
@@ -137,16 +140,33 @@
             <!-- Recommendations Grid -->
             <div class="recommendation-grid" id="recommendationsListGrid" style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));">
                 <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-purple);"></i>
-                    <p style="margin-top: 1rem; color: var(--secondary-text);">Calculating personalized course matches...</p>
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-purple, #5B3FE8);"></i>
+                    <p style="margin-top: 1rem; color: var(--secondary-text, #64748B);">Calculating personalized course matches...</p>
                 </div>
             </div>
 
         </div>
     </main>
 
+    <!-- Why Recommended Interactive Modal -->
+    <div class="modal-overlay" id="whyRecommendedModal" style="display: none !important;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color: #5B3FE8;"></i> Why Recommended For You</h3>
+                <button class="modal-close-btn" id="closeWhyModalBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="whyModalCourseTitle" style="font-size: 16px; color: var(--dark-navy, #0F172A); margin: 0 0 1rem; border-bottom: 1px solid var(--border-light, #E2E8F0); padding-bottom: 0.5rem;">Course Title</h4>
+                <div id="whyModalContent">
+                    <!-- Dynamic breakdown -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="../js/api.js?v=20260915_rec"></script>
-    <script src="../js/recommendations.js?v=20260915_rec"></script>
+    <script src="../js/api.js?v=20261008_v9"></script>
+    <script src="../js/auth.js?v=20261008_v9"></script>
+    <script src="../js/recommendations.js?v=20261008_v9"></script>
 </body>
 </html>

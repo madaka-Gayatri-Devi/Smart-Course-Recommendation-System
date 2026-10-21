@@ -70,14 +70,29 @@
         await loadConversations();
         await loadAllowedContacts();
 
-        // Automatically open target conversation if specified in URL query params
+        // Automatically open target conversation: URL param -> last active in localStorage -> first available conversation
         const urlParams = new URLSearchParams(window.location.search);
         const targetConvId = urlParams.get('conv_id');
+        let initialConvId = null;
         if (targetConvId) {
             const cid = parseInt(targetConvId, 10);
             if (cid && conversations.some(c => c.id === cid)) {
-                openConversation(cid);
+                initialConvId = cid;
             }
+        }
+        if (!initialConvId) {
+            try {
+                const savedId = parseInt(localStorage.getItem('smartlearn_last_active_conv'), 10);
+                if (savedId && conversations.some(c => c.id === savedId)) {
+                    initialConvId = savedId;
+                }
+            } catch (_) {}
+        }
+        if (!initialConvId && conversations.length > 0) {
+            initialConvId = conversations[0].id;
+        }
+        if (initialConvId) {
+            openConversation(initialConvId);
         }
     }
 
@@ -618,6 +633,9 @@
      */
     async function openConversation(convId) {
         activeConvId = convId;
+        try {
+            localStorage.setItem('smartlearn_last_active_conv', String(convId));
+        } catch (_) {}
         if (window.clearMessageSelection) window.clearMessageSelection();
         const appContainer = document.getElementById('chatAppContainer');
         if (appContainer) appContainer.classList.add('mobile-open');

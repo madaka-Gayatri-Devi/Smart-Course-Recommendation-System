@@ -1670,3 +1670,70 @@ aside.app-sidebar .nav-item.active i,
 }
 
 
+
+
+/* ==========================================================================
+   INTERACTIVE FILTER BUTTONS & PILLS (SmartLearn Purple Theme)
+   ========================================================================== */
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.15rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: #475569;
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+    text-decoration: none;
+    outline: none;
+    user-select: none;
+}
+
+.filter-btn:hover {
+    color: #5B3FE8;
+    border-color: #5B3FE8;
+    background: #F5F3FF;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(91, 63, 232, 0.12);
+}
+
+.filter-btn:active {
+    transform: translateY(0);
+}
+
+.filter-btn.active {
+    color: #FFFFFF !important;
+    background: #5B3FE8 !important;
+    border-color: #5B3FE8 !important;
+    box-shadow: 0 4px 12px rgba(91, 63, 232, 0.3) !important;
+}
+
+.filter-btn i {
+    font-size: 0.85rem;
+}
+
+[data-theme="dark"] .filter-btn {
+    background: #1E293B;
+    border-color: #334155;
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .filter-btn:hover {
+    background: #2D3748;
+    border-color: #8B5CF6;
+    color: #DDD6FE;
+}
+
+[data-theme="dark"] .filter-btn.active {
+    background: #6D28D9 !important;
+    border-color: #6D28D9 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45) !important;
+}
