@@ -23,6 +23,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
     <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
@@ -42,9 +43,12 @@
             <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
             
+            <div class="nav-label">COMMUNICATION</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Course Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item active"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="notif-badge badge" id="notifUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="notifications.html" class="nav-item active"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
         <div class="sidebar-footer">
@@ -52,7 +56,7 @@
                 <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
                 <div class="sidebar-user-info">
                     <span class="sidebar-user-name" id="sidebarName">Instructor</span>
-                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">INSTRUCTOR</span>
                 </div>
             </div>
             <div class="sidebar-footer-links">
@@ -99,27 +103,18 @@
     <script src="../js/notifications.js"></script>
     <script src="../js/chatbot.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const currentUser = await window.api.getMe();
-                if (currentUser.role.toUpperCase() !== 'INSTRUCTOR' && currentUser.role.toUpperCase() !== 'ADMIN') {
-                    window.location.href = '../login.html';
-                    return;
-                }
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = (window.auth && window.auth.getUser) ? window.auth.getUser() : (window.api ? window.api.getCurrentUser() : null);
+            if (user) {
+                const fullName = user.name || user.full_name || 'Instructor';
+                const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'IN';
+                const nameEls = document.querySelectorAll('#sidebarName, #topName');
+                const roleEls = document.querySelectorAll('#sidebarRole');
+                const avatarEls = document.querySelectorAll('#sidebarAvatar, #topAvatar');
 
-                const fullName = currentUser.full_name || 'Instructor';
-                document.getElementById('topName').textContent = fullName;
-                document.getElementById('sidebarName').textContent = fullName;
-                document.getElementById('sidebarRole').textContent = 'Instructor';
-
-                const names = fullName.trim().split(' ');
-                let initials = names[0].charAt(0);
-                if (names.length > 1) initials += names[1].charAt(0);
-                initials = initials.toUpperCase();
-                document.getElementById('topAvatar').textContent = initials;
-                document.getElementById('sidebarAvatar').textContent = initials;
-            } catch (_) {
-                window.location.href = '../login.html';
+                nameEls.forEach(el => el.textContent = fullName);
+                roleEls.forEach(el => el.textContent = 'INSTRUCTOR');
+                avatarEls.forEach(el => el.textContent = initials);
             }
 
             const menuToggle = document.getElementById('menuToggle');
@@ -131,8 +126,13 @@
             }
             document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
                 e.preventDefault();
-                window.api.clearToken();
-                window.location.href = '../login.html';
+                if (window.api && window.api.logout) {
+                    window.api.logout();
+                } else {
+                    localStorage.removeItem('smartlearn_token');
+                    localStorage.removeItem('smartlearn_user');
+                    window.location.href = '../login.html';
+                }
             });
         });
     </script>

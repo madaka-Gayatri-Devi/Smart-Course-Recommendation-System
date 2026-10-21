@@ -35,6 +35,13 @@
             this.init();
         }
 
+        getCourseTargetUrl(courseId) {
+            if (!courseId) return 'notifications.html';
+            const isInstructor = window.location.pathname.toLowerCase().includes('/instructor/') || 
+                (window.api && window.api.getCurrentUser && window.api.getCurrentUser() && (window.api.getCurrentUser().role || '').toLowerCase() === 'instructor');
+            return isInstructor ? `course-manage.html?id=${courseId}` : `course-details.html?id=${courseId}`;
+        }
+
         /**
          * Bootstraps notification client services if an active session exists.
          *
@@ -162,7 +169,7 @@
                     if (data.type === 'CHAT_MESSAGE' || data.reference_id) {
                         window.location.href = 'chat.html';
                     } else if (data.related_course_id) {
-                        window.location.href = `course-details.html?id=${data.related_course_id}`;
+                        window.location.href = this.getCourseTargetUrl(data.related_course_id);
                     } else {
                         window.location.href = 'notifications.html';
                     }
@@ -361,7 +368,7 @@
             toast.onclick = () => {
                 toast.remove();
                 if (data.related_course_id) {
-                    window.location.href = `course-details.html?id=${data.related_course_id}`;
+                    window.location.href = this.getCourseTargetUrl(data.related_course_id);
                 } else {
                     window.location.href = 'notifications.html';
                 }
@@ -601,7 +608,7 @@
                         await window.api.markNotificationAsRead(id);
                     } catch (_) {}
                     if (courseId) {
-                        window.location.href = `course-details.html?id=${courseId}`;
+                        window.location.href = this.getCourseTargetUrl(courseId);
                     } else {
                         window.location.href = 'notifications.html';
                     }
@@ -700,7 +707,7 @@
                             <p style="color: #4B5563; font-size: 13px; margin: 6px 0 10px; line-height: 1.5;">${this.escapeHtml(n.message)}</p>
 
                             <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
-                                ${n.related_course_id ? `<span class="btn-action-view" style="font-size: 12px; color: #7C3AED; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrow-right"></i> View Course Details</span>` : ''}
+                                ${n.related_course_id ? `<span class="btn-action-view" style="font-size: 12px; color: #7C3AED; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-arrow-right"></i> ${window.location.pathname.toLowerCase().includes('/instructor/') ? 'Manage Course Content' : 'View Course Details'}</span>` : ''}
                                 ${!n.is_read ? `<button class="btn-mark-single-read" data-id="${n.id}" style="background: none; border: none; font-size: 11.5px; color: #6B7280; text-decoration: underline; cursor: pointer; padding: 0;">Mark as read</button>` : ''}
                                 <button class="btn-delete-notif" data-id="${n.id}" style="background: none; border: none; font-size: 11.5px; color: #EF4444; cursor: pointer; padding: 0; margin-left: auto;" title="Delete notification"><i class="fa-solid fa-trash"></i></button>
                             </div>
@@ -775,7 +782,7 @@
                     } catch (_) {}
 
                     if (courseId) {
-                        window.location.href = `course-details.html?id=${courseId}`;
+                        window.location.href = this.getCourseTargetUrl(courseId);
                     }
                 });
             });

@@ -169,7 +169,8 @@ function renderMyCoursesTable(courses) {
                 <td>⭐ ${(c.rating || 4.8).toFixed(1)}</td>
                 <td style="text-align:right; white-space:nowrap;">
                     <a href="../student/course-details.html?id=${c.id}" target="_blank" class="btn-outline" style="padding:0.3rem 0.55rem; font-size:11.5px; text-decoration:none; margin-right:3px; border-radius:6px;" title="Preview Public Page"><i class="fa-solid fa-eye"></i> View</a>
-                    <a href="course-editor.html?id=${c.id}" class="btn-primary-small" style="text-decoration:none; padding:0.3rem 0.65rem; font-size:11.5px; margin-right:3px; border-radius:6px; background:#4F46E5;" title="Edit in Course Studio"><i class="fa-solid fa-pen-to-square mr-1"></i> Edit Studio</a>
+                    <a href="course-manage.html?id=${c.id}" onclick="localStorage.setItem('smartlearn_instructor_active_course_id', '${c.id}')" class="btn-primary-small" style="text-decoration:none; padding:0.3rem 0.65rem; font-size:11.5px; margin-right:3px; border-radius:6px; background:#4F46E5;" title="Manage Course Content & Modules"><i class="fa-solid fa-pen-to-square mr-1"></i> Course Content</a>
+                    <a href="course-editor.html?id=${c.id}" class="btn-outline" style="padding:0.3rem 0.55rem; font-size:11.5px; text-decoration:none; margin-right:3px; border-radius:6px;" title="Edit Course Details"><i class="fa-solid fa-sliders"></i> Edit</a>
                     <button onclick="handleInstructorTogglePublish(${c.id}, ${isPublished})" class="btn-outline" style="padding:0.3rem 0.55rem; font-size:11.5px; border-radius:6px; cursor:pointer;" title="${isPublished ? 'Unpublish course' : 'Publish course'}">
                         ${isPublished ? 'Unpublish' : 'Publish'}
                     </button>

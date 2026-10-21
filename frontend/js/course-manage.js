@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roleEls = document.querySelectorAll('#sidebarRole');
     const avatarEls = document.querySelectorAll('#sidebarAvatar, #topAvatar');
 
-    nameEls.forEach(el => el.textContent = user.name || 'Instructor');
+    nameEls.forEach(el => el.textContent = user.name || user.full_name || 'Instructor');
     roleEls.forEach(el => el.textContent = (user.role || 'instructor').toUpperCase());
-    const initials = (user.name || 'IN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const initials = (user.name || user.full_name || 'IN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     avatarEls.forEach(el => el.textContent = initials);
 
     const logoutBtn = document.getElementById('logoutBtn');
@@ -22,28 +22,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 2. Parse Course ID
-    const urlParams = new URLSearchParams(window.location.search);
-    const courseId = urlParams.get('id');
+    // 2. Fetch instructor courses to enable switcher and resolve course ID gracefully
+    let instructorCourses = [];
+    try {
+        const fetched = await window.api.getInstructorCourses();
+        instructorCourses = Array.isArray(fetched) ? fetched : (fetched.courses || []);
+    } catch (e) {
+        console.warn('Could not load instructor courses list:', e);
+    }
 
-    if (!courseId) {
-        alert('No course ID specified. Redirecting to My Courses.');
-        window.location.replace('courses.html');
+    // If instructor has no courses created at all
+    if (!instructorCourses || instructorCourses.length === 0) {
+        renderNoCoursesState();
         return;
     }
 
-    document.getElementById('courseIdHidden').value = courseId;
+    // 3. Resolve course ID:
+    // Priority: URL param (?id=) -> localStorage -> first course
+    const urlParams = new URLSearchParams(window.location.search);
+    let courseId = urlParams.get('id');
+
+    if (!courseId) {
+        const cachedId = localStorage.getItem('smartlearn_instructor_active_course_id');
+        if (cachedId && instructorCourses.some(c => String(c.id) === String(cachedId))) {
+            courseId = cachedId;
+        } else {
+            courseId = instructorCourses[0].id;
+        }
+        // Update URL cleanly without reloading
+        window.history.replaceState(null, '', `course-manage.html?id=${courseId}`);
+    }
+
+    // Save to localStorage
+    localStorage.setItem('smartlearn_instructor_active_course_id', courseId);
+
+    // Render course switcher dropdown
+    renderCourseSwitcher(instructorCourses, courseId);
+
+    const idHidden = document.getElementById('courseIdHidden');
+    if (idHidden) idHidden.value = courseId;
     const previewBtn = document.getElementById('previewCourseBtn');
     if (previewBtn) {
         previewBtn.href = `../student/course-details.html?id=${courseId}`;
     }
 
-    // 3. Load Course Data
+    // 4. Load Course Data
     await loadCourseStudio(courseId);
 
-    // 4. Bind Save & Handlers
-    document.getElementById('saveStudioBtn').addEventListener('click', () => saveCourseStudio(courseId));
-    document.getElementById('studioForm').addEventListener('submit', (e) => {
+    // 5. Bind Save & Handlers
+    document.getElementById('saveStudioBtn')?.addEventListener('click', () => saveCourseStudio(courseId));
+    document.getElementById('studioForm')?.addEventListener('submit', (e) => {
         e.preventDefault();
         saveCourseStudio(courseId);
     });
@@ -56,6 +84,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
+function renderNoCoursesState() {
+    const mainContainer = document.querySelector('.dashboard-content');
+    if (!mainContainer) return;
+    mainContainer.innerHTML = `
+        <div style="text-align: center; max-width: 600px; margin: 4rem auto; padding: 3rem 2rem; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: #EEF2FF; color: #4F46E5; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #0F172A; margin-bottom: 0.75rem;">No Courses Created Yet</h2>
+            <p style="color: #64748B; font-size: 14.5px; line-height: 1.6; margin-bottom: 2rem;">
+                To use the Course Content Studio, create your first course. You can design curriculum chapters, add video lectures, build interactive quizzes, and upload lesson materials.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="course-editor.html" class="btn-primary" style="text-decoration: none; padding: 0.75rem 1.75rem; font-size: 14px; border-radius: 8px;">
+                    <i class="fa-solid fa-plus-circle mr-1"></i> Create Your First Course
+                </a>
+                <a href="dashboard.html" class="btn-outline" style="text-decoration: none; padding: 0.75rem 1.5rem; font-size: 14px; border-radius: 8px;">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function renderCourseSwitcher(courses, activeId) {
+    const container = document.getElementById('courseSwitcherContainer');
+    if (!container) return;
+
+    if (!courses || courses.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <label for="courseSwitcherSelect" style="font-size: 12px; font-weight: 600; color: #64748B;"><i class="fa-solid fa-shuffle mr-1"></i> Course:</label>
+        <select id="courseSwitcherSelect" class="form-input" style="padding: 0.25rem 0.6rem; font-size: 12px; border: 1px solid #CBD5E1; border-radius: 6px; background: #FFFFFF; font-weight: 600; color: #1E293B; max-width: 320px;">
+            ${courses.map(c => `
+                <option value="${c.id}" ${String(c.id) === String(activeId) ? 'selected' : ''}>
+                    ${escapeHtml(c.title || `Course #${c.id}`)}
+                </option>
+            `).join('')}
+        </select>
+    `;
+
+    document.getElementById('courseSwitcherSelect')?.addEventListener('change', (e) => {
+        const newId = e.target.value;
+        if (newId) {
+            localStorage.setItem('smartlearn_instructor_active_course_id', newId);
+            window.location.href = `course-manage.html?id=${newId}`;
+        }
+    });
+}
 
 // State
 let courseState = {
@@ -102,40 +183,66 @@ async function loadCourseStudio(courseId) {
         courseState = {
             ...courseState,
             ...data,
+            id: data.id || courseId,
+            title: data.title || '',
+            category: data.category || 'Web Development',
+            subcategory: data.subcategory || '',
+            difficulty: data.difficulty || data.level || 'Intermediate',
+            duration: data.duration || '30 hours',
+            language: data.language || 'English',
+            short_description: data.short_description || '',
+            detailed_description: data.detailed_description || data.description || '',
+            is_free: data.is_free !== undefined ? data.is_free : 1,
+            price: data.price || 0,
+            currency: data.currency || 'INR',
+            demo_video_url: data.demo_video_url || '',
+            status: data.status || 'draft',
             prerequisites: Array.isArray(data.prerequisites) ? data.prerequisites : [],
             technical_requirements: Array.isArray(data.technical_requirements) ? data.technical_requirements : [],
             recommended_knowledge: Array.isArray(data.recommended_knowledge) ? data.recommended_knowledge : [],
-            skills_taught: Array.isArray(data.skills_taught) ? data.skills_taught : [],
+            skills_taught: Array.isArray(data.skills_taught) ? data.skills_taught : (Array.isArray(data.skills) ? data.skills : []),
             target_roles: Array.isArray(data.target_roles) ? data.target_roles : [],
-            target_career_goals: Array.isArray(data.target_career_goals) ? data.target_career_goals : [],
+            target_career_goals: Array.isArray(data.target_career_goals) ? data.target_career_goals : (Array.isArray(data.career_goals) ? data.career_goals : []),
             modules: Array.isArray(data.modules) ? data.modules : []
         };
 
         // Populate Basic Info
-        document.getElementById('courseTitle').value = courseState.title || '';
-        document.getElementById('courseCategory').value = courseState.category || 'Web Development';
-        document.getElementById('courseSubcategory').value = courseState.subcategory || '';
-        document.getElementById('courseDifficulty').value = courseState.difficulty || 'Intermediate';
-        document.getElementById('courseDuration').value = courseState.duration || '';
-        document.getElementById('courseLanguage').value = courseState.language || 'English';
+        const titleEl = document.getElementById('courseTitle');
+        if (titleEl) titleEl.value = courseState.title || '';
+        const catEl = document.getElementById('courseCategory');
+        if (catEl) catEl.value = courseState.category || 'Web Development';
+        const subCatEl = document.getElementById('courseSubcategory');
+        if (subCatEl) subCatEl.value = courseState.subcategory || '';
+        const diffEl = document.getElementById('courseDifficulty');
+        if (diffEl) diffEl.value = courseState.difficulty || 'Intermediate';
+        const durEl = document.getElementById('courseDuration');
+        if (durEl) durEl.value = courseState.duration || '';
+        const langEl = document.getElementById('courseLanguage');
+        if (langEl) langEl.value = courseState.language || 'English';
 
         // Populate Description
-        document.getElementById('courseShortDesc').value = courseState.short_description || '';
-        document.getElementById('courseDetailedDesc').value = courseState.detailed_description || '';
+        const shortDescEl = document.getElementById('courseShortDesc');
+        if (shortDescEl) shortDescEl.value = courseState.short_description || '';
+        const detailedDescEl = document.getElementById('courseDetailedDesc');
+        if (detailedDescEl) detailedDescEl.value = courseState.detailed_description || '';
 
         // Populate Demo Video
-        document.getElementById('demoVideoUrl').value = courseState.demo_video_url || '';
+        const demoEl = document.getElementById('demoVideoUrl');
+        if (demoEl) demoEl.value = courseState.demo_video_url || '';
         updateDemoPreview(courseState.demo_video_url || '');
 
         // Populate Pricing
         const isFree = courseState.is_free !== 0 && courseState.is_free !== false && (!courseState.price || Number(courseState.price) === 0);
         if (isFree) {
-            document.getElementById('priceTypeFree').checked = true;
+            const freeRadio = document.getElementById('priceTypeFree');
+            if (freeRadio) freeRadio.checked = true;
             togglePricingFields(true);
         } else {
-            document.getElementById('priceTypePaid').checked = true;
+            const paidRadio = document.getElementById('priceTypePaid');
+            if (paidRadio) paidRadio.checked = true;
             togglePricingFields(false);
-            document.getElementById('coursePrice').value = courseState.price || 0;
+            const priceInput = document.getElementById('coursePrice');
+            if (priceInput) priceInput.value = courseState.price || 0;
         }
 
         // Render Tag Lists
@@ -151,7 +258,20 @@ async function loadCourseStudio(courseId) {
         updateStudioHeaderAndValidation();
 
     } catch (err) {
-        alert('Failed to load course details: ' + (err.message || err));
+        console.error('Failed to load course details:', err);
+        const mainContainer = document.querySelector('.dashboard-content');
+        if (mainContainer) {
+            mainContainer.innerHTML = `
+                <div style="text-align: center; max-width: 600px; margin: 4rem auto; padding: 2.5rem 2rem; background: #FFFFFF; border: 1px solid #FECACA; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                    <div style="font-size: 2.5rem; color: #EF4444; margin-bottom: 1rem;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h3 style="font-size: 1.3rem; font-weight: 700; color: #991B1B; margin-bottom: 0.5rem;">Could Not Load Course</h3>
+                    <p style="color: #64748B; font-size: 14px; margin-bottom: 1.5rem;">${escapeHtml(err.message || 'The requested course could not be retrieved.')}</p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                        <a href="courses.html" class="btn-primary" style="text-decoration:none; padding: 0.6rem 1.4rem; font-size: 13px; border-radius: 8px;">Back to My Courses</a>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 

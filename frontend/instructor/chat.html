@@ -24,45 +24,48 @@
 
     <div class="app-layout">
         <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
-        <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
-            <div class="sidebar-glow-1"></div>
-            <div class="sidebar-glow-2"></div>
+        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
 
-            <div class="sidebar-brand">
-                <i class="fa-solid fa-graduation-cap"></i> SmartLearn
-            </div>
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">TEACHING</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
+            <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
+            <a href="course-manage.html" class="nav-item"><i class="fa-solid fa-pen-to-square"></i> <span class="nav-text">Course Content</span></a>
+            <a href="public-catalog.html" class="nav-item"><i class="fa-solid fa-globe"></i> <span class="nav-text">Public Catalog</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
+            <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
             
-            <nav class="sidebar-nav">
-                <div class="nav-label">TEACHING</div>
-                <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Dashboard</span></a>
-                <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">My Courses</span></a>
-                <a href="course-editor.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i> <span class="nav-text">Create Course</span></a>
-                <a href="students.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Students / Enrollments</span></a>
-                
-                <div class="nav-label">COMMUNICATION</div>
-                <a href="chat.html" class="nav-item active"><i class="fa-solid fa-comments"></i> <span class="nav-text">Course Chat & Communication</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
-                <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
-                <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
-                
-                <div class="nav-label">ACCOUNT</div>
-                <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-                <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
-            </nav>
+            <div class="nav-label">COMMUNICATION</div>
+            <a href="chat.html" class="nav-item active"><i class="fa-solid fa-comments"></i> <span class="nav-text">Course Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="notif-badge badge" id="notifUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
             
-            <div class="sidebar-footer">
-                <div class="sidebar-user-card">
-                    <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
-                    <div class="sidebar-user-info">
-                        <span class="sidebar-user-name" id="sidebarName">Instructor</span>
-                        <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
-                    </div>
-                </div>
-                <div class="sidebar-footer-links">
-                    <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
-                    <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            <div class="nav-label">ACCOUNT</div>
+            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">INSTRUCTOR</span>
                 </div>
             </div>
-        </aside>
+            <div class="sidebar-footer-links">
+                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
 
         <!-- MAIN APPLICATION AREA -->
         <div class="app-main dashboard-main">
@@ -204,6 +207,7 @@
     <!-- Scripts -->
     <script src="../js/api.js?v=20260928_redesign"></script>
     <script src="../js/auth.js?v=20260928_redesign"></script>
+    <script src="../js/notifications.js"></script>
     <script src="../js/chat.js?v=20260928_redesign"></script>
     <script src="../js/chatbot.js"></script>
 </body>

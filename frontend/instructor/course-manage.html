@@ -130,6 +130,7 @@
 
     <!-- INSTRUCTOR SIDEBAR -->
         <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
+    <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
     <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
         <div class="sidebar-glow-2"></div>
@@ -149,9 +150,12 @@
             <a href="reviews.html" class="nav-item"><i class="fa-solid fa-star"></i> <span class="nav-text">Ratings & Reviews</span></a>
             <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Analytics</span></a>
             
+            <div class="nav-label">COMMUNICATION</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Course Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="notif-badge badge" id="notifUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            
             <div class="nav-label">ACCOUNT</div>
             <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
         </nav>
         
         <div class="sidebar-footer">
@@ -159,7 +163,7 @@
                 <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
                 <div class="sidebar-user-info">
                     <span class="sidebar-user-name" id="sidebarName">Instructor</span>
-                    <span class="sidebar-user-role" id="sidebarRole">Instructor</span>
+                    <span class="sidebar-user-role" id="sidebarRole">INSTRUCTOR</span>
                 </div>
             </div>
             <div class="sidebar-footer-links">
@@ -190,12 +194,14 @@
             
             <!-- Sticky Studio Control Bar -->
             <div class="studio-sticky-bar">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                <div style="flex: 1; min-width: 250px;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
                         <h2 id="stickyCourseTitle" style="font-size: 1.25rem; font-weight: 700; color: var(--dark-navy); margin: 0;">Loading Course...</h2>
                         <span id="stickyStatusBadge" class="status-pill badge-status-draft">Draft</span>
                         <span id="stickyPriceBadge" class="tag-pill" style="background: #E0E7FF; color: #4338CA;">Free</span>
                     </div>
+                    <!-- Course Switcher Container -->
+                    <div id="courseSwitcherContainer" style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0;"></div>
                     <div style="display: flex; align-items: center; gap: 1rem; font-size: 12.5px; color: #64748b;">
                         <span>Completeness: <strong id="completenessScore" style="color: #4F46E5;">0%</strong></span>
                         <div style="width: 120px; height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
@@ -204,7 +210,10 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <button type="button" id="togglePublishBtn" onclick="handleStudioTogglePublish()" class="btn-outline" style="padding: 0.6rem 1rem; font-size: 13px; border-radius: 8px;">
+                        Publish Course
+                    </button>
                     <a id="previewCourseBtn" href="#" target="_blank" class="btn-outline" style="text-decoration: none; padding: 0.6rem 1rem; font-size: 13px; border-radius: 8px;">
                         <i class="fa-solid fa-eye mr-1"></i> Preview as Student
                     </a>

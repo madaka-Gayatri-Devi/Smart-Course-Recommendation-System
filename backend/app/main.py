@@ -788,7 +788,17 @@ def seed_initial_data():
         except Exception as _chat_seed_err:
             db_logger.warning(f"[DB Seed] Chat seeding notice: {_chat_seed_err}")
 
-        # 12. AUTOMATIC DATA REPAIR: Sanitize any existing stringified JSON columns in the database
+        # 12. Notifications (Preserve persistent system & user notifications across restarts)
+        try:
+            if db.query(NotificationDB).count() == 0:
+                for notif in seed_data.get("notifications", []):
+                    db.merge(NotificationDB(**notif))
+                db.commit()
+                db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('notifications', []))} notifications.")
+        except Exception as _notif_seed_err:
+            db_logger.warning(f"[DB Seed] Notifications seeding notice: {_notif_seed_err}")
+
+        # 13. AUTOMATIC DATA REPAIR: Sanitize any existing stringified JSON columns in the database
         course_repaired = 0
         for c_rec in db.query(CourseDB).all():
             changed = False
@@ -4070,6 +4080,36 @@ def update_course_content(
     if user.role.upper() == "INSTRUCTOR" and course.instructor_id != user.id:
         raise HTTPException(status_code=403, detail="Forbidden: You are only authorized to update content for your own courses.")
         
+    if "title" in payload and payload["title"]:
+        course.title = str(payload["title"]).strip()
+    if "short_description" in payload:
+        course.short_description = str(payload["short_description"] or "").strip()
+    if "detailed_description" in payload and payload["detailed_description"]:
+        course.description = str(payload["detailed_description"]).strip()
+    elif "description" in payload and payload["description"]:
+        course.description = str(payload["description"]).strip()
+    if "category" in payload and payload["category"]:
+        course.category = str(payload["category"]).strip()
+    if "subcategory" in payload:
+        course.subcategory = str(payload["subcategory"] or "").strip()
+    if "difficulty" in payload and payload["difficulty"]:
+        course.level = str(payload["difficulty"]).strip()
+    elif "level" in payload and payload["level"]:
+        course.level = str(payload["level"]).strip()
+    if "duration" in payload:
+        course.duration = str(payload["duration"] or "").strip()
+    if "language" in payload:
+        course.language = str(payload["language"] or "").strip()
+    if "skills_taught" in payload:
+        course.skills = payload["skills_taught"]
+    elif "skills" in payload:
+        course.skills = payload["skills"]
+    if "target_roles" in payload:
+        course.target_roles = payload["target_roles"]
+    if "target_career_goals" in payload:
+        course.career_goals = payload["target_career_goals"]
+    elif "career_goals" in payload:
+        course.career_goals = payload["career_goals"]
     if "modules" in payload:
         course.modules = payload["modules"]
     if "demo_video_url" in payload:
