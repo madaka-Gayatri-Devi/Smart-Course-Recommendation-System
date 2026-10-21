@@ -1904,6 +1904,14 @@ class CareerGoalPayload(BaseModel):
     required_skills: Optional[List[str]] = []
     recommended_categories: Optional[List[str]] = []
 
+class AssessmentQuestionPayload(BaseModel):
+    assessment_id: int
+    question_text: str
+    options: List[str]
+    correct_option: int = 0
+    explanation: Optional[str] = None
+    points: Optional[int] = 10
+
 class RegenerateRecommendationsPayload(BaseModel):
     student_ids: Optional[List[int]] = None
 
@@ -6377,11 +6385,31 @@ def create_category(payload: CategoryPayload, user: UserDB = Depends(get_current
     Returns:
         Created CategoryDB record.
     """
-    cat = CategoryDB(name=payload.name, description=payload.description, icon=payload.icon)
+    existing = db.query(CategoryDB).filter(CategoryDB.name.ilike(payload.name.strip())).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Category '{payload.name.strip()}' already exists")
+    cat = CategoryDB(name=payload.name.strip(), description=payload.description, icon=payload.icon)
     db.add(cat)
     db.commit()
     db.refresh(cat)
     return {"message": "Category created", "category": {"id": cat.id, "name": cat.name}}
+
+@app.put("/admin/categories/{category_id}")
+def update_category(category_id: int, payload: CategoryPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    cat = db.query(CategoryDB).filter(CategoryDB.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    existing = db.query(CategoryDB).filter(CategoryDB.name.ilike(payload.name.strip()), CategoryDB.id != category_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Category '{payload.name.strip()}' already exists")
+    cat.name = payload.name.strip()
+    if payload.description is not None:
+        cat.description = payload.description.strip()
+    if payload.icon is not None:
+        cat.icon = payload.icon.strip()
+    db.commit()
+    db.refresh(cat)
+    return {"message": "Category updated successfully", "category": {"id": cat.id, "name": cat.name}}
 
 @app.delete("/admin/categories/{category_id}")
 def delete_category(category_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
@@ -6434,11 +6462,30 @@ def create_skill(payload: SkillPayload, user: UserDB = Depends(get_current_admin
     Returns:
         Created SkillDB record.
     """
-    skill = SkillDB(name=payload.name, category=payload.category, description=payload.description, proficiency_levels=["Beginner", "Intermediate", "Advanced", "Expert"])
+    existing = db.query(SkillDB).filter(SkillDB.name.ilike(payload.name.strip())).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Skill '{payload.name.strip()}' already exists")
+    skill = SkillDB(name=payload.name.strip(), category=payload.category, description=payload.description, proficiency_levels=["Beginner", "Intermediate", "Advanced", "Expert"])
     db.add(skill)
     db.commit()
     db.refresh(skill)
     return {"message": "Skill created", "skill": skill}
+
+@app.put("/admin/skills/{skill_id}")
+def update_skill(skill_id: int, payload: SkillPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    skill = db.query(SkillDB).filter(SkillDB.id == skill_id).first()
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    existing = db.query(SkillDB).filter(SkillDB.name.ilike(payload.name.strip()), SkillDB.id != skill_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Skill '{payload.name.strip()}' already exists")
+    skill.name = payload.name.strip()
+    skill.category = payload.category.strip()
+    if payload.description is not None:
+        skill.description = payload.description.strip()
+    db.commit()
+    db.refresh(skill)
+    return {"message": "Skill updated successfully", "skill": skill}
 
 @app.delete("/admin/skills/{skill_id}")
 def delete_skill(skill_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
@@ -6487,8 +6534,11 @@ def create_career_goal(payload: CareerGoalPayload, user: UserDB = Depends(get_cu
     Returns:
         Created CareerGoalDB record.
     """
+    existing = db.query(CareerGoalDB).filter(CareerGoalDB.title.ilike(payload.title.strip())).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Career Goal '{payload.title.strip()}' already exists")
     goal = CareerGoalDB(
-        title=payload.title,
+        title=payload.title.strip(),
         description=payload.description,
         required_skills=payload.required_skills or [],
         recommended_categories=payload.recommended_categories or []
@@ -6497,6 +6547,25 @@ def create_career_goal(payload: CareerGoalPayload, user: UserDB = Depends(get_cu
     db.commit()
     db.refresh(goal)
     return {"message": "Career Goal created", "career_goal": goal}
+
+@app.put("/admin/career-goals/{goal_id}")
+def update_career_goal(goal_id: int, payload: CareerGoalPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    goal = db.query(CareerGoalDB).filter(CareerGoalDB.id == goal_id).first()
+    if not goal:
+        raise HTTPException(status_code=404, detail="Career goal not found")
+    existing = db.query(CareerGoalDB).filter(CareerGoalDB.title.ilike(payload.title.strip()), CareerGoalDB.id != goal_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Career Goal '{payload.title.strip()}' already exists")
+    goal.title = payload.title.strip()
+    if payload.description is not None:
+        goal.description = payload.description.strip()
+    if payload.required_skills is not None:
+        goal.required_skills = payload.required_skills
+    if payload.recommended_categories is not None:
+        goal.recommended_categories = payload.recommended_categories
+    db.commit()
+    db.refresh(goal)
+    return {"message": "Career goal updated successfully", "career_goal": goal}
 
 @app.delete("/admin/career-goals/{goal_id}")
 def delete_career_goal(goal_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
@@ -6517,6 +6586,95 @@ def delete_career_goal(goal_id: int, user: UserDB = Depends(get_current_admin), 
     db.delete(goal)
     db.commit()
     return {"message": "Career goal deleted"}
+
+# --- ADMIN ASSESSMENT QUESTIONS MANAGEMENT ---
+
+@app.get("/admin/assessments")
+def get_admin_assessments(user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    assessments = db.query(AssessmentDB).all()
+    res = []
+    for a in assessments:
+        q_count = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == a.id).count()
+        res.append({
+            "id": a.id,
+            "title": a.title,
+            "description": a.description,
+            "category": a.category,
+            "duration_minutes": a.duration_minutes,
+            "total_questions": q_count or a.total_questions,
+            "passing_score": a.passing_score
+        })
+    return res
+
+@app.get("/admin/assessment-questions")
+def get_admin_assessment_questions(assessment_id: Optional[int] = None, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    query = db.query(AssessmentQuestionDB)
+    if assessment_id:
+        query = query.filter(AssessmentQuestionDB.assessment_id == assessment_id)
+    questions = query.all()
+    assessments_map = {a.id: a.title for a in db.query(AssessmentDB).all()}
+    res = []
+    for q in questions:
+        res.append({
+            "id": q.id,
+            "assessment_id": q.assessment_id,
+            "assessment_title": assessments_map.get(q.assessment_id, f"Assessment #{q.assessment_id}"),
+            "question_text": q.question_text,
+            "options": q.options or [],
+            "correct_option": q.correct_option,
+            "explanation": q.explanation or "",
+            "points": q.points or 10
+        })
+    return res
+
+@app.post("/admin/assessment-questions")
+def create_admin_assessment_question(payload: AssessmentQuestionPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    assessment = db.query(AssessmentDB).filter(AssessmentDB.id == payload.assessment_id).first()
+    if not assessment:
+        raise HTTPException(status_code=404, detail="Associated assessment not found")
+    q = AssessmentQuestionDB(
+        assessment_id=payload.assessment_id,
+        question_text=payload.question_text.strip(),
+        options=payload.options,
+        correct_option=payload.correct_option,
+        explanation=(payload.explanation or "").strip(),
+        points=payload.points or 10
+    )
+    db.add(q)
+    db.flush()
+    count = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == payload.assessment_id).count()
+    assessment.total_questions = count
+    db.commit()
+    db.refresh(q)
+    return {"message": "Assessment question created successfully", "question": {"id": q.id, "question_text": q.question_text}}
+
+@app.put("/admin/assessment-questions/{question_id}")
+def update_admin_assessment_question(question_id: int, payload: AssessmentQuestionPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    q = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    q.assessment_id = payload.assessment_id
+    q.question_text = payload.question_text.strip()
+    q.options = payload.options
+    q.correct_option = payload.correct_option
+    q.explanation = (payload.explanation or "").strip()
+    q.points = payload.points or 10
+    db.commit()
+    return {"message": "Question updated successfully"}
+
+@app.delete("/admin/assessment-questions/{question_id}")
+def delete_admin_assessment_question(question_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    q = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.id == question_id).first()
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+    aid = q.assessment_id
+    db.delete(q)
+    assessment = db.query(AssessmentDB).filter(AssessmentDB.id == aid).first()
+    if assessment:
+        count = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == aid).count()
+        assessment.total_questions = max(0, count - 1)
+    db.commit()
+    return {"message": "Question deleted successfully"}
 
 @app.get("/admin/reports")
 @app.get("/admin/reports/overview")
@@ -6651,6 +6809,7 @@ def get_admin_popular_courses(user: UserDB = Depends(get_current_admin), db: Ses
     result.sort(key=lambda x: x["enrollments"], reverse=True)
     return {"courses": result}
 
+@app.get("/admin/enrollments")
 @app.get("/admin/reports/enrollments")
 def get_admin_enrollments_report(
     course_id: Optional[Union[int, str]] = None,

@@ -104,6 +104,31 @@ async function initAdminApp() {
         tasks.push(setupAdminAnalyticsPage().catch(e => console.error("Error in setupAdminAnalyticsPage:", e)));
     }
 
+    // 10. Categories Management (categories.html)
+    if (document.getElementById('adminCategoriesTableBody')) {
+        tasks.push(setupAdminCategoriesPage().catch(e => console.error("Error in setupAdminCategoriesPage:", e)));
+    }
+
+    // 11. Skills Management (skills.html)
+    if (document.getElementById('adminSkillsTableBody')) {
+        tasks.push(setupAdminSkillsPage().catch(e => console.error("Error in setupAdminSkillsPage:", e)));
+    }
+
+    // 12. Career Goals Management (career-goals.html)
+    if (document.getElementById('adminGoalsTableBody')) {
+        tasks.push(setupAdminCareerGoalsPage().catch(e => console.error("Error in setupAdminCareerGoalsPage:", e)));
+    }
+
+    // 13. Assessment Questions (assessment-questions.html)
+    if (document.getElementById('adminQuestionsTableBody')) {
+        tasks.push(setupAdminAssessmentQuestionsPage().catch(e => console.error("Error in setupAdminAssessmentQuestionsPage:", e)));
+    }
+
+    // 14. Platform Enrollments (enrollments.html)
+    if (document.getElementById('adminEnrollmentsTableBody')) {
+        tasks.push(setupAdminEnrollmentsPage().catch(e => console.error("Error in setupAdminEnrollmentsPage:", e)));
+    }
+
     await Promise.allSettled(tasks);
 }
 
@@ -3014,3 +3039,883 @@ window.addEventListener('smartlearn:themechanged', () => {
 });
 window.setupAdminAnalyticsPage = setupAdminAnalyticsPage;
 
+
+
+// ==========================================
+// 10. CATEGORIES MANAGEMENT (categories.html)
+// ==========================================
+async function setupAdminCategoriesPage() {
+    const tbody = document.getElementById('adminCategoriesTableBody');
+    if (!tbody) return;
+
+    let editingCategoryId = null;
+    const modal = document.getElementById('categoryModal');
+    const form = document.getElementById('categoryForm');
+    const catNameInput = document.getElementById('catName');
+    const catDescInput = document.getElementById('catDesc');
+    const catIconInput = document.getElementById('catIcon');
+    const addBtn = document.getElementById('addCategoryBtn');
+
+    window.closeCategoryModal = function() {
+        if (modal) modal.style.display = 'none';
+        if (form) form.reset();
+        editingCategoryId = null;
+        const modalTitle = modal ? modal.querySelector('h3') : null;
+        if (modalTitle) modalTitle.textContent = 'Add New Category';
+    };
+
+    window.openCategoryModalForEdit = function(catJsonStr) {
+        try {
+            const cat = JSON.parse(decodeURIComponent(catJsonStr));
+            editingCategoryId = cat.id;
+            if (catNameInput) catNameInput.value = cat.name || '';
+            if (catDescInput) catDescInput.value = cat.description || '';
+            if (catIconInput) catIconInput.value = cat.icon || 'fa-solid fa-code';
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Edit Category';
+            if (modal) modal.style.display = 'flex';
+        } catch (e) {
+            console.error('Error opening edit modal:', e);
+        }
+    };
+
+    window.handleDeleteCategory = async function(id, name) {
+        if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+        try {
+            await window.api.deleteAdminCategory(id);
+            alert('Category deleted successfully.');
+            await fetchAndRenderCategories();
+        } catch (err) {
+            alert(err.message || 'Failed to delete category.');
+        }
+    };
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            editingCategoryId = null;
+            if (form) form.reset();
+            if (catIconInput) catIconInput.value = 'fa-solid fa-code';
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Add New Category';
+            if (modal) modal.style.display = 'flex';
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = (catNameInput ? catNameInput.value : '').trim();
+            const description = (catDescInput ? catDescInput.value : '').trim();
+            const icon = (catIconInput ? catIconInput.value : '').trim() || 'fa-solid fa-code';
+
+            if (!name) {
+                alert('Category Name is required.');
+                return;
+            }
+
+            const payload = { name, description, icon };
+            try {
+                if (editingCategoryId) {
+                    await window.api.updateAdminCategory(editingCategoryId, payload);
+                    alert('Category updated successfully!');
+                } else {
+                    await window.api.createAdminCategory(payload);
+                    alert('Category created successfully!');
+                }
+                closeCategoryModal();
+                await fetchAndRenderCategories();
+            } catch (err) {
+                alert(err.message || 'Failed to save category.');
+            }
+        });
+    }
+
+    const fetchAndRenderCategories = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading categories...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const categories = await window.api.getAdminCategories();
+            if (!categories || categories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                            <div style="font-size:2.2rem; margin-bottom:0.5rem;">🗂️</div>
+                            <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No categories found</div>
+                            <div style="font-size:13.5px; color:#64748b;">Click "Add Category" to create your first course domain.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = categories.map(c => {
+                const iconClass = c.icon || 'fa-solid fa-code';
+                const courseCount = c.course_count || 0;
+                const encodedData = encodeURIComponent(JSON.stringify(c));
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <div style="width:36px; height:36px; border-radius:8px; background:#EEF2FF; color:#4F46E5; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+                                    <i class="${escapeHtml(iconClass)}"></i>
+                                </div>
+                                <strong style="color:var(--dark-navy); font-size:14px;">${escapeHtml(c.name)}</strong>
+                            </div>
+                        </td>
+                        <td><span style="font-size:13px; color:#475569;">${escapeHtml(c.description || 'No description provided.')}</span></td>
+                        <td><code style="font-size:12px; background:#F1F5F9; padding:2px 6px; border-radius:4px; color:#475569;">${escapeHtml(iconClass)}</code></td>
+                        <td>
+                            <span class="badge" style="background:#EDE9FE; color:#5B21B6; font-weight:700; font-size:12px; padding:3px 10px; border-radius:99px;">
+                                ${courseCount} Course${courseCount === 1 ? '' : 's'}
+                            </span>
+                        </td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn btn-xs btn-outline" style="padding:0.35rem 0.65rem; font-size:12px; margin-right:4px; border-radius:6px;" onclick="window.openCategoryModalForEdit('${encodedData}')" title="Edit Category">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                            </button>
+                            <button class="btn btn-xs btn-outline-danger" style="padding:0.35rem 0.65rem; font-size:12px; border-radius:6px;" onclick="window.handleDeleteCategory(${c.id}, '${escapeHtml(c.name)}')" title="Delete Category">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error loading admin categories:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load categories</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check server connection.')}</div>
+                        <button class="btn btn-primary-small" style="margin-top:0.75rem;" onclick="location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    await fetchAndRenderCategories();
+}
+
+// ==========================================
+// 11. SKILLS MANAGEMENT (skills.html)
+// ==========================================
+async function setupAdminSkillsPage() {
+    const tbody = document.getElementById('adminSkillsTableBody');
+    if (!tbody) return;
+
+    let editingSkillId = null;
+    const modal = document.getElementById('skillModal');
+    const form = document.getElementById('skillForm');
+    const skillNameInput = document.getElementById('skillName');
+    const skillCategoryInput = document.getElementById('skillCategory');
+    const skillDescInput = document.getElementById('skillDesc');
+    const addBtn = document.getElementById('addSkillBtn');
+
+    window.closeSkillModal = function() {
+        if (modal) modal.style.display = 'none';
+        if (form) form.reset();
+        editingSkillId = null;
+        const modalTitle = modal ? modal.querySelector('h3') : null;
+        if (modalTitle) modalTitle.textContent = 'Add New Skill';
+    };
+
+    window.openSkillModalForEdit = function(skillJsonStr) {
+        try {
+            const skill = JSON.parse(decodeURIComponent(skillJsonStr));
+            editingSkillId = skill.id;
+            if (skillNameInput) skillNameInput.value = skill.name || '';
+            if (skillCategoryInput) skillCategoryInput.value = skill.category || '';
+            if (skillDescInput) skillDescInput.value = skill.description || '';
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Edit Skill';
+            if (modal) modal.style.display = 'flex';
+        } catch (e) {
+            console.error('Error opening edit skill modal:', e);
+        }
+    };
+
+    window.handleDeleteSkill = async function(id, name) {
+        if (!confirm(`Are you sure you want to delete skill "${name}"?`)) return;
+        try {
+            await window.api.deleteAdminSkill(id);
+            alert('Skill deleted successfully.');
+            await fetchAndRenderSkills();
+        } catch (err) {
+            alert(err.message || 'Failed to delete skill.');
+        }
+    };
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            editingSkillId = null;
+            if (form) form.reset();
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Add New Skill';
+            if (modal) modal.style.display = 'flex';
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = (skillNameInput ? skillNameInput.value : '').trim();
+            const category = (skillCategoryInput ? skillCategoryInput.value : '').trim();
+            const description = (skillDescInput ? skillDescInput.value : '').trim();
+
+            if (!name || !category) {
+                alert('Skill Name and Category are required.');
+                return;
+            }
+
+            const payload = { name, category, description };
+            try {
+                if (editingSkillId) {
+                    await window.api.updateAdminSkill(editingSkillId, payload);
+                    alert('Skill updated successfully!');
+                } else {
+                    await window.api.createAdminSkill(payload);
+                    alert('Skill created successfully!');
+                }
+                closeSkillModal();
+                await fetchAndRenderSkills();
+            } catch (err) {
+                alert(err.message || 'Failed to save skill.');
+            }
+        });
+    }
+
+    const fetchAndRenderSkills = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading skills catalog...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const skills = await window.api.getAdminSkills();
+            if (!skills || skills.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                            <div style="font-size:2.2rem; margin-bottom:0.5rem;">⚡</div>
+                            <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No skills found</div>
+                            <div style="font-size:13.5px; color:#64748b;">Click "Add Skill" to define key technical competencies.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = skills.map(s => {
+                const encodedData = encodeURIComponent(JSON.stringify(s));
+                return `
+                    <tr>
+                        <td><strong style="color:var(--dark-navy); font-size:14px;"><i class="fa-solid fa-bolt mr-2" style="color:#F59E0B;"></i> ${escapeHtml(s.name)}</strong></td>
+                        <td>
+                            <span class="badge" style="background:#F0FDF4; color:#15803D; font-weight:600; font-size:12px; padding:3px 8px; border-radius:6px; border:1px solid #BBF7D0;">
+                                ${escapeHtml(s.category)}
+                            </span>
+                        </td>
+                        <td><span style="font-size:13px; color:#475569;">${escapeHtml(s.description || 'Standard platform skill competency.')}</span></td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn btn-xs btn-outline" style="padding:0.35rem 0.65rem; font-size:12px; margin-right:4px; border-radius:6px;" onclick="window.openSkillModalForEdit('${encodedData}')" title="Edit Skill">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                            </button>
+                            <button class="btn btn-xs btn-outline-danger" style="padding:0.35rem 0.65rem; font-size:12px; border-radius:6px;" onclick="window.handleDeleteSkill(${s.id}, '${escapeHtml(s.name)}')" title="Delete Skill">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error loading admin skills:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load skills</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check server connection.')}</div>
+                        <button class="btn btn-primary-small" style="margin-top:0.75rem;" onclick="location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    await fetchAndRenderSkills();
+}
+
+// ==========================================
+// 12. CAREER GOALS MANAGEMENT (career-goals.html)
+// ==========================================
+async function setupAdminCareerGoalsPage() {
+    const tbody = document.getElementById('adminGoalsTableBody');
+    if (!tbody) return;
+
+    let editingGoalId = null;
+    const modal = document.getElementById('goalModal');
+    const form = document.getElementById('goalForm');
+    const goalTitleInput = document.getElementById('goalTitle');
+    const goalDescInput = document.getElementById('goalDesc');
+    const goalSkillsInput = document.getElementById('goalSkills');
+    const addBtn = document.getElementById('addGoalBtn');
+
+    window.closeGoalModal = function() {
+        if (modal) modal.style.display = 'none';
+        if (form) form.reset();
+        editingGoalId = null;
+        const modalTitle = modal ? modal.querySelector('h3') : null;
+        if (modalTitle) modalTitle.textContent = 'Add Career Goal Benchmark';
+    };
+
+    window.openGoalModalForEdit = function(goalJsonStr) {
+        try {
+            const goal = JSON.parse(decodeURIComponent(goalJsonStr));
+            editingGoalId = goal.id;
+            if (goalTitleInput) goalTitleInput.value = goal.title || '';
+            if (goalDescInput) goalDescInput.value = goal.description || '';
+            const skillsArr = Array.isArray(goal.required_skills) ? goal.required_skills : [];
+            if (goalSkillsInput) goalSkillsInput.value = skillsArr.join(', ');
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Edit Career Goal Benchmark';
+            if (modal) modal.style.display = 'flex';
+        } catch (e) {
+            console.error('Error opening edit goal modal:', e);
+        }
+    };
+
+    window.handleDeleteGoal = async function(id, title) {
+        if (!confirm(`Are you sure you want to delete career goal "${title}"?`)) return;
+        try {
+            await window.api.deleteAdminCareerGoal(id);
+            alert('Career goal deleted successfully.');
+            await fetchAndRenderGoals();
+        } catch (err) {
+            alert(err.message || 'Failed to delete career goal.');
+        }
+    };
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            editingGoalId = null;
+            if (form) form.reset();
+            const modalTitle = modal ? modal.querySelector('h3') : null;
+            if (modalTitle) modalTitle.textContent = 'Add Career Goal Benchmark';
+            if (modal) modal.style.display = 'flex';
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = (goalTitleInput ? goalTitleInput.value : '').trim();
+            const description = (goalDescInput ? goalDescInput.value : '').trim();
+            const rawSkills = (goalSkillsInput ? goalSkillsInput.value : '').trim();
+
+            if (!title || !rawSkills) {
+                alert('Target Role Title and Required Skills are required.');
+                return;
+            }
+
+            const required_skills = rawSkills.split(',').map(s => s.trim()).filter(Boolean);
+            const payload = { title, description, required_skills };
+
+            try {
+                if (editingGoalId) {
+                    await window.api.updateAdminCareerGoal(editingGoalId, payload);
+                    alert('Career goal updated successfully!');
+                } else {
+                    await window.api.createAdminCareerGoal(payload);
+                    alert('Career goal created successfully!');
+                }
+                closeGoalModal();
+                await fetchAndRenderGoals();
+            } catch (err) {
+                alert(err.message || 'Failed to save career goal.');
+            }
+        });
+    }
+
+    const fetchAndRenderGoals = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading career goals...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const goals = await window.api.getAdminCareerGoals();
+            if (!goals || goals.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                            <div style="font-size:2.2rem; margin-bottom:0.5rem;">🎯</div>
+                            <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No career goals found</div>
+                            <div style="font-size:13.5px; color:#64748b;">Click "Add Goal" to define target industry career pathways.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = goals.map(g => {
+                const skillsArr = Array.isArray(g.required_skills) ? g.required_skills : (typeof g.required_skills === 'string' ? JSON.parse(g.required_skills || '[]') : []);
+                const chipsHtml = skillsArr.length > 0 
+                    ? skillsArr.map(s => `<span class="badge" style="background:#EDE9FE; color:#5B21B6; font-size:11px; padding:2px 8px; border-radius:99px; margin-right:4px; margin-bottom:4px; display:inline-block;">${escapeHtml(s)}</span>`).join('')
+                    : `<span style="font-size:12px; color:#94A3B8; font-style:italic;">None specified</span>`;
+
+                const encodedData = encodeURIComponent(JSON.stringify(g));
+
+                return `
+                    <tr>
+                        <td><strong style="color:var(--dark-navy); font-size:14px;"><i class="fa-solid fa-bullseye mr-2" style="color:#7C3AED;"></i> ${escapeHtml(g.title)}</strong></td>
+                        <td><span style="font-size:13px; color:#475569;">${escapeHtml(g.description || 'Target career role benchmark.')}</span></td>
+                        <td><div style="max-width:380px;">${chipsHtml}</div></td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <button class="btn btn-xs btn-outline" style="padding:0.35rem 0.65rem; font-size:12px; margin-right:4px; border-radius:6px;" onclick="window.openGoalModalForEdit('${encodedData}')" title="Edit Career Goal">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                            </button>
+                            <button class="btn btn-xs btn-outline-danger" style="padding:0.35rem 0.65rem; font-size:12px; border-radius:6px;" onclick="window.handleDeleteGoal(${g.id}, '${escapeHtml(g.title)}')" title="Delete Career Goal">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error loading admin career goals:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load career goals</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check server connection.')}</div>
+                        <button class="btn btn-primary-small" style="margin-top:0.75rem;" onclick="location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    await fetchAndRenderGoals();
+}
+
+// ==========================================
+// 13. ASSESSMENT QUESTIONS MANAGEMENT (assessment-questions.html)
+// ==========================================
+async function setupAdminAssessmentQuestionsPage() {
+    const tbody = document.getElementById('adminQuestionsTableBody');
+    if (!tbody) return;
+
+    let allQuestions = [];
+    let editingQuestionId = null;
+    const modal = document.getElementById('questionModal');
+    const form = document.getElementById('questionForm');
+    const assessmentSelect = document.getElementById('qAssessmentSelect');
+    const filterSelect = document.getElementById('adminAssessmentFilterSelect');
+    const searchInput = document.getElementById('adminQuestionSearchInput');
+    const addBtn = document.getElementById('addQuestionBtn');
+
+    window.closeQuestionModal = function() {
+        if (modal) modal.style.display = 'none';
+        if (form) form.reset();
+        editingQuestionId = null;
+        const titleEl = document.getElementById('questionModalTitle');
+        if (titleEl) titleEl.textContent = 'Add Assessment Question';
+    };
+
+    window.openQuestionModalForEdit = function(qJsonStr) {
+        try {
+            const q = JSON.parse(decodeURIComponent(qJsonStr));
+            editingQuestionId = q.id;
+            if (assessmentSelect) assessmentSelect.value = q.assessment_id;
+            document.getElementById('qText').value = q.question_text || '';
+            const opts = Array.isArray(q.options) ? q.options : ['', '', '', ''];
+            document.getElementById('qOpt0').value = opts[0] || '';
+            document.getElementById('qOpt1').value = opts[1] || '';
+            document.getElementById('qOpt2').value = opts[2] || '';
+            document.getElementById('qOpt3').value = opts[3] || '';
+            
+            const radios = document.getElementsByName('qCorrectRadio');
+            radios.forEach(r => {
+                r.checked = (parseInt(r.value, 10) === parseInt(q.correct_option, 10));
+            });
+
+            document.getElementById('qPoints').value = q.points || 10;
+            document.getElementById('qExplanation').value = q.explanation || '';
+
+            const titleEl = document.getElementById('questionModalTitle');
+            if (titleEl) titleEl.textContent = 'Edit Assessment Question';
+            if (modal) modal.style.display = 'flex';
+        } catch (e) {
+            console.error('Error opening question edit modal:', e);
+        }
+    };
+
+    window.handleDeleteQuestion = async function(id) {
+        if (!confirm(`Are you sure you want to delete question #${id}?`)) return;
+        try {
+            await window.api.deleteAdminAssessmentQuestion(id);
+            alert('Assessment question deleted successfully.');
+            await fetchAndRenderQuestions();
+        } catch (err) {
+            alert(err.message || 'Failed to delete question.');
+        }
+    };
+
+    // Populate assessment dropdown
+    try {
+        const assessments = await window.api.getAdminAssessments();
+        if (assessmentSelect && assessments) {
+            assessmentSelect.innerHTML = assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.category)})</option>`).join('');
+        }
+        if (filterSelect && assessments) {
+            filterSelect.innerHTML = `<option value="all">All Assessments</option>` + assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)}</option>`).join('');
+            filterSelect.addEventListener('change', () => filterAndRender());
+        }
+    } catch (e) {
+        console.warn('Could not load assessments dropdown:', e);
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            editingQuestionId = null;
+            if (form) form.reset();
+            const titleEl = document.getElementById('questionModalTitle');
+            if (titleEl) titleEl.textContent = 'Add Assessment Question';
+            if (modal) modal.style.display = 'flex';
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const assessment_id = parseInt(document.getElementById('qAssessmentSelect').value, 10);
+            const question_text = document.getElementById('qText').value.trim();
+            const opt0 = document.getElementById('qOpt0').value.trim();
+            const opt1 = document.getElementById('qOpt1').value.trim();
+            const opt2 = document.getElementById('qOpt2').value.trim();
+            const opt3 = document.getElementById('qOpt3').value.trim();
+            const points = parseInt(document.getElementById('qPoints').value, 10) || 10;
+            const explanation = document.getElementById('qExplanation').value.trim();
+
+            let correct_option = 0;
+            const radios = document.getElementsByName('qCorrectRadio');
+            for (const r of radios) {
+                if (r.checked) { correct_option = parseInt(r.value, 10); break; }
+            }
+
+            if (!question_text || !opt0 || !opt1) {
+                alert('Question text and at least 2 options are required.');
+                return;
+            }
+
+            const options = [opt0, opt1, opt2, opt3].filter(Boolean);
+            const payload = { assessment_id, question_text, options, correct_option, points, explanation };
+
+            try {
+                if (editingQuestionId) {
+                    await window.api.updateAdminAssessmentQuestion(editingQuestionId, payload);
+                    alert('Assessment question updated successfully!');
+                } else {
+                    await window.api.createAdminAssessmentQuestion(payload);
+                    alert('Assessment question created successfully!');
+                }
+                closeQuestionModal();
+                await fetchAndRenderQuestions();
+            } catch (err) {
+                alert(err.message || 'Failed to save question.');
+            }
+        });
+    }
+
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(filterAndRender, 250);
+        });
+    }
+
+    function filterAndRender() {
+        const filterVal = filterSelect ? filterSelect.value : 'all';
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        let filtered = allQuestions;
+        if (filterVal !== 'all') {
+            filtered = filtered.filter(q => String(q.assessment_id) === String(filterVal));
+        }
+        if (query) {
+            filtered = filtered.filter(q => (q.question_text || '').toLowerCase().includes(query) || (q.assessment_title || '').toLowerCase().includes(query));
+        }
+        renderTableRows(filtered);
+    }
+
+    function renderTableRows(questions) {
+        if (!questions || questions.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                        <div style="font-size:2.2rem; margin-bottom:0.5rem;">📋</div>
+                        <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No assessment questions found</div>
+                        <div style="font-size:13.5px; color:#64748b;">Click "Add Question" to author diagnostic questions.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = questions.map(q => {
+            const opts = Array.isArray(q.options) ? q.options : [];
+            const encodedData = encodeURIComponent(JSON.stringify(q));
+            const optionsHtml = opts.map((opt, idx) => {
+                const isCorrect = idx === Number(q.correct_option);
+                return `
+                    <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; margin-bottom:3px; color:${isCorrect ? '#065F46' : '#475569'}; ${isCorrect ? 'font-weight:700;' : ''}">
+                        <i class="fa-solid ${isCorrect ? 'fa-circle-check text-success' : 'fa-circle-dot'}" style="color:${isCorrect ? '#059669' : '#CBD5E1'}; font-size:11px;"></i>
+                        <span>${escapeHtml(opt)}</span>
+                        ${isCorrect ? '<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:1px 5px; border-radius:4px;">CORRECT</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <tr>
+                    <td>
+                        <span class="badge" style="background:#EDE9FE; color:#5B21B6; font-size:11.5px; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-block; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(q.assessment_title || '')}">
+                            ${escapeHtml(q.assessment_title || `Assessment #${q.assessment_id}`)}
+                        </span>
+                    </td>
+                    <td>
+                        <strong style="color:var(--dark-navy); font-size:13.5px; display:block; margin-bottom:4px;">${escapeHtml(q.question_text)}</strong>
+                        ${q.explanation ? `<div style="font-size:11.5px; color:#64748B;"><i class="fa-solid fa-lightbulb mr-1" style="color:#F59E0B;"></i> ${escapeHtml(q.explanation)}</div>` : ''}
+                    </td>
+                    <td><div style="max-width:320px;">${optionsHtml}</div></td>
+                    <td><strong style="color:#4F46E5; font-size:13px;">${q.points || 10} pts</strong></td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <button class="btn btn-xs btn-outline" style="padding:0.35rem 0.65rem; font-size:12px; margin-right:4px; border-radius:6px;" onclick="window.openQuestionModalForEdit('${encodedData}')" title="Edit Question">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <button class="btn btn-xs btn-outline-danger" style="padding:0.35rem 0.65rem; font-size:12px; border-radius:6px;" onclick="window.handleDeleteQuestion(${q.id})" title="Delete Question">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    const fetchAndRenderQuestions = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading assessment questions...
+                </td>
+            </tr>
+        `;
+
+        try {
+            allQuestions = await window.api.getAdminAssessmentQuestions();
+            filterAndRender();
+        } catch (err) {
+            console.error('Error loading assessment questions:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load assessment questions</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check server connection.')}</div>
+                        <button class="btn btn-primary-small" style="margin-top:0.75rem;" onclick="location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    await fetchAndRenderQuestions();
+}
+
+// ==========================================
+// 14. PLATFORM ENROLLMENTS (enrollments.html)
+// ==========================================
+async function setupAdminEnrollmentsPage() {
+    const tbody = document.getElementById('adminEnrollmentsTableBody');
+    if (!tbody) return;
+
+    let currentPage = 1;
+    const limit = 20;
+    const courseFilter = document.getElementById('adminEnrollmentCourseFilter');
+    const statusFilter = document.getElementById('adminEnrollmentStatusFilter');
+    const searchInput = document.getElementById('adminEnrollmentSearchInput');
+    const resetBtn = document.getElementById('adminEnrollmentResetBtn');
+    const prevBtn = document.getElementById('prevEnrollmentBtn');
+    const nextBtn = document.getElementById('nextEnrollmentBtn');
+    const pageInfo = document.getElementById('enrollmentsPageInfo');
+
+    // Populate course dropdown
+    try {
+        const courses = await window.api.getAdminCourses();
+        if (courseFilter && courses) {
+            courseFilter.innerHTML = `<option value="all">All Courses</option>` + courses.map(c => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
+        }
+    } catch (_) {}
+
+    const fetchAndRenderEnrollments = async () => {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:3rem 1rem; color:var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin mr-2" style="color:#5B3FE8; font-size:1.25rem;"></i> Loading platform enrollments...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const params = {
+                page: currentPage,
+                limit: limit
+            };
+            if (courseFilter && courseFilter.value !== 'all') params.course_id = courseFilter.value;
+            if (statusFilter && statusFilter.value !== 'all') params.status = statusFilter.value;
+            if (searchInput && searchInput.value.trim()) params.search = searchInput.value.trim();
+
+            const res = await window.api.getAdminEnrollments(params);
+            const items = res.enrollments || res.items || (Array.isArray(res) ? res : []);
+            const total = res.total !== undefined ? res.total : items.length;
+
+            // Update stats
+            const completedCount = items.filter(e => (e.status || '').toLowerCase() === 'completed').length;
+            const inProgressCount = items.filter(e => (e.status || '').toLowerCase() === 'in_progress').length;
+            const uniqueUsers = new Set(items.map(e => e.user_id || e.student_id)).size;
+
+            document.getElementById('statTotalEnrollments') && (document.getElementById('statTotalEnrollments').textContent = total);
+            document.getElementById('statCompletedEnrollments') && (document.getElementById('statCompletedEnrollments').textContent = completedCount);
+            document.getElementById('statInProgressEnrollments') && (document.getElementById('statInProgressEnrollments').textContent = inProgressCount);
+            document.getElementById('statActiveLearners') && (document.getElementById('statActiveLearners').textContent = uniqueUsers || items.length);
+
+            // Pagination info
+            const start = total === 0 ? 0 : (currentPage - 1) * limit + 1;
+            const end = Math.min(currentPage * limit, total);
+            if (pageInfo) pageInfo.textContent = `Showing ${start}-${end} of ${total} enrollments`;
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = end >= total;
+
+            if (items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:3.5rem 1rem; color:var(--secondary-text);">
+                            <div style="font-size:2.2rem; margin-bottom:0.5rem;">🎓</div>
+                            <div style="font-weight:700; font-size:16px; color:var(--dark-navy); margin-bottom:0.25rem;">No enrollments found</div>
+                            <div style="font-size:13.5px; color:#64748b;">Try adjusting your course, status, or search filters.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = items.map(e => {
+                const studentName = e.student_name || e.user_name || 'Learner';
+                const studentEmail = e.student_email || e.user_email || '';
+                const courseTitle = e.course_title || `Course #${e.course_id}`;
+                const instructorName = e.instructor_name || 'Faculty';
+                const enrolledDate = e.enrolled_at || e.created_at || 'Recent';
+                const progress = Math.min(100, Math.max(0, Number(e.progress_percentage || e.progress || 0)));
+                const status = (e.status || 'in_progress').toLowerCase();
+                const statusColor = status === 'completed' ? '#059669' : (status === 'in_progress' ? '#2563EB' : '#64748B');
+                const statusBg = status === 'completed' ? '#ECFDF5' : (status === 'in_progress' ? '#EFF6FF' : '#F1F5F9');
+                const statusLabel = status === 'completed' ? 'Completed' : (status === 'in_progress' ? 'In Progress' : 'Not Started');
+
+                const initials = studentName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'ST';
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #4F46E5, #7C3AED); color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <strong style="color:var(--dark-navy); font-size:13.5px; display:block;">${escapeHtml(studentName)}</strong>
+                                    <span style="font-size:11.5px; color:#64748B;">${escapeHtml(studentEmail)}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong style="color:var(--dark-navy); font-size:13.5px; display:block;">${escapeHtml(courseTitle)}</strong>
+                            <span style="font-size:11.5px; color:#64748B;">${escapeHtml(e.course_category || 'General')}</span>
+                        </td>
+                        <td><span style="font-size:13px; color:#475569;">${escapeHtml(instructorName)}</span></td>
+                        <td><span style="font-size:12.5px; color:#64748B;">${escapeHtml(enrolledDate)}</span></td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:0.6rem;">
+                                <div style="flex:1; height:6px; background:#E2E8F0; border-radius:999px; overflow:hidden; min-width:60px;">
+                                    <div style="width:${progress}%; height:100%; background:linear-gradient(90deg, #4F46E5, #10B981);"></div>
+                                </div>
+                                <span style="font-size:12px; font-weight:700; color:#4F46E5;">${progress}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge" style="background:${statusBg}; color:${statusColor}; font-weight:700; font-size:11.5px; padding:3px 8px; border-radius:6px;">
+                                ${statusLabel}
+                            </span>
+                        </td>
+                        <td><span style="font-size:12px; color:#64748B;">${escapeHtml(e.last_activity || e.last_accessed || 'Recently active')}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Error loading admin enrollments:', err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem 1rem; color:#EF4444;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                        <strong>Unable to load enrollments</strong>
+                        <div style="font-size:13px; color:#64748b; margin-top:0.25rem;">${escapeHtml(err.message || 'Please check server connection.')}</div>
+                        <button class="btn btn-primary-small" style="margin-top:0.75rem;" onclick="location.reload()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    courseFilter && courseFilter.addEventListener('change', () => { currentPage = 1; fetchAndRenderEnrollments(); });
+    statusFilter && statusFilter.addEventListener('change', () => { currentPage = 1; fetchAndRenderEnrollments(); });
+    if (searchInput) {
+        let timer = null;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { currentPage = 1; fetchAndRenderEnrollments(); }, 300);
+        });
+    }
+    resetBtn && resetBtn.addEventListener('click', () => {
+        if (courseFilter) courseFilter.value = 'all';
+        if (statusFilter) statusFilter.value = 'all';
+        if (searchInput) searchInput.value = '';
+        currentPage = 1;
+        fetchAndRenderEnrollments();
+    });
+    prevBtn && prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchAndRenderEnrollments();
+        }
+    });
+    nextBtn && nextBtn.addEventListener('click', () => {
+        currentPage++;
+        fetchAndRenderEnrollments();
+    });
+
+    await fetchAndRenderEnrollments();
+}

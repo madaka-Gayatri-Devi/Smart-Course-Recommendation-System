@@ -1857,6 +1857,256 @@ const api = {
         return res.json();
     },
 
+    async createAdminCategory(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/categories`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create category');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async updateAdminCategory(categoryId, payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update category');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteAdminCategory(categoryId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/categories/${categoryId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete category');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async createAdminSkill(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/skills`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create skill');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async updateAdminSkill(skillId, payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/skills/${skillId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update skill');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteAdminSkill(skillId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/skills/${skillId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete skill');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async createAdminCareerGoal(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/career-goals`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create career goal');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async updateAdminCareerGoal(goalId, payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/career-goals/${goalId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update career goal');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteAdminCareerGoal(goalId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/career-goals/${goalId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete career goal');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminAssessments() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch assessments');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminAssessmentQuestions(assessmentId = null) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        let url = `${API_URL}/admin/assessment-questions`;
+        if (assessmentId) {
+            url += `?assessment_id=${encodeURIComponent(assessmentId)}`;
+        }
+        const res = await safeFetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch assessment questions');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async createAdminAssessmentQuestion(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessment-questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create assessment question');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async updateAdminAssessmentQuestion(questionId, payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessment-questions/${questionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update assessment question');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteAdminAssessmentQuestion(questionId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessment-questions/${questionId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete assessment question');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async getAdminEnrollments(params = {}) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const url = new URL(`${API_URL}/admin/enrollments`);
+        url.searchParams.append('token', token);
+        Object.keys(params).forEach(k => {
+            if (params[k] !== undefined && params[k] !== null && params[k] !== '') {
+                url.searchParams.append(k, params[k]);
+            }
+        });
+        const res = await safeFetch(url.toString(), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to fetch enrollments');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
     async getAdminReports() {
         return this.getAdminReportsOverview();
     },

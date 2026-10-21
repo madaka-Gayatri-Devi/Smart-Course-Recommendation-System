@@ -37,9 +37,12 @@
 
         getCourseTargetUrl(courseId) {
             if (!courseId) return 'notifications.html';
-            const isInstructor = window.location.pathname.toLowerCase().includes('/instructor/') || 
-                (window.api && window.api.getCurrentUser && window.api.getCurrentUser() && (window.api.getCurrentUser().role || '').toLowerCase() === 'instructor');
-            return isInstructor ? `course-manage.html?id=${courseId}` : `course-details.html?id=${courseId}`;
+            const path = window.location.pathname.toLowerCase();
+            const user = (window.api && window.api.getCurrentUser) ? window.api.getCurrentUser() : null;
+            const role = (user && user.role) ? user.role.toLowerCase() : '';
+            if (path.includes('/admin/') || role === 'admin') return `course-editor.html?id=${courseId}`;
+            if (path.includes('/instructor/') || role === 'instructor') return `course-manage.html?id=${courseId}`;
+            return `course-details.html?id=${courseId}`;
         }
 
         /**

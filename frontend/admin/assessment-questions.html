@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Questions - SmartLearn Admin</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- 🛡️ ADMIN SIDEBAR -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Students</span></a>
+            <a href="instructors.html" class="nav-item"><i class="fa-solid fa-chalkboard-user"></i> <span class="nav-text">Instructors</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="assessment-questions.html" class="nav-item active"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
+            <a href="enrollments.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-lightbulb"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">COMMUNICATION & GOVERNANCE</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Chat & Group Management</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="notif-badge badge" id="notifUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+
+            <div class="nav-label">ACCOUNT</div>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">System Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Assessment Questions</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
+                <div class="profile-dropdown">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div class="welcome-section" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1>Assessment Question Bank 📋</h1>
+                    <p>Review, author, and manage multiple-choice diagnostic skill testing questions across domains.</p>
+                </div>
+                <button id="addQuestionBtn" class="btn-primary" style="padding: 0.75rem 1.5rem; border: none; cursor: pointer;"><i class="fa-solid fa-plus mr-1"></i> Add Question</button>
+            </div>
+
+            <!-- Filter Controls -->
+            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="adminAssessmentFilterSelect" style="font-size: 13px; font-weight: 600; color: #475569;">Filter Assessment:</label>
+                    <select id="adminAssessmentFilterSelect" class="form-input" style="padding: 0.5rem 0.85rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 8px; background: #FFFFFF; font-weight: 500; min-width: 280px;">
+                        <option value="all">All Assessments</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 220px;">
+                    <input type="text" id="adminQuestionSearchInput" placeholder="Search questions..." class="form-input" style="width: 100%; padding: 0.5rem 0.85rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="padding: 1.5rem;">
+                <div style="overflow-x: auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Assessment</th>
+                                <th>Question Details</th>
+                                <th>Options & Correct Answer</th>
+                                <th>Points</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminQuestionsTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading assessment questions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Question Modal -->
+    <div class="modal-backdrop" id="questionModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+        <div class="modal-dialog" style="background: #FFFFFF; width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 0.75rem;">
+                <h3 id="questionModalTitle" style="margin: 0; color: var(--dark-navy);">Add Assessment Question</h3>
+                <button type="button" onclick="closeQuestionModal()" style="border: none; background: none; font-size: 18px; cursor: pointer;">&times;</button>
+            </div>
+            <form id="questionForm">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Target Assessment Paper *</label>
+                    <select id="qAssessmentSelect" required style="width: 100%; padding: 0.7rem; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 13px;">
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Question Text *</label>
+                    <textarea id="qText" required rows="3" placeholder="Enter diagnostic question text..." style="width: 100%; padding: 0.7rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit; font-size: 13px;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Answer Options (Select radio for Correct Answer) *</label>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="qCorrectRadio" value="0" checked title="Mark Option 1 as correct">
+                            <input type="text" id="qOpt0" required placeholder="Option 1" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="qCorrectRadio" value="1" title="Mark Option 2 as correct">
+                            <input type="text" id="qOpt1" required placeholder="Option 2" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="qCorrectRadio" value="2" title="Mark Option 3 as correct">
+                            <input type="text" id="qOpt2" required placeholder="Option 3" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="qCorrectRadio" value="3" title="Mark Option 4 as correct">
+                            <input type="text" id="qOpt3" required placeholder="Option 4" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Points *</label>
+                        <input type="number" id="qPoints" value="10" min="1" max="100" required style="width: 100%; padding: 0.6rem; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 13px;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Answer Explanation (Optional)</label>
+                    <textarea id="qExplanation" rows="2" placeholder="Brief rationale for the correct answer..." style="width: 100%; padding: 0.6rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit; font-size: 13px;"></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" class="btn-outline" onclick="closeQuestionModal()" style="padding: 0.6rem 1.25rem;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.6rem 1.5rem; border: none; cursor: pointer;">Save Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/chatbot.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>
