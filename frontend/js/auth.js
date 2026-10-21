@@ -370,7 +370,46 @@ checkAccessDeniedNotice();
 /**
  * Initializes all auth-related forms, listeners, and session guards.
  */
+function checkOAuthRedirectParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const oauthError = urlParams.get('oauth_error');
+
+    if (oauthError) {
+        showAuthAlert(`Google Authentication Notice: ${decodeURIComponent(oauthError)}`, 'error');
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        return;
+    }
+
+    if (token) {
+        const role = urlParams.get('role') || 'Student';
+        const email = urlParams.get('email') || '';
+        const name = urlParams.get('name') || '';
+        const id = urlParams.get('id') || '';
+
+        const userObj = {
+            id: id,
+            email: email,
+            full_name: name,
+            name: name,
+            role: role
+        };
+
+        localStorage.setItem('smartlearn_token', token);
+        localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
+        localStorage.setItem('smartlearn_role', role);
+
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+
+        showAuthAlert("Authentication successful! Redirecting...", "success");
+        redirectUserToDashboard(role);
+    }
+}
+
 function initAuthHandlers() {
+    checkOAuthRedirectParams();
     verifyBackendSession();
     checkAccessDeniedNotice();
     setupLoginForm();

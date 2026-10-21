@@ -1,3 +1,9 @@
+databases:
+  - name: smartlearn-db
+    databaseName: smartlearndb
+    user: smartlearn_user
+    plan: free
+
 services:
   - type: web
     name: smart-course-recommendation-system
@@ -15,3 +21,13 @@ services:
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smartlearn-db
+          property: connectionString
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_AUTH_DOMAIN
+        sync: false

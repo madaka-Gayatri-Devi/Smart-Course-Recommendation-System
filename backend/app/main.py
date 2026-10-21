@@ -39,7 +39,8 @@ except ImportError:
         from backend.app.recommendation.skill_gap_analyzer import SkillGapAnalyzer
         from backend.app.recommendation.learning_path_generator import LearningPathGenerator
 
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Query, Header, WebSocket, WebSocketDisconnect
+import logging
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Query, Header, WebSocket, WebSocketDisconnect, Request
 
 try:
     from app.services.notification_service import NotificationService, ws_manager
@@ -78,27 +79,58 @@ try:
 except Exception as _rzp_err:
     razorpay_client = None
 
-ROOT_DB_PATH = BASE_DIR.parent / "smartlearn.db"
-BACKEND_DB_PATH = BASE_DIR / "smartlearn.db"
+# --- LOGGING CONFIGURATION ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+auth_logger = logging.getLogger("smartlearn.auth")
+db_logger = logging.getLogger("smartlearn.db")
 
-# Sync databases if one is larger/has full data
-if BACKEND_DB_PATH.exists() and ROOT_DB_PATH.exists():
+# --- PERSISTENT DATABASE CONFIGURATION ---
+ROOT_DIR = BASE_DIR.parent
+CANONICAL_SQLITE_PATH = (BASE_DIR / "smartlearn.db").resolve()
+
+# If backend/smartlearn.db does not exist but root smartlearn.db does, initialize it once
+if not CANONICAL_SQLITE_PATH.exists() and (ROOT_DIR / "smartlearn.db").exists():
     try:
-        if BACKEND_DB_PATH.stat().st_size > ROOT_DB_PATH.stat().st_size:
-            shutil.copyfile(BACKEND_DB_PATH, ROOT_DB_PATH)
-        elif ROOT_DB_PATH.stat().st_size > BACKEND_DB_PATH.stat().st_size:
-            shutil.copyfile(ROOT_DB_PATH, BACKEND_DB_PATH)
+        shutil.copyfile(ROOT_DIR / "smartlearn.db", CANONICAL_SQLITE_PATH)
+        db_logger.info(f"Initialized canonical SQLite database at {CANONICAL_SQLITE_PATH}")
     except Exception as _sync_err:
-        print(f"[DB Sync Warning] {_sync_err}")
+        db_logger.warning(f"Could not copy root smartlearn.db: {_sync_err}")
 
-DB_PATH = BACKEND_DB_PATH if BACKEND_DB_PATH.exists() else ROOT_DB_PATH
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH.as_posix()}")
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+raw_db_url = (os.getenv("DATABASE_URL") or "").strip()
 
-# --- DB SETUP ---
+if not raw_db_url or raw_db_url == "sqlite:///smartlearn.db":
+    DATABASE_URL = f"sqlite:///{CANONICAL_SQLITE_PATH.as_posix()}"
+elif raw_db_url.startswith("postgres://"):
+    DATABASE_URL = raw_db_url.replace("postgres://", "postgresql://", 1)
+elif raw_db_url.startswith("postgresql://"):
+    DATABASE_URL = raw_db_url
+elif raw_db_url.startswith("sqlite:///"):
+    sqlite_rel = raw_db_url[10:]
+    p = Path(sqlite_rel)
+    if not p.is_absolute():
+        p = (BASE_DIR / p).resolve()
+    DATABASE_URL = f"sqlite:///{p.as_posix()}"
+else:
+    DATABASE_URL = raw_db_url
+
+# Configure connection arguments and connection pooling
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+pool_kwargs = {}
+if "postgresql" in DATABASE_URL:
+    pool_kwargs = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 10,
+        "max_overflow": 20
+    }
+    db_logger.info("Configured PostgreSQL connection pool with pre-ping validation.")
+else:
+    db_logger.info(f"Configured SQLite connection: {DATABASE_URL}")
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args, **pool_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -438,7 +470,7 @@ def run_migrations():
                 conn.execute(text("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1;"))
                 conn.commit()
             if "two_factor_enabled" not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 1;"))
+                conn.execute(text("ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0;"))
                 conn.commit()
             if "created_at" not in user_cols:
                 conn.execute(text("ALTER TABLE users ADD COLUMN created_at VARCHAR;"))
@@ -548,28 +580,32 @@ run_migrations()
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifies a plaintext password against a stored bcrypt hash.
-
-    Args:
-        plain_password: Raw password string entered by the user.
-        hashed_password: Stored bcrypt hashed password string from the database.
-
-    Returns:
-        True if the password matches the hash, False otherwise.
+    Safely handles empty values, string/bytes conversion, bcrypt 72-byte limit, and formatting errors.
     """
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    if not plain_password or not hashed_password:
+        return False
+    try:
+        if not isinstance(plain_password, str):
+            plain_password = str(plain_password)
+        if not isinstance(hashed_password, str):
+            hashed_password = str(hashed_password)
+        pwd_bytes = plain_password.encode('utf-8')[:72]
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+    except Exception as err:
+        auth_logger.warning(f"[Auth] Password verification encountered error: {err}")
+        return False
 
 def get_password_hash(password: str) -> str:
     """
     Computes a secure bcrypt hash for a user password using a freshly generated salt.
-
-    Args:
-        password: Plaintext password to hash.
-
-    Returns:
-        UTF-8 decoded bcrypt hash string safe for database storage.
+    Enforces 72-byte max boundary for bcrypt compatibility.
     """
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    if not isinstance(password, str):
+        password = str(password)
+    pwd_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
 def create_access_token(data: dict) -> str:
     """
@@ -590,6 +626,98 @@ def create_access_token(data: dict) -> str:
 
 INITIAL_ADMIN_EMAIL = "admin@smartlearn.edu"
 INITIAL_ADMIN_PASS = "Admin@SmartLearn2026!"
+
+def seed_initial_data():
+    """
+    Seeds core catalog, taxonomy, courses, and user accounts from seed_data.json on fresh databases.
+    Preserves all existing accounts (Gayatri, Honey, Harsha, Tulasi, Admin) and user records.
+    """
+    import json
+    db = SessionLocal()
+    try:
+        user_count = db.query(UserDB).count()
+        if user_count > 0:
+            db_logger.info(f"[DB Seed] Database already contains {user_count} users. Preserving existing accounts.")
+            return
+
+        seed_file = APP_DIR / "config" / "seed_data.json"
+        if not seed_file.exists():
+            db_logger.warning(f"[DB Seed] {seed_file} not found; falling back to basic seeders.")
+            return
+
+        with open(seed_file, "r", encoding="utf-8") as f:
+            seed_data = json.load(f)
+
+        db_logger.info(f"[DB Seed] Fresh database detected. Seeding from {seed_file.name}...")
+
+        # 1. Categories
+        for cat in seed_data.get("categories", []):
+            db.merge(CategoryDB(**cat))
+        db.commit()
+
+        # 2. Career Goals
+        for cg in seed_data.get("career_goals", []):
+            db.merge(CareerGoalDB(**cg))
+        db.commit()
+
+        # 3. Skills
+        for sk in seed_data.get("skills", []):
+            db.merge(SkillDB(**sk))
+        db.commit()
+
+        # 4. Users
+        for u in seed_data.get("users", []):
+            db.merge(UserDB(**u))
+        db.commit()
+
+        # 5. Profiles
+        for p in seed_data.get("profiles", []):
+            db.merge(ProfileDB(**p))
+        db.commit()
+
+        # 6. Courses
+        for c in seed_data.get("courses", []):
+            db.merge(CourseDB(**c))
+        db.commit()
+
+        # 7. Assessments
+        for a in seed_data.get("assessments", []):
+            db.merge(AssessmentDB(**a))
+        db.commit()
+
+        # 8. Assessment Questions
+        for q in seed_data.get("assessment_questions", []):
+            db.merge(AssessmentQuestionDB(**q))
+        db.commit()
+
+        # 9. Enrollments
+        for e in seed_data.get("enrollments", []):
+            db.merge(EnrollmentDB(**e))
+        db.commit()
+
+        # 10. Reviews
+        for r in seed_data.get("reviews", []):
+            db.merge(ReviewDB(**r))
+        db.commit()
+
+        # Reset sequences for PostgreSQL
+        if "postgresql" in DATABASE_URL:
+            for tbl in ["users", "profiles", "courses", "categories", "skills", "career_goals", "assessments", "assessment_questions", "enrollments", "reviews"]:
+                try:
+                    db.execute(text(f"SELECT setval(pg_get_serial_sequence('{tbl}', 'id'), COALESCE(MAX(id), 1)) FROM \"{tbl}\";"))
+                    db.commit()
+                except Exception as seq_err:
+                    db_logger.debug(f"[DB Sequence Reset] {tbl}: {seq_err}")
+
+        db_logger.info(
+            f"[DB Seed] Database initialized successfully with {len(seed_data.get('users', []))} users and "
+            f"{len(seed_data.get('courses', []))} courses from seed_data.json."
+        )
+    except Exception as err:
+        db_logger.error(f"[DB Seed Error] Failed to seed database: {err}", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
 
 def seed_initial_admin():
     """
@@ -1276,6 +1404,7 @@ def seed_initial_recommendations():
     finally:
         db.close()
 
+seed_initial_data()
 seed_initial_admin()
 seed_catalogs()
 seed_assessments()
@@ -1326,8 +1455,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=r".*",
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1772,29 +1900,19 @@ async def websocket_notifications_endpoint(websocket: WebSocket, token: Optional
 # --- AUTH ROUTES ---
 
 @app.post("/auth/register")
-def register(user: UserRegister, db: Session = Depends(get_db)):
+def register(user: UserRegister, request: Request, db: Session = Depends(get_db)):
     """
     Registers a new student or instructor account.
-
-    Args:
-        user: Pydantic UserRegister model containing full_name, email, password, and role.
-        db: Active SQLAlchemy database session.
-
-    Returns:
-        Dictionary with created user id, access token, bearer token type, role, and email.
-
-    Purpose:
-        Validates account parameters, prevents public admin registrations, enforces password length,
-        hashes credentials with bcrypt, initializes empty profile, and dispatches welcome notifications.
-
-    Error handling:
-        Raises HTTP 400 if email is already registered, password is too short, or role is invalid.
+    Hashes credentials with bcrypt, commits to database, initializes profile,
+    and records clean audit logging without logging sensitive credentials.
     """
+    client_ip = request.client.host if request.client else "unknown"
     role_clean = user.role.strip().capitalize()
     clean_email = user.email.strip().lower()
     
     # Requirement: Public registration strictly forbids Admin creation
     if role_clean.upper() == "ADMIN" or role_clean not in ["Student", "Instructor"]:
+        auth_logger.warning(f"[Auth] Registration rejected: Forbidden role '{user.role}' from IP={client_ip}")
         raise HTTPException(
             status_code=400,
             detail="Admin accounts cannot be registered publicly. Please choose Student or Instructor."
@@ -1805,6 +1923,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
     db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
     if db_user:
+        auth_logger.info(f"[Auth] Registration rejected: Email '{clean_email}' already exists. IP={client_ip}")
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_pwd = get_password_hash(user.password)
@@ -1815,6 +1934,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         hashed_password=hashed_pwd,
         role=role_clean,
         is_active=1,
+        two_factor_enabled=0,
         created_at=now_str
     )
     db.add(new_user)
@@ -1826,6 +1946,8 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     db.add(profile)
     db.commit()
 
+    auth_logger.info(f"[Auth] Registered new account: id={new_user.id}, email={new_user.email}, role={new_user.role}. IP={client_ip}")
+
     try:
         NotificationService.notify_system_welcome(db, new_user.id, new_user.full_name, new_user.role)
         NotificationService.notify_admin_platform_event(
@@ -1835,7 +1957,7 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
             notification_type="NEW_USER_REGISTERED"
         )
     except Exception as _reg_notif_err:
-        print(f"[Register Notification Warning] {_reg_notif_err}")
+        auth_logger.warning(f"[Register Notification Warning] {_reg_notif_err}")
     
     access_token = create_access_token(data={"sub": new_user.email})
     return {
@@ -1844,39 +1966,41 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "role": new_user.role,
         "full_name": new_user.full_name,
-        "email": new_user.email
+        "email": new_user.email,
+        "user": {
+            "id": new_user.id,
+            "email": new_user.email,
+            "full_name": new_user.full_name,
+            "role": new_user.role
+        }
     }
 
 @app.post("/auth/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
+def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
     """
     Authenticates a user with email and password credentials.
-
-    Args:
-        user: Pydantic UserLogin model containing email and password.
-        db: Active SQLAlchemy database session.
-
-    Returns:
-        JSON response with either a JWT access token or a 2FA challenge payload (pre_auth_token).
-
-    Purpose:
-        Validates user credentials against stored bcrypt hash, checks account active status,
-        and triggers two-factor verification code dispatch via email if 2FA is enabled.
-
-    Error handling:
-        Raises HTTP 401 for invalid email/password; HTTP 403 if account is deactivated.
+    Validates user credentials against stored bcrypt hash, checks account active status,
+    and logs authentication outcomes securely without exposing sensitive credentials.
     """
+    client_ip = request.client.host if request.client else "unknown"
     clean_email = user.email.strip().lower()
     clean_pass = user.password.strip()
     
     db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
-    if not db_user or (not verify_password(user.password, db_user.hashed_password) and not verify_password(clean_pass, db_user.hashed_password)):
+    if not db_user:
+        auth_logger.warning(f"[Auth] Login failed: User '{clean_email}' not found in database. IP={client_ip}")
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    
+    password_matches = verify_password(user.password, db_user.hashed_password) or verify_password(clean_pass, db_user.hashed_password)
+    if not password_matches:
+        auth_logger.warning(f"[Auth] Login failed: Password mismatch for user '{clean_email}'. IP={client_ip}")
         raise HTTPException(status_code=401, detail="Incorrect email or password")
     
     if getattr(db_user, "is_active", 1) == 0:
+        auth_logger.warning(f"[Auth] Login rejected: Account '{clean_email}' is deactivated. IP={client_ip}")
         raise HTTPException(status_code=403, detail="Account is deactivated. Please contact support.")
     
-    is_2fa_enabled = getattr(db_user, "two_factor_enabled", 1) == 1
+    is_2fa_enabled = bool(getattr(db_user, "two_factor_enabled", 0) == 1)
     if is_2fa_enabled:
         import secrets
         otp_code = str(secrets.randbelow(900000) + 100000)
@@ -2291,18 +2415,161 @@ def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends
 def get_firebase_config():
     """
     Returns public Firebase configuration keys for frontend Google OAuth initialization.
-
-    Returns:
-        Dictionary with apiKey, authDomain, projectId, and appId.
+    Safely strips quotes and trims whitespace from environment configurations.
     """
     return {
-        "apiKey": os.getenv("FIREBASE_API_KEY", ""),
-        "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "smartlearn-auth.firebaseapp.com"),
-        "projectId": os.getenv("FIREBASE_PROJECT_ID", "smartlearn-auth"),
-        "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET", "smartlearn-auth.appspot.com"),
-        "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "102938475610"),
-        "appId": os.getenv("FIREBASE_APP_ID", "1:102938475610:web:abc123def456789")
+        "apiKey": (os.getenv("FIREBASE_API_KEY") or "").strip('"\''),
+        "authDomain": (os.getenv("FIREBASE_AUTH_DOMAIN") or "smartlearn-auth.firebaseapp.com").strip('"\''),
+        "projectId": (os.getenv("FIREBASE_PROJECT_ID") or "smartlearn-auth").strip('"\''),
+        "storageBucket": (os.getenv("FIREBASE_STORAGE_BUCKET") or "smartlearn-auth.appspot.com").strip('"\''),
+        "messagingSenderId": (os.getenv("FIREBASE_MESSAGING_SENDER_ID") or "102938475610").strip('"\''),
+        "appId": (os.getenv("FIREBASE_APP_ID") or "1:102938475610:web:abc123def456789").strip('"\''),
+        "googleClientId": (os.getenv("GOOGLE_CLIENT_ID") or "").strip('"\'')
     }
+
+GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID") or "").strip('"\'')
+GOOGLE_CLIENT_SECRET = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip('"\'')
+APP_URL = (os.getenv("APP_URL") or "").strip('"\'').rstrip('/')
+
+@app.get("/auth/google/url")
+def get_google_oauth_url(request: Request, role: Optional[str] = "Student"):
+    """
+    Generates direct Google OAuth 2.0 authorization URL for redirect flow.
+    """
+    client_id = GOOGLE_CLIENT_ID or (os.getenv("FIREBASE_CLIENT_ID") or "").strip('"\'')
+    if not client_id:
+        raise HTTPException(
+            status_code=503,
+            detail="Google OAuth is not configured on this server. Please set GOOGLE_CLIENT_ID in environment variables."
+        )
+    import urllib.parse
+    base_url = APP_URL or str(request.base_url).rstrip('/')
+    redirect_uri = f"{base_url}/auth/google/callback"
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "select_account",
+        "state": role or "Student"
+    }
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    return {"auth_url": auth_url, "redirect_uri": redirect_uri}
+
+@app.get("/auth/google/login")
+def redirect_to_google_login(request: Request, role: Optional[str] = "Student"):
+    """
+    Redirects user directly to Google OAuth consent screen.
+    """
+    url_res = get_google_oauth_url(request, role)
+    return RedirectResponse(url=url_res["auth_url"])
+
+@app.get("/auth/google/callback")
+def google_oauth_callback(
+    request: Request,
+    code: Optional[str] = None,
+    error: Optional[str] = None,
+    state: Optional[str] = "Student",
+    db: Session = Depends(get_db)
+):
+    """
+    Handles Google OAuth 2.0 redirect callback, exchanges code for user profile,
+    links or creates user account, generates JWT, and routes user to their dashboard.
+    """
+    import urllib.parse
+    base_url = APP_URL or str(request.base_url).rstrip('/')
+    login_page = f"{base_url}/login.html"
+
+    if error:
+        auth_logger.warning(f"[Google OAuth] Error returned from Google: {error}")
+        return RedirectResponse(url=f"{login_page}?oauth_error={urllib.parse.quote(str(error))}")
+
+    if not code:
+        return RedirectResponse(url=f"{login_page}?oauth_error=No+authorization+code+received")
+
+    client_id = GOOGLE_CLIENT_ID or (os.getenv("FIREBASE_CLIENT_ID") or "").strip('"\'')
+    client_secret = GOOGLE_CLIENT_SECRET or (os.getenv("FIREBASE_CLIENT_SECRET") or "").strip('"\'')
+    redirect_uri = f"{base_url}/auth/google/callback"
+
+    try:
+        token_res = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            },
+            timeout=10
+        )
+        if not token_res.ok:
+            auth_logger.error(f"[Google OAuth] Token exchange failed: {token_res.text}")
+            return RedirectResponse(url=f"{login_page}?oauth_error=Failed+to+exchange+Google+authorization+code")
+
+        tokens = token_res.json()
+        google_access_token = tokens.get("access_token")
+
+        userinfo_res = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {google_access_token}"},
+            timeout=10
+        )
+        if not userinfo_res.ok:
+            return RedirectResponse(url=f"{login_page}?oauth_error=Failed+to+fetch+Google+user+profile")
+
+        user_info = userinfo_res.json()
+        clean_email = (user_info.get("email") or "").strip().lower()
+        full_name = user_info.get("name") or clean_email.split("@")[0]
+        picture = user_info.get("picture")
+        google_id = user_info.get("id")
+
+        if not clean_email:
+            return RedirectResponse(url=f"{login_page}?oauth_error=No+verified+email+found+in+Google+account")
+
+        db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
+        now_str = datetime.utcnow().strftime("%Y-%m-%d")
+
+        if db_user:
+            if not getattr(db_user, "firebase_uid", None) and google_id:
+                db_user.firebase_uid = google_id
+                db.commit()
+        else:
+            req_role = (state or "Student").strip().capitalize()
+            if req_role.upper() == "ADMIN" or req_role not in ["Student", "Instructor"]:
+                req_role = "Student"
+
+            rand_pwd = f"GoogleOAuth_{uuid.uuid4().hex[:12]}!"
+            db_user = UserDB(
+                full_name=full_name,
+                email=clean_email,
+                hashed_password=get_password_hash(rand_pwd),
+                role=req_role,
+                is_active=1,
+                firebase_uid=google_id,
+                created_at=now_str
+            )
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+
+            profile = ProfileDB(user_id=db_user.id, profile_image=picture, completion_percentage=20)
+            db.add(profile)
+            db.commit()
+
+        if getattr(db_user, "is_active", 1) == 0:
+            return RedirectResponse(url=f"{login_page}?oauth_error=Account+is+deactivated")
+
+        smartlearn_token = create_access_token(data={"sub": db_user.email})
+        auth_logger.info(f"[Google OAuth] Authenticated user via Google OAuth: {clean_email} (Role: {db_user.role})")
+
+        redirect_target = f"{login_page}?token={urllib.parse.quote(smartlearn_token)}&role={urllib.parse.quote(db_user.role)}&email={urllib.parse.quote(db_user.email)}&name={urllib.parse.quote(db_user.full_name)}&id={db_user.id}"
+        return RedirectResponse(url=redirect_target)
+
+    except Exception as err:
+        auth_logger.error(f"[Google OAuth Exception] {err}", exc_info=True)
+        return RedirectResponse(url=f"{login_page}?oauth_error={urllib.parse.quote(str(err))}")
 
 @app.post("/auth/google-login")
 def google_login(payload: GoogleLoginPayload, db: Session = Depends(get_db)):

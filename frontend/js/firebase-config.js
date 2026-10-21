@@ -25,6 +25,11 @@ async function loadFirebaseConfigFromBackend() {
         if (res.ok) {
             const data = await res.json();
             if (data && data.apiKey) {
+                for (const k in data) {
+                    if (typeof data[k] === 'string') {
+                        data[k] = data[k].replace(/^["']|["']$/g, '').trim();
+                    }
+                }
                 activeFirebaseConfig = { ...activeFirebaseConfig, ...data };
             }
         }
@@ -40,7 +45,7 @@ async function initFirebase() {
         await loadFirebaseConfigFromBackend();
         
         if (!activeFirebaseConfig.apiKey || activeFirebaseConfig.apiKey.includes("DummyKey")) {
-            throw new Error("Firebase API Key is missing or invalid. Please populate 'FIREBASE_API_KEY' in backend/.env to enable Google Authentication.");
+            throw new Error("Google Sign-In is not configured on this server. Please add FIREBASE_API_KEY in your Render environment variables.");
         }
 
         try {
@@ -84,8 +89,11 @@ async function signInWithGooglePopup() {
         };
     } catch (error) {
         console.error("Firebase Google Auth Exception:", error);
+        if (error.code === 'auth/unauthorized-domain' || error.message.includes('unauthorized-domain')) {
+            throw new Error("This deployment domain is not authorized for Google Sign-In. Please add your Render URL into Firebase Console: Authentication > Settings > Authorized domains.");
+        }
         if (error.code === 'auth/api-key-not-valid' || error.message.includes('api-key-not-valid')) {
-            throw new Error("Firebase API Key is invalid. Please set your real Firebase API Key in backend/.env under FIREBASE_API_KEY.");
+            throw new Error("Firebase API Key is invalid. Please verify FIREBASE_API_KEY in your Render environment variables.");
         }
         if (error.code === 'auth/popup-closed-by-user') {
             throw new Error("Google authentication window was closed before signing in.");
