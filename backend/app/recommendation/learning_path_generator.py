@@ -1,5 +1,27 @@
 """Learning Path Generator for SmartLearn."""
+import json
 from typing import List, Dict, Any, Optional
+
+def _safe_list(val: Any) -> List[Any]:
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, (set, tuple)):
+        return list(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if (s.startswith('[') and s.endswith(']')) or (s.startswith('{') and s.endswith('}')):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return parsed
+                elif isinstance(parsed, dict):
+                    return [parsed]
+            except Exception:
+                pass
+        return [s] if s else []
+    return []
 
 try:
     from app.recommendation.skill_gap_analyzer import SkillGapAnalyzer
@@ -53,6 +75,9 @@ class LearningPathGenerator:
         Dependencies:
             SkillGapAnalyzer.analyze, CourseScorer.score_course.
         """
+        student_skills = _safe_list(student_skills)
+        enrolled_courses = _safe_list(enrolled_courses)
+        courses_catalog = _safe_list(courses_catalog)
         goal = (career_goal or "Full Stack Web Developer").strip()
         goal_lower = goal.lower()
         sec_goal_lower = (secondary_career_goal or "").strip().lower()
@@ -75,10 +100,10 @@ class LearningPathGenerator:
         other_courses: List[Dict[str, Any]] = []
 
         for c in courses_catalog:
-            target_roles = [str(r).lower() for r in (c.get("target_roles") or c.get("career_goals") or [])]
+            target_roles = [str(r).lower() for r in (_safe_list(c.get("target_roles")) or _safe_list(c.get("career_goals")))]
             category = (c.get("category") or "").lower()
-            domains = [str(d).lower() for d in (c.get("domains") or [])]
-            course_skills = [str(s).lower() for s in (c.get("skills") or [])]
+            domains = [str(d).lower() for d in _safe_list(c.get("domains"))]
+            course_skills = [str(s).lower() for s in _safe_list(c.get("skills"))]
 
             is_primary = any(goal_lower in r or r in goal_lower for r in target_roles) or (goal_lower in category) or any(goal_lower in d for d in domains)
             is_secondary = sec_goal_lower and (any(sec_goal_lower in r or r in sec_goal_lower for r in target_roles) or (sec_goal_lower in category) or any(sec_goal_lower in d for d in domains))
@@ -201,7 +226,7 @@ class LearningPathGenerator:
         for idx, course in enumerate(selected):
             c_id = course.get("id")
             c_title = (course.get("title") or "").lower().strip()
-            c_skills = course.get("skills") or []
+            c_skills = _safe_list(course.get("skills"))
             
             # Enrollment check
             enrolled_info = enrolled_map.get(c_id) or enrolled_map.get(str(c_id)) or enrolled_map.get(c_title)

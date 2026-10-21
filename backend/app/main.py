@@ -52,7 +52,7 @@ except ImportError:
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse
-from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text, func, or_, and_
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
 import bcrypt
@@ -143,6 +143,46 @@ AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 MATERIAL_DIR.mkdir(parents=True, exist_ok=True)
 THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
+
+def safe_parse_json(val, default=None):
+    """Safely deserialize JSON strings into native Python objects, or return val if already list/dict."""
+    if default is None:
+        default = []
+    if val is None:
+        return default
+    if isinstance(val, (list, dict)):
+        return val
+    if isinstance(val, (set, tuple)):
+        return list(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if (s.startswith('[') and s.endswith(']')) or (s.startswith('{') and s.endswith('}')):
+            try:
+                import json as _j
+                return _j.loads(s)
+            except Exception:
+                return default
+        return [s] if s else default
+    return default
+
+def get_course_lessons_count(course) -> int:
+    """Safely calculates total lesson count across modules without throwing AttributeError on strings."""
+    if not course:
+        return 24
+    raw_modules = getattr(course, "modules", None)
+    if raw_modules is None and isinstance(course, dict):
+        raw_modules = course.get("modules")
+    mods = safe_parse_json(raw_modules, default=[])
+    if not isinstance(mods, list):
+        return 24
+    total = 0
+    for m in mods:
+        if isinstance(m, dict):
+            lessons = m.get("lessons") or []
+            if isinstance(lessons, list):
+                total += len(lessons)
+    return total if total > 0 else 24
+
 
 # --- DATABASE MODELS ---
 
@@ -629,17 +669,13 @@ INITIAL_ADMIN_PASS = "Admin@SmartLearn2026!"
 
 def seed_initial_data():
     """
-    Seeds core catalog, taxonomy, courses, and user accounts from seed_data.json on fresh databases.
-    Preserves all existing accounts (Gayatri, Honey, Harsha, Tulasi, Admin) and user records.
+    Seeds core catalog, taxonomy, courses, and user accounts from seed_data.json.
+    Ensures granular table seeding so courses, career goals, and categories exist even if users exist.
+    Sanitizes existing JSON columns in SQLite/PostgreSQL to prevent 'str' object has no attribute 'get'.
     """
     import json
     db = SessionLocal()
     try:
-        user_count = db.query(UserDB).count()
-        if user_count > 0:
-            db_logger.info(f"[DB Seed] Database already contains {user_count} users. Preserving existing accounts.")
-            return
-
         seed_file = APP_DIR / "config" / "seed_data.json"
         if not seed_file.exists():
             db_logger.warning(f"[DB Seed] {seed_file} not found; falling back to basic seeders.")
@@ -648,57 +684,133 @@ def seed_initial_data():
         with open(seed_file, "r", encoding="utf-8") as f:
             seed_data = json.load(f)
 
-        db_logger.info(f"[DB Seed] Fresh database detected. Seeding from {seed_file.name}...")
-
         # 1. Categories
-        for cat in seed_data.get("categories", []):
-            db.merge(CategoryDB(**cat))
-        db.commit()
+        if db.query(CategoryDB).count() == 0:
+            for cat in seed_data.get("categories", []):
+                db.merge(CategoryDB(**cat))
+            db.commit()
 
         # 2. Career Goals
-        for cg in seed_data.get("career_goals", []):
-            db.merge(CareerGoalDB(**cg))
-        db.commit()
+        if db.query(CareerGoalDB).count() == 0:
+            for cg in seed_data.get("career_goals", []):
+                db.merge(CareerGoalDB(**cg))
+            db.commit()
 
         # 3. Skills
-        for sk in seed_data.get("skills", []):
-            db.merge(SkillDB(**sk))
-        db.commit()
+        if db.query(SkillDB).count() == 0:
+            for sk in seed_data.get("skills", []):
+                db.merge(SkillDB(**sk))
+            db.commit()
 
-        # 4. Users
-        for u in seed_data.get("users", []):
-            db.merge(UserDB(**u))
-        db.commit()
+        # 4. Users (Preserve existing accounts; fill any missing seed accounts)
+        user_count = db.query(UserDB).count()
+        if user_count == 0:
+            for u in seed_data.get("users", []):
+                db.merge(UserDB(**u))
+            db.commit()
+            db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('users', []))} default user accounts.")
+        else:
+            existing_emails = {u[0].lower() for u in db.query(UserDB.email).all() if u[0]}
+            for u in seed_data.get("users", []):
+                if u.get("email", "").lower() not in existing_emails:
+                    db.merge(UserDB(**u))
+            db.commit()
 
         # 5. Profiles
-        for p in seed_data.get("profiles", []):
-            db.merge(ProfileDB(**p))
-        db.commit()
+        if db.query(ProfileDB).count() == 0:
+            for p in seed_data.get("profiles", []):
+                db.merge(ProfileDB(**p))
+            db.commit()
+        else:
+            existing_prof_users = {p[0] for p in db.query(ProfileDB.user_id).all() if p[0]}
+            for p in seed_data.get("profiles", []):
+                if p.get("user_id") not in existing_prof_users:
+                    db.merge(ProfileDB(**p))
+            db.commit()
 
         # 6. Courses
-        for c in seed_data.get("courses", []):
-            db.merge(CourseDB(**c))
-        db.commit()
+        if db.query(CourseDB).count() == 0:
+            for c in seed_data.get("courses", []):
+                db.merge(CourseDB(**c))
+            db.commit()
+            db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('courses', []))} catalog courses.")
 
         # 7. Assessments
-        for a in seed_data.get("assessments", []):
-            db.merge(AssessmentDB(**a))
-        db.commit()
+        if db.query(AssessmentDB).count() == 0:
+            for a in seed_data.get("assessments", []):
+                db.merge(AssessmentDB(**a))
+            db.commit()
 
         # 8. Assessment Questions
-        for q in seed_data.get("assessment_questions", []):
-            db.merge(AssessmentQuestionDB(**q))
-        db.commit()
+        if db.query(AssessmentQuestionDB).count() == 0:
+            for q in seed_data.get("assessment_questions", []):
+                db.merge(AssessmentQuestionDB(**q))
+            db.commit()
 
         # 9. Enrollments
-        for e in seed_data.get("enrollments", []):
-            db.merge(EnrollmentDB(**e))
-        db.commit()
+        if db.query(EnrollmentDB).count() == 0:
+            for e in seed_data.get("enrollments", []):
+                db.merge(EnrollmentDB(**e))
+            db.commit()
 
         # 10. Reviews
-        for r in seed_data.get("reviews", []):
-            db.merge(ReviewDB(**r))
-        db.commit()
+        if db.query(ReviewDB).count() == 0:
+            for r in seed_data.get("reviews", []):
+                db.merge(ReviewDB(**r))
+            db.commit()
+
+        # 11. AUTOMATIC DATA REPAIR: Sanitize any existing stringified JSON columns in the database
+        course_repaired = 0
+        for c_rec in db.query(CourseDB).all():
+            changed = False
+            for attr in ["modules", "skills", "target_roles", "career_goals", "prerequisites", "learning_outcomes", "technical_requirements", "recommended_knowledge"]:
+                v = getattr(c_rec, attr, None)
+                if isinstance(v, str) and ((v.strip().startswith('[') and v.strip().endswith(']')) or (v.strip().startswith('{') and v.strip().endswith('}'))):
+                    try:
+                        setattr(c_rec, attr, json.loads(v.strip()))
+                        changed = True
+                    except Exception:
+                        pass
+            if not c_rec.status or c_rec.status == "":
+                c_rec.status = "published"
+                changed = True
+            if changed:
+                course_repaired += 1
+                db.add(c_rec)
+
+        profile_repaired = 0
+        for p_rec in db.query(ProfileDB).all():
+            changed = False
+            for attr in ["skills", "interests", "languages", "education", "experience", "projects", "courses", "wishlist"]:
+                v = getattr(p_rec, attr, None)
+                if isinstance(v, str) and ((v.strip().startswith('[') and v.strip().endswith(']')) or (v.strip().startswith('{') and v.strip().endswith('}'))):
+                    try:
+                        setattr(p_rec, attr, json.loads(v.strip()))
+                        changed = True
+                    except Exception:
+                        pass
+            if changed:
+                profile_repaired += 1
+                db.add(p_rec)
+
+        goal_repaired = 0
+        for g_rec in db.query(CareerGoalDB).all():
+            changed = False
+            for attr in ["required_skills", "recommended_categories"]:
+                v = getattr(g_rec, attr, None)
+                if isinstance(v, str) and ((v.strip().startswith('[') and v.strip().endswith(']')) or (v.strip().startswith('{') and v.strip().endswith('}'))):
+                    try:
+                        setattr(g_rec, attr, json.loads(v.strip()))
+                        changed = True
+                    except Exception:
+                        pass
+            if changed:
+                goal_repaired += 1
+                db.add(g_rec)
+
+        if course_repaired > 0 or profile_repaired > 0 or goal_repaired > 0:
+            db.commit()
+            db_logger.info(f"[DB Heal] Sanitized stringified JSON in {course_repaired} courses, {profile_repaired} profiles, {goal_repaired} career goals.")
 
         # Reset sequences for PostgreSQL
         if "postgresql" in DATABASE_URL:
@@ -3356,7 +3468,7 @@ def list_courses(
             "career_goals": c.career_goals or c.target_roles or [],
             "learning_outcomes": c.learning_outcomes or [],
             "modules": c.modules or [],
-            "lessons_count": sum(len(m.get("lessons", [])) for m in (c.modules or [])) or 24,
+            "lessons_count": get_course_lessons_count(c),
             "icon": c.icon or "fa-solid fa-graduation-cap",
             "color_theme": c.color_theme or "linear-gradient(135deg, #5B3FE8, #8B4AD9)",
             "match_percentage": match_pct,
@@ -3402,6 +3514,19 @@ def list_courses(
             pass
 
     return res
+
+@app.get("/courses/recommended")
+@app.get("/api/courses/recommended")
+def get_recommended_courses_endpoint(
+    limit: Optional[int] = 6,
+    category: Optional[str] = None,
+    user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Personalized course recommendations endpoint routed before course_id path parameter.
+    """
+    return get_recommendations(limit=limit, category=category, user=user, db=db)
 
 @app.get("/courses/{course_id}")
 def get_course_details(
@@ -4253,7 +4378,7 @@ def submit_course_lesson_quiz(
                 enrollment.completed_lesson_ids = completed_ids
                 enrollment.completed_lessons = len(completed_ids)
                 
-                all_lessons_count = sum(len(m.get("lessons", [])) for m in (course.modules or []))
+                all_lessons_count = get_course_lessons_count(course)
                 enrollment.progress_percentage = min(100, round((len(completed_ids) / max(all_lessons_count, 1)) * 100))
                 enrollment.last_lesson_id = int(lesson_id) if str(lesson_id).isdigit() else 1
                 enrollment.last_lesson_title = target_lesson.get("title", f"Lesson {lesson_id}")
@@ -4485,7 +4610,7 @@ def get_instructor_courses_list(
     res = []
     for c in courses:
         enr_for_c = [e for e in enrollments if e.course_id == c.id]
-        total_lessons = sum(len(m.get("lessons", [])) for m in (c.modules or []))
+        total_lessons = get_course_lessons_count(c)
         c_dur_hours = parse_duration_hours(c.duration)
         c_is_free = bool(c.is_free if c.is_free is not None else 1) or (c.price == 0.0 or c.price is None)
         res.append({
@@ -4901,7 +5026,7 @@ def enroll_course(course_id: int, user: UserDB = Depends(get_current_user), db: 
                     "title": course.title,
                     "progress": 0,
                     "completed_lessons": 0,
-                    "total_lessons": sum(len(m.get("lessons", [])) for m in (course.modules or [])) or 24,
+                    "total_lessons": get_course_lessons_count(course) or 24,
                     "status": "in_progress",
                     "hours": int(course.duration.split(" ")[0]) if " " in (course.duration or "") else 30,
                     "hours_spent": 0,
@@ -4928,6 +5053,10 @@ def enroll_course(course_id: int, user: UserDB = Depends(get_current_user), db: 
         return {"message": f"Already enrolled in {course.title}.", "enrolled": True}
 
 @app.get("/my-courses")
+@app.get("/student/my-courses")
+@app.get("/enrollments/my-courses")
+@app.get("/api/my-courses")
+@app.get("/api/student/courses")
 def get_my_courses(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Retrieves all courses enrolled by the active student.
@@ -4944,7 +5073,7 @@ def get_my_courses(user: UserDB = Depends(get_current_user), db: Session = Depen
     for enr in enrollments:
         c = db.query(CourseDB).filter(CourseDB.id == enr.course_id).first()
         if c:
-            total_l = sum(len(m.get("lessons", [])) for m in (c.modules or [])) or 24
+            total_l = get_course_lessons_count(c) or 24
             res.append({
                 "id": c.id,
                 "enrollment_id": enr.id,
@@ -5102,39 +5231,41 @@ def get_wishlist(user: UserDB = Depends(get_current_user), db: Session = Depends
 def get_db_course_dicts(db: Session) -> List[Dict[str, Any]]:
     """
     Queries courses from the database and serializes them into dictionaries compatible with CourseScorer.
-
-    Args:
-        db: Active SQLAlchemy database session.
-
-    Returns:
-        List of course dictionary payloads.
+    Safely unpacks JSON lists and guards against string attributes.
     """
-    courses = db.query(CourseDB).filter(CourseDB.status == "published").all()
+    courses = db.query(CourseDB).filter(
+        or_(CourseDB.status == "published", CourseDB.status == "Published", CourseDB.status.is_(None))
+    ).all()
+    if not courses:
+        courses = db.query(CourseDB).all()
     res = []
     for c in courses:
+        c_skills = safe_parse_json(c.skills, default=[])
+        c_roles = safe_parse_json(c.target_roles, default=[c.category])
+        c_goals = safe_parse_json(c.career_goals, default=c_roles)
         res.append({
             "id": c.id,
             "title": c.title,
             "category": c.category,
-            "description": c.description,
-            "short_description": c.short_description,
+            "description": c.description or c.short_description or "",
+            "short_description": c.short_description or "",
             "instructor": c.instructor_name or "SmartLearn Faculty",
             "rating": c.rating or 4.8,
             "review_count": c.review_count or 0,
-            "duration": c.duration,
-            "lessons_count": sum(len(m.get("lessons", [])) for m in (c.modules or [])) or 24,
-            "level": c.level,
-            "difficulty": c.level,
-            "icon": c.icon,
-            "color_theme": c.color_theme,
-            "skills": c.skills or [],
-            "prerequisites": c.prerequisites or [],
-            "technical_requirements": c.technical_requirements or [],
-            "recommended_knowledge": c.recommended_knowledge or [],
-            "target_roles": c.target_roles or [c.category],
-            "career_goals": c.career_goals or c.target_roles or [c.category],
-            "learning_outcomes": c.learning_outcomes or [],
-            "modules": c.modules or [],
+            "duration": c.duration or "30 hours",
+            "lessons_count": get_course_lessons_count(c),
+            "level": c.level or "Intermediate",
+            "difficulty": c.level or "Intermediate",
+            "icon": c.icon or "fa-solid fa-graduation-cap",
+            "color_theme": c.color_theme or "linear-gradient(135deg, #5B3FE8, #8B4AD9)",
+            "skills": c_skills,
+            "prerequisites": safe_parse_json(c.prerequisites, default=[]),
+            "technical_requirements": safe_parse_json(c.technical_requirements, default=[]),
+            "recommended_knowledge": safe_parse_json(c.recommended_knowledge, default=[]),
+            "target_roles": c_roles,
+            "career_goals": c_goals,
+            "learning_outcomes": safe_parse_json(c.learning_outcomes, default=[]),
+            "modules": safe_parse_json(c.modules, default=[]),
             "domains": [c.category, c.subcategory] if c.subcategory else [c.category]
         })
     return res
@@ -5202,6 +5333,8 @@ def get_recommendations(
     )
 
 @app.get("/skill-gaps")
+@app.get("/student/skill-gaps")
+@app.get("/api/student/skill-gaps")
 def get_skill_gaps(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Performs skill-gap analysis comparing student acquired skills against target career goal skills.
@@ -5231,6 +5364,8 @@ def get_skill_gaps(user: UserDB = Depends(get_current_user), db: Session = Depen
     )
 
 @app.get("/learning-path")
+@app.get("/student/learning-path")
+@app.get("/api/student/learning-path")
 def get_learning_path(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Generates a sequential multi-step course learning path to bridge identified student skill gaps.
@@ -5753,7 +5888,7 @@ def get_admin_students(
         enrollments_list = []
         for e in student_enrs:
             c_obj = courses_map.get(e.course_id)
-            total_lessons = sum(len(m.get("lessons", [])) for m in (c_obj.modules or [])) if (c_obj and c_obj.modules) else 24
+            total_lessons = get_course_lessons_count(c_obj) if (c_obj and c_obj.modules) else 24
             completed_lessons = int(round((e.progress_percentage / 100.0) * total_lessons)) if total_lessons > 0 else 0
             
             enrollments_list.append({
@@ -5847,7 +5982,7 @@ def get_admin_student_detail(
     enrollments_list = []
     for e in student_enrs:
         c_obj = courses_map.get(e.course_id)
-        total_lessons = sum(len(m.get("lessons", [])) for m in (c_obj.modules or [])) if (c_obj and c_obj.modules) else 24
+        total_lessons = get_course_lessons_count(c_obj) if (c_obj and c_obj.modules) else 24
         completed_lessons = int(round((e.progress_percentage / 100.0) * total_lessons)) if total_lessons > 0 else 0
         
         enrollments_list.append({
@@ -6032,7 +6167,7 @@ def get_admin_instructor_detail(
         c_revs = [r for r in inst_reviews if r.course_id == c.id]
         c_avg_rating = round(sum(r.rating for r in c_revs) / len(c_revs), 1) if c_revs else c.rating
         
-        total_lessons = sum(len(m.get("lessons", [])) for m in (c.modules or [])) if c.modules else 24
+        total_lessons = get_course_lessons_count(c) if c.modules else 24
         
         enrolled_students_list = []
         for e in c_enrs:
@@ -7065,6 +7200,7 @@ def export_admin_report_csv(
 # --- UNIFIED DASHBOARD SUMMARY ROUTES ---
 
 @app.get("/student/dashboard-summary")
+@app.get("/api/student/dashboard-summary")
 def get_student_dashboard_summary(
     user: UserDB = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -7143,7 +7279,7 @@ def get_student_dashboard_summary(
     for e in active_enrollments:
         c = db.query(CourseDB).filter(CourseDB.id == e.course_id).first()
         if c:
-            total_lessons = sum(len(m.get("lessons", [])) for m in (c.modules or [])) or 24
+            total_lessons = get_course_lessons_count(c) or 24
             in_progress_courses.append({
                 "course_id": c.id,
                 "title": c.title,
@@ -7175,45 +7311,68 @@ def get_student_dashboard_summary(
             "percentage": a.percentage,
             "performance_level": a.performance_level
         })
-    db_goals_map = {g.title: g.required_skills for g in db.query(CareerGoalDB).all()}
+    db_goals_map = {g.title: safe_parse_json(g.required_skills, default=[]) for g in db.query(CareerGoalDB).all()}
     profile_dict = {
         "career_goal": career_goal,
         "secondary_career_goal": secondary_career_goal,
         "skills": all_student_skills,
-        "interests": profile.interests or [] if profile else [],
-        "education": profile.education or [] if profile else [],
-        "courses": profile.courses or [] if profile else [],
+        "interests": safe_parse_json(profile.interests if profile else [], default=[]),
+        "education": safe_parse_json(profile.education if profile else [], default=[]),
+        "courses": safe_parse_json(profile.courses if profile else [], default=[]),
         "learning_style": profile.learning_style if profile else None
     }
-    rec_result = RecommendationEngine.get_recommendations(
-        profile_data=profile_dict,
-        assessment_attempts=rec_attempts,
-        limit=4,
-        courses_catalog=db_courses,
-        enrolled_course_ids=[e.course_id for e in enrollments],
-        completed_course_ids=[e.course_id for e in enrollments if e.status == "completed" or (e.progress_percentage or 0) >= 100],
-        goals_map=db_goals_map
-    )
+    try:
+        rec_result = RecommendationEngine.get_recommendations(
+            profile_data=profile_dict,
+            assessment_attempts=rec_attempts,
+            limit=4,
+            courses_catalog=db_courses,
+            enrolled_course_ids=[e.course_id for e in enrollments],
+            completed_course_ids=[e.course_id for e in enrollments if e.status == "completed" or (e.progress_percentage or 0) >= 100],
+            goals_map=db_goals_map
+        )
+    except Exception as _rec_err:
+        auth_logger.warning(f"RecommendationEngine error in dashboard summary: {_rec_err}")
+        rec_result = {"recommendations": []}
     
     # Skill Gaps
-    db_goals = [{"title": g.title, "required_skills": g.required_skills} for g in db.query(CareerGoalDB).all()]
-    gap_result = SkillGapAnalyzer.analyze(
-        career_goal=career_goal or "Full Stack Web Developer",
-        student_skills=all_student_skills,
-        courses_catalog=db_courses,
-        db_career_goals=db_goals
-    )
+    db_goals = [{"title": g.title, "required_skills": safe_parse_json(g.required_skills, default=[])} for g in db.query(CareerGoalDB).all()]
+    try:
+        gap_result = SkillGapAnalyzer.analyze(
+            career_goal=career_goal or "Full Stack Web Developer",
+            student_skills=all_student_skills,
+            courses_catalog=db_courses,
+            db_career_goals=db_goals
+        )
+    except Exception as _gap_err:
+        auth_logger.warning(f"SkillGapAnalyzer error in dashboard summary: {_gap_err}")
+        gap_result = {
+            "career_goal": career_goal or "Full Stack Web Developer",
+            "readiness_percentage": 0,
+            "matching_count": 0,
+            "missing_count": 0,
+            "matching_skills": [],
+            "missing_skills": []
+        }
     
     # Learning Path
-    path_result = LearningPathGenerator.generate_path(
-        career_goal=career_goal or "Full Stack Web Developer",
-        secondary_career_goal=secondary_career_goal or None,
-        student_skills=all_student_skills,
-        assessment_results=[{"category": a.performance_level, "score": a.score} for a in attempts],
-        enrolled_courses=[{"id": e.course_id, "progress": e.progress_percentage, "status": e.status} for e in enrollments],
-        courses_catalog=db_courses,
-        db_career_goals=db_goals
-    )
+    try:
+        path_result = LearningPathGenerator.generate_path(
+            career_goal=career_goal or "Full Stack Web Developer",
+            secondary_career_goal=secondary_career_goal or None,
+            student_skills=all_student_skills,
+            assessment_results=[{"category": a.performance_level, "score": a.score} for a in attempts],
+            enrolled_courses=[{"id": e.course_id, "progress": e.progress_percentage, "status": e.status} for e in enrollments],
+            courses_catalog=db_courses,
+            db_career_goals=db_goals
+        )
+    except Exception as _path_err:
+        auth_logger.warning(f"LearningPathGenerator error in dashboard summary: {_path_err}")
+        path_result = {
+            "career_goal": career_goal or "Full Stack Web Developer",
+            "milestones": [],
+            "overall_progress_percentage": 0
+        }
     
     # Recent Activity
     recent_activity = []
@@ -8163,7 +8322,7 @@ def get_instructor_dashboard_summary(
     for c in courses:
         enr_for_c = [e for e in enrollments if e.course_id == c.id]
         avg_progress = round(sum(e.progress_percentage for e in enr_for_c) / len(enr_for_c)) if enr_for_c else 0
-        total_lessons = sum(len(m.get("lessons", [])) for m in (c.modules or []))
+        total_lessons = get_course_lessons_count(c)
         
         course_list.append({
             "id": c.id,
@@ -8324,7 +8483,7 @@ def get_instructor_students(
         student_user = db.query(UserDB).filter(UserDB.id == e.user_id).first()
         course_obj = course_map.get(e.course_id)
 
-        total_lessons = sum(len(m.get("lessons", [])) for m in (course_obj.modules or [])) if (course_obj and course_obj.modules) else 24
+        total_lessons = get_course_lessons_count(course_obj) if (course_obj and course_obj.modules) else 24
         completed_lessons = int(round((e.progress_percentage / 100.0) * total_lessons)) if total_lessons > 0 else 0
 
         students_list.append({
@@ -8689,7 +8848,7 @@ def create_payment_order(
             "instructor": course.instructor_name or "SmartLearn Faculty",
             "thumbnail_url": course.thumbnail_url or "",
             "rating": course.rating or 4.8,
-            "lessons_count": sum(len(m.get("lessons", [])) for m in (course.modules or [])) or 24
+            "lessons_count": get_course_lessons_count(course) or 24
         },
         "customer": {
             "name": user.full_name or "Student",
@@ -8819,7 +8978,7 @@ def verify_payment(
                     "title": course.title,
                     "progress": 0,
                     "completed_lessons": 0,
-                    "total_lessons": sum(len(m.get("lessons", [])) for m in (course.modules or [])) or 24,
+                    "total_lessons": get_course_lessons_count(course) or 24,
                     "status": "in_progress",
                     "hours": int(course.duration.split(" ")[0]) if " " in (course.duration or "") else 30,
                     "hours_spent": 0,

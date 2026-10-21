@@ -1,5 +1,27 @@
 """Skill Gap Analyzer implementation for SmartLearn."""
+import json
 from typing import List, Dict, Any, Optional
+
+def _safe_list(val: Any) -> List[Any]:
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, (set, tuple)):
+        return list(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if (s.startswith('[') and s.endswith(']')) or (s.startswith('{') and s.endswith('}')):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return parsed
+                elif isinstance(parsed, dict):
+                    return [parsed]
+            except Exception:
+                pass
+        return [s] if s else []
+    return []
 
 
 # ============================================================================
@@ -87,11 +109,12 @@ class SkillGapAnalyzer:
         goal_clean = (career_goal or "Full Stack Web Developer").strip()
 
         # Find target skills from DB goals or default benchmarks
+        student_skills = _safe_list(student_skills)
         required_skills: List[str] = []
         if db_career_goals:
             for g in db_career_goals:
                 if g.get("title", "").strip().lower() == goal_clean.lower():
-                    required_skills = g.get("required_skills", [])
+                    required_skills = _safe_list(g.get("required_skills", []))
                     break
 
         if not required_skills:
@@ -167,7 +190,7 @@ class SkillGapAnalyzer:
         bridge_courses: List[Dict[str, Any]] = []
 
         for c in courses_catalog:
-            course_skills = [s.lower() for s in (c.get("skills") or [])]
+            course_skills = [str(s).lower() for s in _safe_list(c.get("skills"))]
             overlap = missing_skill_names.intersection(course_skills)
             if overlap:
                 bridge_courses.append({

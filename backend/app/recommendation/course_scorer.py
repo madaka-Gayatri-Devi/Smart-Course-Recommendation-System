@@ -1,5 +1,28 @@
 """Course catalog and dynamic personalization scoring logic for SmartLearn recommendation engine."""
+import json
 from typing import List, Dict, Any, Optional, Tuple, Set
+
+def _safe_list(val: Any) -> List[Any]:
+    """Safely converts stringified JSON or non-list values into native python lists."""
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, (set, tuple)):
+        return list(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if (s.startswith('[') and s.endswith(']')) or (s.startswith('{') and s.endswith('}')):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    return parsed
+                elif isinstance(parsed, dict):
+                    return [parsed]
+            except Exception:
+                pass
+        return [s] if s else []
+    return []
 
 # ============================================================================
 # DEFAULT COURSE CATALOG & BENCHMARKS
@@ -232,7 +255,7 @@ class CourseScorer:
         if goals_map:
             for k, v in goals_map.items():
                 if k.lower() == goal_clean or goal_clean in k.lower() or k.lower() in goal_clean:
-                    return [s.strip().lower() for s in (v or [])]
+                    return [s.strip().lower() for s in _safe_list(v) if isinstance(s, str)]
         for k, v in CAREER_BENCHMARKS.items():
             if k == goal_clean or goal_clean in k or k in goal_clean:
                 return v
@@ -286,6 +309,8 @@ class CourseScorer:
         is_enrolled = bool(enrolled_course_ids and course_id in enrolled_course_ids)
 
         # Parse Student Skills and Levels
+        student_skills = _safe_list(student_skills)
+        student_interests = _safe_list(student_interests)
         student_skill_map: Dict[str, int] = {}
         student_skill_display: Dict[str, str] = {}
         for s in (student_skills or []):
@@ -312,11 +337,11 @@ class CourseScorer:
                     norm_interests.append(name.lower())
 
         # Course Metadata
-        course_skills_raw = course.get("skills") or []
+        course_skills_raw = _safe_list(course.get("skills"))
         course_skills_lower = [s.strip().lower() for s in course_skills_raw if isinstance(s, str)]
-        course_roles_lower = [r.strip().lower() for r in (course.get("target_roles") or []) if isinstance(r, str)]
-        course_goals_lower = [g.strip().lower() for g in (course.get("career_goals") or []) if isinstance(g, str)]
-        course_domains_lower = [d.strip().lower() for d in (course.get("domains") or []) if isinstance(d, str)]
+        course_roles_lower = [r.strip().lower() for r in _safe_list(course.get("target_roles")) if isinstance(r, str)]
+        course_goals_lower = [g.strip().lower() for g in _safe_list(course.get("career_goals")) if isinstance(g, str)]
+        course_domains_lower = [d.strip().lower() for d in _safe_list(course.get("domains")) if isinstance(d, str)]
         course_cat = str(course.get("category") or "").strip().lower()
         course_subcat = str(course.get("subcategory") or "").strip().lower()
         course_desc = str(course.get("description") or "").strip().lower()
