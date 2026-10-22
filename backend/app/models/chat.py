@@ -67,6 +67,8 @@ class MessageDB(Base):
     deleted_at = Column(String, nullable=True)
     deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     is_announcement = Column(Integer, default=0)
+    is_forwarded = Column(Integer, default=0)
+    forwarded_from_message_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
     created_at = Column(String, index=True)
     updated_at = Column(String, nullable=True)
 

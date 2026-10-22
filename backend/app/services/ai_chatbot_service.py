@@ -658,8 +658,16 @@ class AIChatbotService:
             messages.append({"role": role, "content": m.get("content", "")})
         messages.append({"role": "user", "content": user_message})
 
-        preferred_model = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b").strip()
-        candidate_models = [preferred_model, "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b", "allam-2-7b"]
+        preferred_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
+        candidate_models = [
+            preferred_model,
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "llama3-70b-8192",
+            "llama3-8b-8192",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it"
+        ]
         candidate_models = list(dict.fromkeys(candidate_models))
 
         last_error = ""

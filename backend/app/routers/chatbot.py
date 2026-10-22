@@ -52,6 +52,20 @@ except ImportError:
 
 router = APIRouter(prefix="/chatbot", tags=["AI Chatbot Assistant"])
 
+# Ensure database tables exist across SQLite and PostgreSQL upon router registration
+try:
+    try:
+        from app.main import engine
+    except ImportError:
+        try:
+            from main import engine
+        except ImportError:
+            from backend.app.main import engine
+    AIChatbotConversationDB.__table__.create(bind=engine, checkfirst=True)
+    AIChatbotMessageDB.__table__.create(bind=engine, checkfirst=True)
+except Exception as _tb_err:
+    pass
+
 
 @router.get("/health")
 def chatbot_health():
@@ -78,10 +92,19 @@ def _get_main_deps():
     return get_db, get_current_user, UserDB
 
 
+def get_db_session():
+    """
+    FastAPI dependency yielding an active SQLAlchemy database session
+    and safely closing it after the request lifecycle terminates.
+    """
+    get_db, _, _ = _get_main_deps()
+    yield from get_db()
+
+
 def authenticate_user(
     token: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None),
-    db: Session = Depends(lambda: next(_get_main_deps()[0]()))
+    db: Session = Depends(get_db_session)
 ):
     """
     FastAPI dependency that extracts and validates the JWT authentication token
@@ -90,15 +113,6 @@ def authenticate_user(
     """
     _, get_current_user_fn, _ = _get_main_deps()
     return get_current_user_fn(token=token, authorization=authorization, db=db)
-
-
-def get_db_session():
-    """
-    FastAPI dependency yielding an active SQLAlchemy database session
-    and safely closing it after the request lifecycle terminates.
-    """
-    get_db, _, _ = _get_main_deps()
-    yield from get_db()
 
 
 @router.post("/message", response_model=ChatMessageResponse)
@@ -158,22 +172,22 @@ def send_chatbot_message(
     # 3. Build role context from trusted backend data
     system_context = AIChatbotService.get_role_context(db, user)
 
-    # 4. Generate AI response from real provider with safe error handling
+    # 4. Generate AI response from real provider with safe error handling & grounded fallback
     try:
         ai_reply = AIChatbotService.generate_ai_response(
             messages_history=messages_history,
             system_context=system_context,
             user_message=payload.message
         )
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(ve)
-        )
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI Service processing error: {str(exc)}"
+        import logging
+        logging.getLogger("smartlearn.chatbot").warning(
+            f"AI provider generation notice: {exc}. Falling back to context-grounded response synthesizer."
+        )
+        ai_reply = AIChatbotService._synthesize_grounded_response(
+            system_context=system_context,
+            user_message=payload.message,
+            history=messages_history
         )
 
     # 5. Persist user message and AI response
