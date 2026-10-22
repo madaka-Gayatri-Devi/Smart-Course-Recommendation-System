@@ -5612,8 +5612,10 @@ def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Dep
     raw_skills = profile.skills if profile and isinstance(profile.skills, list) else []
     skills = []
     for s in raw_skills:
-        if isinstance(s, dict) and s.get("name"):
-            skills.append(str(s.get("name")).strip().lower())
+        if isinstance(s, dict):
+            s_name = s.get("name") or s.get("skill") or s.get("title")
+            if s_name:
+                skills.append(str(s_name).strip().lower())
         elif isinstance(s, str) and s.strip():
             skills.append(s.strip().lower())
 
@@ -5675,6 +5677,10 @@ def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Dep
     res = []
     for a in assessments:
         q_count = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == a.id).count()
+        # Per requirement: Do not show an assessment unless it is properly configured and has usable questions
+        if q_count == 0:
+            continue
+
         m_priority, m_type, m_badge, m_score = match_level(a.category, a.title)
         
         last_att = attempts_map.get(a.id)
@@ -5692,11 +5698,11 @@ def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Dep
         res.append({
             "id": a.id,
             "title": a.title,
-            "description": a.description,
+            "description": a.description or "",
             "category": a.category,
-            "duration_minutes": a.duration_minutes,
+            "duration_minutes": a.duration_minutes or 15,
             "total_questions": q_count or a.total_questions,
-            "passing_score": a.passing_score,
+            "passing_score": a.passing_score or 60,
             "match_priority": m_priority,
             "match_type": m_type,
             "match_badge": m_badge,

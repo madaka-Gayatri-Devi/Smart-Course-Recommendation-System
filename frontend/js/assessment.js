@@ -1,3 +1,18 @@
+/**
+ * Sanitizes and escapes special characters to prevent HTML/XSS injection.
+ * @param {string|number} str - String to escape
+ * @returns {string} Escaped string safe for HTML rendering
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ----------------------------------------------------
@@ -217,33 +232,66 @@ function stopTimer() {
     let currentCatalogFilter = 'all';
 
     async function loadCatalog() {
-        try {
-            // Check if profile is complete
-            const hasGoal = profileData && (profileData.career_goal || profileData.secondary_career_goal);
-            const hasInterests = profileData && Array.isArray(profileData.interests) && profileData.interests.length > 0;
-            
-            const incompleteBanner = document.getElementById('profileIncompleteBanner');
-            if (incompleteBanner) {
-                if (!hasGoal && !hasInterests) {
-                    incompleteBanner.style.display = 'flex';
-                } else {
-                    incompleteBanner.style.display = 'none';
-                }
+        // Check if profile is complete
+        const hasGoal = profileData && (profileData.career_goal || profileData.secondary_career_goal);
+        const hasInterests = profileData && Array.isArray(profileData.interests) && profileData.interests.length > 0;
+        
+        const incompleteBanner = document.getElementById('profileIncompleteBanner');
+        if (incompleteBanner) {
+            if (!hasGoal && !hasInterests) {
+                incompleteBanner.style.display = 'flex';
+            } else {
+                incompleteBanner.style.display = 'none';
             }
+        }
 
+        // 1. Show loading indicator
+        if (assessmentsListContainer) {
+            assessmentsListContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1.5rem; color: var(--secondary-text);">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.25rem; color: var(--primary-purple); margin-bottom: 0.85rem; display: block;"></i>
+                    <p style="font-size: 14.5px; font-weight: 600; color: var(--dark-navy);">Loading available skill assessments...</p>
+                    <p style="font-size: 12.5px; color: var(--secondary-text); margin-top: 0.25rem;">Personalizing diagnostic papers for your career profile</p>
+                </div>
+            `;
+        }
+
+        // 2. Fetch assessments with retry capability
+        try {
             cachedAssessments = await window.api.getAssessments();
             renderAssessments(cachedAssessments);
-
-            const history = await window.api.getMyAssessmentResults();
-            renderHistory(history);
         } catch (err) {
             console.error('Failed to load assessment catalog:', err);
             if (assessmentsListContainer) {
                 assessmentsListContainer.innerHTML = `
-                    <div style="background:#fef2f2; border:1px solid #fecaca; padding:1.5rem; border-radius:12px; color:#991b1b;">
-                        <i class="fa-solid fa-circle-exclamation mr-2"></i> Failed to load assessments from server.
+                    <div style="background: #FEF2F2; border: 1px solid #FECACA; padding: 2.25rem 1.5rem; border-radius: 14px; color: #991B1B; text-align: center;">
+                        <div style="width: 52px; height: 52px; border-radius: 50%; background: #FEE2E2; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.85rem;">
+                            <i class="fa-solid fa-circle-exclamation" style="font-size: 26px; color: #DC2626;"></i>
+                        </div>
+                        <h4 style="font-size: 16.5px; font-weight: 700; color: #991B1B; margin-bottom: 0.4rem;">Unable to Load Assessments</h4>
+                        <p style="font-size: 13.5px; color: #7F1D1D; margin-bottom: 1.25rem; max-width: 440px; margin-left: auto; margin-right: auto; line-height: 1.55;">
+                            We encountered an issue retrieving the skill assessment catalog. Please check your connection and try again.
+                        </p>
+                        <button type="button" id="btnRetryLoadAssessments" class="btn-primary-small" style="padding: 0.7rem 1.75rem; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 auto; cursor: pointer; border-radius: 8px; font-weight: 600;">
+                            <i class="fa-solid fa-rotate-right"></i> Try Again
+                        </button>
                     </div>
                 `;
+                const retryBtn = document.getElementById('btnRetryLoadAssessments');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => loadCatalog());
+                }
+            }
+        }
+
+        // 3. Fetch past assessment attempts independently
+        try {
+            const history = await window.api.getMyAssessmentResults();
+            renderHistory(history);
+        } catch (histErr) {
+            console.error('Failed to load past assessment history:', histErr);
+            if (historyListContainer) {
+                historyListContainer.innerHTML = '<p style="color: var(--secondary-text); font-size: 13px;">Unable to load previous attempts.</p>';
             }
         }
     }
@@ -254,13 +302,22 @@ function stopTimer() {
      */
     function renderAssessments(list) {
         if (!assessmentsListContainer) return;
-        if (!list || list.length === 0) {
-            assessmentsListContainer.innerHTML = '<p style="color: var(--secondary-text);">No assessments currently available.</p>';
+        
+        // Ensure assessments have questions configured
+        let displayList = (list || []).filter(item => (item.total_questions || 0) > 0);
+
+        if (!list || list.length === 0 || displayList.length === 0) {
+            assessmentsListContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1.5rem; color: var(--secondary-text); background: var(--bg-surface, #fff); border-radius: 12px; border: 1px dashed var(--border-color, #E2E8F0);">
+                    <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">📋</div>
+                    <h4 style="font-size: 16px; font-weight: 700; color: var(--dark-navy); margin-bottom: 0.25rem;">No Skill Assessments Available</h4>
+                    <p style="font-size: 13.5px; color: var(--secondary-text); max-width: 420px; margin: 0 auto;">No assessment papers with active questions are currently published. Please check back later or explore our course catalog.</p>
+                </div>
+            `;
             return;
         }
 
         // Apply filter if selected
-        let displayList = [...list];
         if (currentCatalogFilter === 'recommended') {
             displayList = displayList.filter(item => item.is_recommended);
         } else if (currentCatalogFilter !== 'all') {
