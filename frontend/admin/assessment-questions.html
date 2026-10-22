@@ -91,25 +91,28 @@
                     <h1>Assessment Question Bank 📋</h1>
                     <p>Review, author, and manage multiple-choice diagnostic skill testing questions across domains.</p>
                 </div>
-                <button id="addQuestionBtn" class="btn-primary" style="padding: 0.75rem 1.5rem; border: none; cursor: pointer;"><i class="fa-solid fa-plus mr-1"></i> Add Question</button>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                    <button id="createAssessmentBtn" class="btn btn-outline" style="padding: 0.75rem 1.25rem; font-weight: 600; cursor: pointer; border-radius: 8px;"><i class="fa-solid fa-file-circle-plus mr-1"></i> Create Assessment Paper</button>
+                    <button id="addQuestionBtn" class="btn-primary" style="padding: 0.75rem 1.5rem; border: none; cursor: pointer; border-radius: 8px;"><i class="fa-solid fa-plus mr-1"></i> Add Question</button>
+                </div>
             </div>
 
             <!-- Filter Controls -->
             <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="adminAssessmentFilterSelect" style="font-size: 13px; font-weight: 600; color: #475569;">Filter Assessment:</label>
-                    <select id="adminAssessmentFilterSelect" class="form-input" style="padding: 0.5rem 0.85rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 8px; background: #FFFFFF; font-weight: 500; min-width: 280px;">
+                    <label for="adminAssessmentFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--secondary-text, #475569);">Filter Assessment:</label>
+                    <select id="adminAssessmentFilterSelect" class="form-input" style="padding: 0.55rem 0.85rem; font-size: 13px; border: 1px solid var(--border-color, #CBD5E1); border-radius: 8px; background: var(--bg-surface, #FFFFFF); color: var(--dark-navy, #1e293b); font-weight: 500; min-width: 280px;">
                         <option value="all">All Assessments</option>
                     </select>
                 </div>
                 <div style="flex: 1; min-width: 220px;">
-                    <input type="text" id="adminQuestionSearchInput" placeholder="Search questions..." class="form-input" style="width: 100%; padding: 0.5rem 0.85rem; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 8px;">
+                    <input type="text" id="adminQuestionSearchInput" placeholder="Search questions..." class="form-input" style="width: 100%; padding: 0.55rem 0.85rem; font-size: 13px; border: 1px solid var(--border-color, #CBD5E1); border-radius: 8px; background: var(--bg-surface, #FFFFFF); color: var(--dark-navy, #1e293b);">
                 </div>
             </div>
 
             <div class="dashboard-card" style="padding: 1.5rem;">
                 <div style="overflow-x: auto;">
-                    <table class="admin-table">
+                    <table class="admin-table questions-table">
                         <thead>
                             <tr>
                                 <th>Assessment</th>
@@ -130,59 +133,109 @@
         </div>
     </main>
 
+    <!-- Create / Edit Assessment Paper Modal -->
+    <div class="modal-backdrop" id="assessmentPaperModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+        <div class="admin-modal-dialog">
+            <div class="admin-modal-header">
+                <h3 id="assessmentPaperModalTitle">Create Assessment Paper</h3>
+                <button type="button" class="admin-modal-close" onclick="closeAssessmentPaperModal()" title="Close">&times;</button>
+            </div>
+            <form id="assessmentPaperForm" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; margin: 0;">
+                <div class="admin-modal-body">
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Assessment Title *</label>
+                        <input type="text" id="paperTitle" required placeholder="e.g. Cloud Architecture & Kubernetes Mastery" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Target Career Domain / Category *</label>
+                        <select id="paperCategory" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                            <option value="">Select Domain Category...</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Frontend Development">Frontend Development</option>
+                            <option value="Backend Development">Backend Development</option>
+                            <option value="Data Science & AI">Data Science & AI</option>
+                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                            <option value="Cloud & DevOps">Cloud & DevOps</option>
+                            <option value="Cyber Security">Cyber Security</option>
+                            <option value="UI/UX Design">UI/UX Design</option>
+                            <option value="Mobile Development">Mobile Development</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Description</label>
+                        <textarea id="paperDesc" rows="3" placeholder="Brief summary of skills assessed..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-family: inherit; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Duration (Minutes) *</label>
+                            <input type="number" id="paperDuration" value="15" min="5" max="180" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Passing Score (%) *</label>
+                            <input type="number" id="paperPassingScore" value="60" min="10" max="100" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                        </div>
+                    </div>
+                </div>
+                <div class="admin-modal-footer">
+                    <button type="button" class="btn-outline" onclick="closeAssessmentPaperModal()" style="padding: 0.6rem 1.25rem;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.6rem 1.5rem; border: none; cursor: pointer;">Save Assessment Paper</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add/Edit Question Modal -->
     <div class="modal-backdrop" id="questionModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
-        <div class="modal-dialog" style="background: #FFFFFF; width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 1.75rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #F1F5F9; padding-bottom: 0.75rem;">
-                <h3 id="questionModalTitle" style="margin: 0; color: var(--dark-navy);">Add Assessment Question</h3>
-                <button type="button" onclick="closeQuestionModal()" style="border: none; background: none; font-size: 18px; cursor: pointer;">&times;</button>
+        <div class="admin-modal-dialog">
+            <div class="admin-modal-header">
+                <h3 id="questionModalTitle">Add Assessment Question</h3>
+                <button type="button" class="admin-modal-close" onclick="closeQuestionModal()" title="Close">&times;</button>
             </div>
-            <form id="questionForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Target Assessment Paper *</label>
-                    <select id="qAssessmentSelect" required style="width: 100%; padding: 0.7rem; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 13px;">
-                    </select>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Question Text *</label>
-                    <textarea id="qText" required rows="3" placeholder="Enter diagnostic question text..." style="width: 100%; padding: 0.7rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit; font-size: 13px;"></textarea>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Answer Options (Select radio for Correct Answer) *</label>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="qCorrectRadio" value="0" checked title="Mark Option 1 as correct">
-                            <input type="text" id="qOpt0" required placeholder="Option 1" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="qCorrectRadio" value="1" title="Mark Option 2 as correct">
-                            <input type="text" id="qOpt1" required placeholder="Option 2" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="qCorrectRadio" value="2" title="Mark Option 3 as correct">
-                            <input type="text" id="qOpt2" required placeholder="Option 3" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="qCorrectRadio" value="3" title="Mark Option 4 as correct">
-                            <input type="text" id="qOpt3" required placeholder="Option 4" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px;">
+            <form id="questionForm" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; margin: 0;">
+                <div class="admin-modal-body">
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Target Assessment Paper *</label>
+                        <select id="qAssessmentSelect" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Question Text *</label>
+                        <textarea id="qText" required rows="3" placeholder="Enter diagnostic question text..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-family: inherit; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);"></textarea>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Answer Options (Select radio for Correct Answer) *</label>
+                        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <input type="radio" name="qCorrectRadio" value="0" checked title="Mark Option 1 as correct" style="width: 18px; height: 18px; accent-color: var(--color-primary, #5B3FE8); cursor: pointer;">
+                                <input type="text" id="qOpt0" required placeholder="Option 1" style="flex: 1; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 6px; font-size: 13px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <input type="radio" name="qCorrectRadio" value="1" title="Mark Option 2 as correct" style="width: 18px; height: 18px; accent-color: var(--color-primary, #5B3FE8); cursor: pointer;">
+                                <input type="text" id="qOpt1" required placeholder="Option 2" style="flex: 1; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 6px; font-size: 13px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <input type="radio" name="qCorrectRadio" value="2" title="Mark Option 3 as correct" style="width: 18px; height: 18px; accent-color: var(--color-primary, #5B3FE8); cursor: pointer;">
+                                <input type="text" id="qOpt2" required placeholder="Option 3" style="flex: 1; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 6px; font-size: 13px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <input type="radio" name="qCorrectRadio" value="3" title="Mark Option 4 as correct" style="width: 18px; height: 18px; accent-color: var(--color-primary, #5B3FE8); cursor: pointer;">
+                                <input type="text" id="qOpt3" required placeholder="Option 4" style="flex: 1; padding: 0.65rem 0.85rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 6px; font-size: 13px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
-                    <div style="flex: 1;">
-                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Points *</label>
-                        <input type="number" id="qPoints" value="10" min="1" max="100" required style="width: 100%; padding: 0.6rem; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 13px;">
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Points *</label>
+                        <input type="number" id="qPoints" value="20" min="1" max="100" required style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                    </div>
+
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Answer Explanation (Optional)</label>
+                        <textarea id="qExplanation" rows="2" placeholder="Brief rationale for the correct answer..." style="width: 100%; padding: 0.65rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-family: inherit; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);"></textarea>
                     </div>
                 </div>
-
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Answer Explanation (Optional)</label>
-                    <textarea id="qExplanation" rows="2" placeholder="Brief rationale for the correct answer..." style="width: 100%; padding: 0.6rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit; font-size: 13px;"></textarea>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <div class="admin-modal-footer">
                     <button type="button" class="btn-outline" onclick="closeQuestionModal()" style="padding: 0.6rem 1.25rem;">Cancel</button>
                     <button type="submit" class="btn-primary" style="padding: 0.6rem 1.5rem; border: none; cursor: pointer;">Save Question</button>
                 </div>

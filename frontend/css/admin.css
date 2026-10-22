@@ -253,38 +253,222 @@ body.admin-theme {
   border: 1px solid var(--admin-border, #e2e8f0);
 }
 
+.admin-table,
 .admin-data-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
+.admin-table th,
 .admin-data-table th {
   text-align: left;
-  padding: 0.85rem 1rem;
-  background-color: #f8fafc;
-  color: #475569;
+  padding: 0.9rem 1.25rem;
+  background-color: var(--bg-surface-secondary, #F8FAFC);
+  color: var(--secondary-text, #475569);
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  border-bottom: 2px solid var(--admin-border, #e2e8f0);
+  font-size: 0.725rem;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border-color, #E2E8F0);
   white-space: nowrap;
 }
 
+.admin-table td,
 .admin-data-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--admin-border, #f1f5f9);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color, #F1F5F9);
   vertical-align: middle;
 }
 
+.admin-table tr:last-child td,
 .admin-data-table tr:last-child td {
   border-bottom: none;
 }
 
+.admin-table tr:hover td,
 .admin-data-table tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--bg-surface-secondary, #F8FAFC);
+}
+
+/* Category domains table specific column widths and separation */
+.categories-table th:nth-child(1),
+.categories-table td:nth-child(1) {
+  min-width: 220px;
+  width: 26%;
+}
+
+.categories-table th:nth-child(2),
+.categories-table td:nth-child(2) {
+  min-width: 300px;
+  width: 42%;
+  line-height: 1.5;
+}
+
+.categories-table th:nth-child(3),
+.categories-table td:nth-child(3) {
+  min-width: 130px;
+  width: 12%;
+}
+
+.categories-table th:nth-child(4),
+.categories-table td:nth-child(4) {
+  min-width: 110px;
+  width: 10%;
+}
+
+.categories-table th:nth-child(5),
+.categories-table td:nth-child(5) {
+  min-width: 140px;
+  width: 10%;
+  text-align: right;
+}
+
+/* Assessment Questions Table Specific Column Widths */
+.questions-table th:nth-child(1),
+.questions-table td:nth-child(1) {
+  min-width: 220px;
+  width: 22%;
+}
+
+.questions-table th:nth-child(2),
+.questions-table td:nth-child(2) {
+  min-width: 280px;
+  width: 32%;
+}
+
+.questions-table th:nth-child(3),
+.questions-table td:nth-child(3) {
+  min-width: 260px;
+  width: 30%;
+}
+
+.questions-table th:nth-child(4),
+.questions-table td:nth-child(4) {
+  min-width: 80px;
+  width: 6%;
+}
+
+.questions-table th:nth-child(5),
+.questions-table td:nth-child(5) {
+  min-width: 120px;
+  width: 10%;
+  text-align: right;
+}
+
+/* Modern Admin Modals with Fixed Header/Footer & Scrollable Body */
+.admin-modal-dialog {
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--dark-navy, #0F172A);
+  width: 90%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color, #E2E8F0);
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-modal-header {
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--border-color, #E2E8F0);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--bg-surface, #FFFFFF);
+}
+
+.admin-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dark-navy, #0F172A);
+}
+
+.admin-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--secondary-text, #64748B);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.admin-modal-close:hover {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.admin-modal-body {
+  padding: 1.5rem 1.75rem;
+  overflow-y: auto;
+  flex-grow: 1;
+  max-height: calc(85vh - 140px);
+}
+
+.admin-modal-footer {
+  padding: 1rem 1.75rem;
+  border-top: 1px solid var(--border-color, #E2E8F0);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  background: var(--bg-surface-secondary, #F8FAFC);
+}
+
+/* Dark mode theme overrides */
+html[data-resolved-appearance="dark"] .admin-table th,
+html[data-resolved-appearance="dark"] .admin-data-table th {
+  background-color: #1E293B !important;
+  color: #94A3B8 !important;
+  border-bottom-color: #334155 !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-table td,
+html[data-resolved-appearance="dark"] .admin-data-table td {
+  border-bottom-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-table tr:hover td,
+html[data-resolved-appearance="dark"] .admin-data-table tr:hover td {
+  background-color: #1E293B !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-modal-dialog {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-modal-header {
+  background: #1E293B !important;
+  border-bottom-color: #334155 !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-modal-header h3 {
+  color: #F8FAFC !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-modal-footer {
+  background: #0F172A !important;
+  border-top-color: #334155 !important;
+}
+
+html[data-resolved-appearance="dark"] .admin-modal-body input,
+html[data-resolved-appearance="dark"] .admin-modal-body select,
+html[data-resolved-appearance="dark"] .admin-modal-body textarea {
+  background: #0F172A !important;
+  border-color: #334155 !important;
+  color: #F8FAFC !important;
 }
 
 .user-cell {

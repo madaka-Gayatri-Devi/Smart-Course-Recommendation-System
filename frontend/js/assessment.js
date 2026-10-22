@@ -213,10 +213,26 @@ function stopTimer() {
 // ==========================================
 // ASSESSMENT CATALOG & HISTORY
 // ==========================================
-async function loadCatalog() {
+    let cachedAssessments = [];
+    let currentCatalogFilter = 'all';
+
+    async function loadCatalog() {
         try {
-            const assessments = await window.api.getAssessments();
-            renderAssessments(assessments);
+            // Check if profile is complete
+            const hasGoal = profileData && (profileData.career_goal || profileData.secondary_career_goal);
+            const hasInterests = profileData && Array.isArray(profileData.interests) && profileData.interests.length > 0;
+            
+            const incompleteBanner = document.getElementById('profileIncompleteBanner');
+            if (incompleteBanner) {
+                if (!hasGoal && !hasInterests) {
+                    incompleteBanner.style.display = 'flex';
+                } else {
+                    incompleteBanner.style.display = 'none';
+                }
+            }
+
+            cachedAssessments = await window.api.getAssessments();
+            renderAssessments(cachedAssessments);
 
             const history = await window.api.getMyAssessmentResults();
             renderHistory(history);
@@ -232,72 +248,101 @@ async function loadCatalog() {
         }
     }
 
-    function isRecommendedForGoal(assessmentCategory, assessmentTitle) {
-        const careerGoal = (profileData.career_goal || '').toLowerCase();
-        const category = (assessmentCategory || '').toLowerCase();
-        const title = (assessmentTitle || '').toLowerCase();
-
-        if (careerGoal.includes('web') || careerGoal.includes('full stack') || careerGoal.includes('developer')) {
-            if (category.includes('web') || title.includes('full stack') || title.includes('web')) return true;
-        }
-        if (careerGoal.includes('data') || careerGoal.includes('ai') || careerGoal.includes('machine learning')) {
-            if (category.includes('data') || title.includes('data') || title.includes('machine learning')) return true;
-        }
-        if (careerGoal.includes('cloud') || careerGoal.includes('devops')) {
-            if (category.includes('cloud') || title.includes('cloud') || title.includes('devops')) return true;
-        }
-        return false;
-    }
-
     /**
- * Renders assessment catalog cards with category badges, duration, question count, and take-test buttons.
- * @param {Array<Object>} assessments - List of diagnostic assessments.
- */
-function renderAssessments(list) {
+     * Renders assessment catalog cards with category badges, duration, question count, and take-test buttons.
+     * Integrates personalized match priority based on student's primary/secondary career goals and interests.
+     */
+    function renderAssessments(list) {
         if (!assessmentsListContainer) return;
         if (!list || list.length === 0) {
             assessmentsListContainer.innerHTML = '<p style="color: var(--secondary-text);">No assessments currently available.</p>';
             return;
         }
 
-        // Sort so recommended tests for user career goal appear first
-        const sortedList = [...list].sort((a, b) => {
-            const aRec = isRecommendedForGoal(a.category, a.title);
-            const bRec = isRecommendedForGoal(b.category, b.title);
-            if (aRec && !bRec) return -1;
-            if (!aRec && bRec) return 1;
-            return a.id - b.id;
-        });
+        // Apply filter if selected
+        let displayList = [...list];
+        if (currentCatalogFilter === 'recommended') {
+            displayList = displayList.filter(item => item.is_recommended);
+        } else if (currentCatalogFilter !== 'all') {
+            displayList = displayList.filter(item => (item.category || '').toLowerCase().includes(currentCatalogFilter.toLowerCase()));
+        }
+
+        if (displayList.length === 0) {
+            assessmentsListContainer.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--secondary-text); background: var(--bg-surface, #fff); border-radius: 12px; border: 1px dashed var(--border-color, #E2E8F0);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+                    <div style="font-weight: 700; color: var(--dark-navy);">No assessments in this filter</div>
+                    <p style="font-size: 13.5px; margin-top: 0.25rem;">Switch to "All Assessments" to see the full catalog.</p>
+                </div>
+            `;
+            return;
+        }
 
         assessmentsListContainer.innerHTML = '';
-        sortedList.forEach(item => {
-            const isRec = isRecommendedForGoal(item.category, item.title);
+        displayList.forEach(item => {
+            const isRec = Boolean(item.is_recommended);
             const card = document.createElement('div');
             card.className = 'assessment-card';
-            if (isRec) {
+            
+            // Enhanced card styling based on match priority
+            if (item.match_type === 'primary_goal') {
+                card.style.border = '2px solid rgba(91, 63, 232, 0.45)';
+                card.style.background = 'linear-gradient(180deg, rgba(91, 63, 232, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)';
+                card.style.boxShadow = '0 10px 25px -5px rgba(91, 63, 232, 0.12)';
+            } else if (item.match_type === 'secondary_goal') {
                 card.style.border = '2px solid rgba(139, 92, 246, 0.35)';
-                card.style.background = 'linear-gradient(180deg, #FAF8FF 0%, #FFFFFF 100%)';
+                card.style.background = 'linear-gradient(180deg, rgba(139, 92, 246, 0.04) 0%, rgba(255, 255, 255, 0.95) 100%)';
+            } else if (item.match_type === 'interest') {
+                card.style.border = '1px solid rgba(2, 132, 199, 0.35)';
+                card.style.background = 'linear-gradient(180deg, rgba(2, 132, 199, 0.03) 0%, rgba(255, 255, 255, 0.95) 100%)';
             }
 
+            // Construct personalized match badge
+            let matchBadgeHtml = '';
+            if (item.match_badge) {
+                if (item.match_type === 'primary_goal') {
+                    matchBadgeHtml = `<span style="background: linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%); color: white; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;"><i class="fa-solid fa-bullseye mr-1"></i> ${escapeHtml(item.match_badge)}</span>`;
+                } else if (item.match_type === 'secondary_goal') {
+                    matchBadgeHtml = `<span style="background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%); color: white; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-star mr-1"></i> ${escapeHtml(item.match_badge)}</span>`;
+                } else if (item.match_type === 'interest') {
+                    matchBadgeHtml = `<span style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;"><i class="fa-solid fa-lightbulb mr-1"></i> ${escapeHtml(item.match_badge)}</span>`;
+                }
+            }
+
+            // Construct attempt status badge if previously taken
+            let attemptStatusHtml = '';
+            if (item.last_attempt) {
+                if (item.last_attempt.passed) {
+                    attemptStatusHtml = `<span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px;"><i class="fa-solid fa-circle-check mr-1"></i> Passed (${item.last_attempt.percentage}%)</span>`;
+                } else {
+                    attemptStatusHtml = `<span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 99px;"><i class="fa-solid fa-rotate mr-1"></i> Score: ${item.last_attempt.percentage}% - Retake Available</span>`;
+                }
+            }
+
+            const buttonLabel = item.last_attempt ? 'Retake Assessment →' : 'Start Assessment →';
+
             card.innerHTML = `
-                <div class="assessment-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <div class="assessment-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
                     <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                        <span class="assessment-category">${item.category || 'Skill Test'}</span>
-                        ${isRec ? `<span style="background: linear-gradient(135deg, var(--primary-purple), var(--magenta-pink)); color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;"><i class="fa-solid fa-star mr-1"></i> Recommended for ${profileData.career_goal || 'Goal'}</span>` : ''}
+                        <span class="assessment-category" style="background: var(--bg-surface-secondary, #F1F5F9); color: var(--dark-navy, #334155); font-weight: 600; padding: 3px 9px; border-radius: 6px; font-size: 12px;">${escapeHtml(item.category || 'Skill Test')}</span>
+                        ${matchBadgeHtml}
                     </div>
-                    <span style="font-size: 12.5px; font-weight: 700; color: #10b981;"><i class="fa-solid fa-circle-check mr-1"></i> Passing Score: ${item.passing_score || 60}%</span>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        ${attemptStatusHtml}
+                        <span style="font-size: 12.5px; font-weight: 700; color: #10B981;"><i class="fa-solid fa-circle-check mr-1"></i> Pass: ${item.passing_score || 60}%</span>
+                    </div>
                 </div>
-                <h4 style="font-size: 18px; font-weight: 800; color: var(--dark-navy); margin-bottom: 0.4rem; letter-spacing:-0.2px;">${item.title}</h4>
-                <p style="font-size: 13.5px; color: var(--secondary-text); margin-bottom: 1rem; line-height: 1.55;">${item.description}</p>
+                <h4 style="font-size: 18px; font-weight: 800; color: var(--dark-navy); margin-bottom: 0.4rem; letter-spacing:-0.2px;">${escapeHtml(item.title)}</h4>
+                <p style="font-size: 13.5px; color: var(--secondary-text); margin-bottom: 1rem; line-height: 1.55;">${escapeHtml(item.description)}</p>
                 
                 <div class="assessment-meta" style="margin-bottom: 1.25rem;">
                     <span><i class="fa-regular fa-circle-question" style="color:var(--primary-purple);"></i> ${item.total_questions} Questions</span>
                     <span><i class="fa-regular fa-clock" style="color:var(--primary-purple);"></i> ~${item.duration_minutes || 15} mins</span>
-                    <span><i class="fa-solid fa-trophy" style="color:var(--magenta-pink);"></i> Multiple Choice</span>
+                    <span><i class="fa-solid fa-trophy" style="color:var(--magenta-pink);"></i> Diagnostic Test</span>
                 </div>
 
                 <button type="button" class="btn-primary-small btn-start-assessment" data-id="${item.id}">
-                    Start Assessment →
+                    ${buttonLabel}
                 </button>
             `;
             assessmentsListContainer.appendChild(card);
@@ -311,6 +356,7 @@ function renderAssessments(list) {
             });
         });
     }
+
 
     /**
  * Renders previous assessment attempts table with score percentages and performance tiers.

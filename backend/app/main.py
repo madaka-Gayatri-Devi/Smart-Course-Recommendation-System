@@ -762,16 +762,18 @@ def seed_initial_data():
             db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('courses', []))} catalog courses.")
 
         # 7. Assessments
-        if db.query(AssessmentDB).count() == 0:
-            for a in seed_data.get("assessments", []):
+        for a in seed_data.get("assessments", []):
+            existing_a = db.query(AssessmentDB).filter(AssessmentDB.id == a.get("id")).first()
+            if not existing_a:
                 db.merge(AssessmentDB(**a))
-            db.commit()
+        db.commit()
 
         # 8. Assessment Questions
-        if db.query(AssessmentQuestionDB).count() == 0:
-            for q in seed_data.get("assessment_questions", []):
+        for q in seed_data.get("assessment_questions", []):
+            existing_q = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.id == q.get("id")).first()
+            if not existing_q:
                 db.merge(AssessmentQuestionDB(**q))
-            db.commit()
+        db.commit()
 
         # 9. Enrollments
         if db.query(EnrollmentDB).count() == 0:
@@ -1978,6 +1980,13 @@ class CareerGoalPayload(BaseModel):
     description: Optional[str] = None
     required_skills: Optional[List[str]] = []
     recommended_categories: Optional[List[str]] = []
+
+class AssessmentPayload(BaseModel):
+    title: str
+    category: str
+    description: Optional[str] = None
+    duration_minutes: Optional[int] = 15
+    passing_score: Optional[int] = 60
 
 class AssessmentQuestionPayload(BaseModel):
     assessment_id: int
@@ -5589,18 +5598,97 @@ def get_learning_path(user: UserDB = Depends(get_current_user), db: Session = De
 @app.get("/assessments")
 def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    Retrieves catalog of diagnostic skill assessments.
-
-    Args:
-        db: Active SQLAlchemy database session.
-
-    Returns:
-        List of assessment papers with question counts and target skills.
+    Retrieves catalog of diagnostic skill assessments with personalized scoring based on
+    the student's primary career goal, secondary career goal, selected interests, and skills.
     """
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    
+    primary_goal = (profile.career_goal or "").strip().lower() if profile else ""
+    secondary_goal = (profile.secondary_career_goal or "").strip().lower() if profile else ""
+    
+    raw_interests = profile.interests if profile and isinstance(profile.interests, list) else []
+    interests = [str(i).strip().lower() for i in raw_interests if str(i).strip()]
+    
+    raw_skills = profile.skills if profile and isinstance(profile.skills, list) else []
+    skills = []
+    for s in raw_skills:
+        if isinstance(s, dict) and s.get("name"):
+            skills.append(str(s.get("name")).strip().lower())
+        elif isinstance(s, str) and s.strip():
+            skills.append(s.strip().lower())
+
+    past_attempts = db.query(AssessmentAttemptDB).filter(AssessmentAttemptDB.user_id == user.id).all()
+    attempts_map = {}
+    for att in past_attempts:
+        if att.assessment_id not in attempts_map or (att.percentage or 0) > (attempts_map[att.assessment_id].percentage or 0):
+            attempts_map[att.assessment_id] = att
+
+    def match_level(cat: str, title: str) -> tuple:
+        c = (cat or "").lower()
+        t = (title or "").lower()
+        
+        def matches_domain(text: str) -> bool:
+            if not text:
+                return False
+            if ("web" in text or "full stack" in text) and ("web" in c or "web" in t or "full stack" in t):
+                return True
+            if "frontend" in text and ("frontend" in c or "frontend" in t or "ui architecture" in t):
+                return True
+            if "backend" in text and ("backend" in c or "backend" in t or "distributed systems" in t or "api" in t):
+                return True
+            if ("data" in text or "scientist" in text) and ("data" in c or "data" in t or "machine learning" in t):
+                return True
+            if ("ai" in text or "artificial" in text or "machine learning" in text) and ("artificial" in c or "ai" in c or "deep learning" in t or "machine learning" in t):
+                return True
+            if ("cloud" in text or "devops" in text or "architect" in text) and ("cloud" in c or "devops" in c or "cloud" in t or "devops" in t):
+                return True
+            if ("security" in text or "cyber" in text) and ("security" in c or "cyber" in c or "security" in t):
+                return True
+            if ("design" in text or "ui/ux" in text or "ui" in text) and ("ui/ux" in c or "design" in c or "prototyping" in t):
+                return True
+            if ("mobile" in text or "app" in text or "android" in text or "ios" in text) and ("mobile" in c or "mobile" in t or "ios" in t):
+                return True
+            return False
+
+        # 1. Primary Goal match (Priority 1)
+        if matches_domain(primary_goal):
+            return (1, "primary_goal", f"🎯 Target Career Match: {profile.career_goal}", 100)
+            
+        # 2. Secondary Goal match (Priority 2)
+        if matches_domain(secondary_goal):
+            return (2, "secondary_goal", f"🌟 Secondary Goal Match: {profile.secondary_career_goal}", 80)
+            
+        # 3. Interests match (Priority 3)
+        for intr in interests:
+            if matches_domain(intr):
+                return (3, "interest", f"💡 Interest Domain: {intr.title()}", 60)
+
+        # 4. Skills match (Priority 4)
+        for sk in skills:
+            if sk in c or sk in t:
+                return (4, "skill", f"⚡ Relevant Skill: {sk.title()}", 40)
+
+        # 5. General Catalog (Priority 5)
+        return (5, "general", "General Diagnostic", 10)
+
     assessments = db.query(AssessmentDB).all()
     res = []
     for a in assessments:
         q_count = db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == a.id).count()
+        m_priority, m_type, m_badge, m_score = match_level(a.category, a.title)
+        
+        last_att = attempts_map.get(a.id)
+        attempt_info = None
+        if last_att:
+            attempt_info = {
+                "percentage": last_att.percentage,
+                "score": last_att.score,
+                "max_score": last_att.max_score,
+                "performance_level": last_att.performance_level,
+                "submitted_at": last_att.submitted_at,
+                "passed": (last_att.percentage or 0) >= (a.passing_score or 60)
+            }
+
         res.append({
             "id": a.id,
             "title": a.title,
@@ -5608,8 +5696,17 @@ def list_assessments(user: UserDB = Depends(get_current_user), db: Session = Dep
             "category": a.category,
             "duration_minutes": a.duration_minutes,
             "total_questions": q_count or a.total_questions,
-            "passing_score": a.passing_score
+            "passing_score": a.passing_score,
+            "match_priority": m_priority,
+            "match_type": m_type,
+            "match_badge": m_badge,
+            "match_score": m_score,
+            "is_recommended": m_priority <= 3,
+            "last_attempt": attempt_info
         })
+
+    # Sort: Recommended / highest match score first, then assessment ID
+    res.sort(key=lambda x: (-x["match_score"], x["id"]))
     return res
 
 @app.get("/assessments/my-results")
@@ -6678,6 +6775,52 @@ def get_admin_assessments(user: UserDB = Depends(get_current_admin), db: Session
             "passing_score": a.passing_score
         })
     return res
+
+@app.post("/admin/assessments")
+def create_admin_assessment(payload: AssessmentPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    if not payload.title or not payload.title.strip():
+        raise HTTPException(status_code=400, detail="Assessment title is required")
+    if not payload.category or not payload.category.strip():
+        raise HTTPException(status_code=400, detail="Category/domain is required")
+
+    a = AssessmentDB(
+        title=payload.title.strip(),
+        description=(payload.description or "").strip(),
+        category=payload.category.strip(),
+        duration_minutes=payload.duration_minutes or 15,
+        total_questions=0,
+        passing_score=payload.passing_score or 60,
+        created_at=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    db.add(a)
+    db.commit()
+    db.refresh(a)
+    return {"message": "Assessment created successfully", "assessment": {"id": a.id, "title": a.title, "category": a.category}}
+
+@app.put("/admin/assessments/{assessment_id}")
+def update_admin_assessment(assessment_id: int, payload: AssessmentPayload, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    a = db.query(AssessmentDB).filter(AssessmentDB.id == assessment_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    a.title = payload.title.strip()
+    a.description = (payload.description or "").strip()
+    a.category = payload.category.strip()
+    if payload.duration_minutes is not None:
+        a.duration_minutes = payload.duration_minutes
+    if payload.passing_score is not None:
+        a.passing_score = payload.passing_score
+    db.commit()
+    return {"message": "Assessment updated successfully"}
+
+@app.delete("/admin/assessments/{assessment_id}")
+def delete_admin_assessment(assessment_id: int, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):
+    a = db.query(AssessmentDB).filter(AssessmentDB.id == assessment_id).first()
+    if not a:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    db.query(AssessmentQuestionDB).filter(AssessmentQuestionDB.assessment_id == assessment_id).delete()
+    db.delete(a)
+    db.commit()
+    return {"message": "Assessment and associated questions deleted successfully"}
 
 @app.get("/admin/assessment-questions")
 def get_admin_assessment_questions(assessment_id: Optional[int] = None, user: UserDB = Depends(get_current_admin), db: Session = Depends(get_db)):

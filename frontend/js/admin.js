@@ -3166,10 +3166,10 @@ async function setupAdminCategoriesPage() {
                                 <div style="width:36px; height:36px; border-radius:8px; background:#EEF2FF; color:#4F46E5; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
                                     <i class="${escapeHtml(iconClass)}"></i>
                                 </div>
-                                <strong style="color:var(--dark-navy); font-size:14px;">${escapeHtml(c.name)}</strong>
+                                <strong style="color:var(--dark-navy); font-size:14px; white-space:nowrap;">${escapeHtml(c.name)}</strong>
                             </div>
                         </td>
-                        <td><span style="font-size:13px; color:#475569;">${escapeHtml(c.description || 'No description provided.')}</span></td>
+                        <td><span style="font-size:13.5px; color:var(--secondary-text, #475569); line-height:1.5; display:block;">${escapeHtml(c.description || 'No description provided.')}</span></td>
                         <td><code style="font-size:12px; background:#F1F5F9; padding:2px 6px; border-radius:4px; color:#475569;">${escapeHtml(iconClass)}</code></td>
                         <td>
                             <span class="badge" style="background:#EDE9FE; color:#5B21B6; font-weight:700; font-size:12px; padding:3px 10px; border-radius:99px;">
@@ -3577,19 +3577,84 @@ async function setupAdminAssessmentQuestionsPage() {
         }
     };
 
-    // Populate assessment dropdown
-    try {
-        const assessments = await window.api.getAdminAssessments();
-        if (assessmentSelect && assessments) {
-            assessmentSelect.innerHTML = assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.category)})</option>`).join('');
-        }
-        if (filterSelect && assessments) {
-            filterSelect.innerHTML = `<option value="all">All Assessments</option>` + assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)}</option>`).join('');
-            filterSelect.addEventListener('change', () => filterAndRender());
-        }
-    } catch (e) {
-        console.warn('Could not load assessments dropdown:', e);
+    // Assessment Paper Modal Elements
+    const paperModal = document.getElementById('assessmentPaperModal');
+    const paperForm = document.getElementById('assessmentPaperForm');
+    const createPaperBtn = document.getElementById('createAssessmentBtn');
+    let editingPaperId = null;
+
+    window.closeAssessmentPaperModal = function() {
+        if (paperModal) paperModal.style.display = 'none';
+        if (paperForm) paperForm.reset();
+        editingPaperId = null;
+        const titleEl = document.getElementById('assessmentPaperModalTitle');
+        if (titleEl) titleEl.textContent = 'Create Assessment Paper';
+    };
+
+    if (createPaperBtn) {
+        createPaperBtn.addEventListener('click', () => {
+            editingPaperId = null;
+            if (paperForm) paperForm.reset();
+            const titleEl = document.getElementById('assessmentPaperModalTitle');
+            if (titleEl) titleEl.textContent = 'Create Assessment Paper';
+            if (paperModal) paperModal.style.display = 'flex';
+        });
     }
+
+    if (paperForm) {
+        paperForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = (document.getElementById('paperTitle')?.value || '').trim();
+            const category = (document.getElementById('paperCategory')?.value || '').trim();
+            const description = (document.getElementById('paperDesc')?.value || '').trim();
+            const duration_minutes = parseInt(document.getElementById('paperDuration')?.value, 10) || 15;
+            const passing_score = parseInt(document.getElementById('paperPassingScore')?.value, 10) || 60;
+
+            if (!title || !category) {
+                alert('Title and Category Domain are required.');
+                return;
+            }
+
+            const payload = { title, category, description, duration_minutes, passing_score };
+
+            try {
+                if (editingPaperId) {
+                    await window.api.updateAdminAssessment(editingPaperId, payload);
+                    alert('Assessment paper updated successfully!');
+                } else {
+                    await window.api.createAdminAssessment(payload);
+                    alert('Assessment paper created successfully!');
+                }
+                closeAssessmentPaperModal();
+                await reloadAssessmentsDropdown();
+                await fetchAndRenderQuestions();
+            } catch (err) {
+                alert(err.message || 'Failed to save assessment paper.');
+            }
+        });
+    }
+
+    async function reloadAssessmentsDropdown() {
+        try {
+            const assessments = await window.api.getAdminAssessments();
+            if (assessmentSelect && assessments) {
+                assessmentSelect.innerHTML = assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.category)})</option>`).join('');
+            }
+            if (filterSelect && assessments) {
+                const currentVal = filterSelect.value;
+                filterSelect.innerHTML = `<option value="all">All Assessments</option>` + assessments.map(a => `<option value="${a.id}">${escapeHtml(a.title)} (${escapeHtml(a.category)})</option>`).join('');
+                if (currentVal && currentVal !== 'all') filterSelect.value = currentVal;
+            }
+        } catch (e) {
+            console.warn('Could not reload assessments dropdown:', e);
+        }
+    }
+
+    if (filterSelect) {
+        filterSelect.addEventListener('change', () => filterAndRender());
+    }
+
+    await reloadAssessmentsDropdown();
 
     if (addBtn) {
         addBtn.addEventListener('click', () => {

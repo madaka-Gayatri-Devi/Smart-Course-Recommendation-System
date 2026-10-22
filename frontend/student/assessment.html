@@ -104,9 +104,25 @@
             <div id="viewCatalog">
                 
                 <!-- Hero Intro Banner -->
-                <div class="welcome-section" style="margin-bottom: 2rem;">
+                <div class="welcome-section" style="margin-bottom: 1.5rem;">
                     <h1>Skill & Career Readiness Assessment 🎯</h1>
                     <p>Validate your technical proficiency, uncover skill gaps, and get personalized course recommendations.</p>
+                </div>
+
+                <!-- Profile Incomplete Prompt Banner (Shown when career goals/interests are missing) -->
+                <div id="profileIncompleteBanner" style="display: none; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 44px; height: 44px; border-radius: 50%; background: #FEF3C7; color: #D97706; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 14.5px; color: #92400E;">Unlock Tailored Skill Diagnostics</div>
+                            <div style="font-size: 13px; color: #B45309; margin-top: 2px;">Set your primary career goal and interests in your Profile to receive prioritized assessments and curated course recommendations.</div>
+                        </div>
+                    </div>
+                    <a href="profile.html#career-goals" class="btn btn-sm btn-primary" style="padding: 0.55rem 1.15rem; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 8px; white-space: nowrap;">
+                        Set Career Goals →
+                    </a>
                 </div>
 
                 <!-- Grid Layout: Available Assessments & History -->
@@ -114,9 +130,11 @@
                     
                     <!-- Left: Available Assessments -->
                     <div>
-                        <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-navy); margin-bottom: 1.25rem;">
-                            <i class="fa-solid fa-list-check" style="color: var(--primary-purple); margin-right: 0.5rem;"></i> Available Assessments
-                        </h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                            <h3 style="font-size: 18px; font-weight: 700; color: var(--dark-navy); margin: 0;">
+                                <i class="fa-solid fa-list-check" style="color: var(--primary-purple); margin-right: 0.5rem;"></i> Available Assessments
+                            </h3>
+                        </div>
                         
                         <div id="assessmentsListContainer">
                             <div style="text-align: center; padding: 2rem;">

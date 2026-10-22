@@ -98,7 +98,7 @@
 
             <div class="dashboard-card" style="padding: 1.5rem;">
                 <div style="overflow-x: auto;">
-                    <table class="admin-table">
+                    <table class="admin-table categories-table">
                         <thead>
                             <tr>
                                 <th>Category Name</th>
@@ -120,25 +120,30 @@
     </main>
 
     <!-- Add Category Modal -->
-    <div class="modal-backdrop" id="categoryModal">
-        <div class="modal-dialog">
-            <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy);">Add New Category</h3>
-            <form id="categoryForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Category Name *</label>
-                    <input type="text" id="catName" required placeholder="e.g. Game Development" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
+    <div class="modal-backdrop" id="categoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+        <div class="admin-modal-dialog">
+            <div class="admin-modal-header">
+                <h3 id="categoryModalTitle">Add New Category</h3>
+                <button type="button" class="admin-modal-close" onclick="closeCategoryModal()" title="Close">&times;</button>
+            </div>
+            <form id="categoryForm" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; margin: 0;">
+                <div class="admin-modal-body">
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Category Name *</label>
+                        <input type="text" id="catName" required placeholder="e.g. Game Development" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Description</label>
+                        <textarea id="catDesc" rows="3" placeholder="Brief category description..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-family: inherit; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);"></textarea>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--dark-navy);">Icon Class</label>
+                        <input type="text" id="catIcon" value="fa-solid fa-code" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color, #D1D5DB); border-radius: 8px; font-size: 13.5px; background: var(--bg-surface, #fff); color: var(--dark-navy, #1e293b);">
+                    </div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Description</label>
-                    <textarea id="catDesc" rows="3" placeholder="Brief category description..." style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px; font-family: inherit;"></textarea>
-                </div>
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem;">Icon Class</label>
-                    <input type="text" id="catIcon" value="fa-solid fa-code" style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 8px;">
-                </div>
-                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <div class="admin-modal-footer">
                     <button type="button" class="btn-outline" onclick="closeCategoryModal()" style="padding: 0.6rem 1.25rem;">Cancel</button>
-                    <button type="submit" class="btn-primary" style="padding: 0.6rem 1.5rem; border: none; cursor: pointer;">Save</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.6rem 1.5rem; border: none; cursor: pointer;">Save Category</button>
                 </div>
             </form>
         </div>

@@ -2020,6 +2020,56 @@ const api = {
         return res.json();
     },
 
+    async createAdminAssessment(payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to create assessment');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async updateAdminAssessment(assessmentId, payload) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessments/${assessmentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to update assessment');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
+    async deleteAdminAssessment(assessmentId) {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+        const res = await safeFetch(`${API_URL}/admin/assessments/${assessmentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to delete assessment');
+            throw new Error(msg);
+        }
+        return res.json();
+    },
+
     async getAdminAssessmentQuestions(assessmentId = null) {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
