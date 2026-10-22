@@ -116,4 +116,47 @@ test.describe('Targeted Mobile 360x800 Verification', () => {
       expect(toggleBottom).toBeLessThanOrEqual(composerTop + 10);
     }
   });
+
+  test('Verify AI Chatbot Keyboard Focus & Visibility', async ({ page }) => {
+    await page.addInitScript((data) => {
+      window.localStorage.setItem('smartlearn_token', data.token);
+      window.localStorage.setItem('smartlearn_user', JSON.stringify(data.user));
+      window.localStorage.setItem('smartlearn_role', data.user.role);
+    }, studentAuth);
+
+    await page.goto('/student/dashboard.html', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+
+    // Click chatbot toggle to open chatbot
+    const toggleBtn = page.locator('#smartlearn-chatbot-toggle');
+    await expect(toggleBtn).toBeVisible();
+    await toggleBtn.click();
+    await page.waitForTimeout(500);
+
+    // Verify chatbot window is open
+    const chatbotWin = page.locator('#smartlearn-chatbot-window');
+    await expect(chatbotWin).toHaveClass(/open/);
+
+    // Focus input and type 'What is python'
+    const input = page.locator('#chatbot-input');
+    await expect(input).toBeVisible();
+    await input.focus();
+    await input.fill('What is python');
+    await page.waitForTimeout(300);
+
+    const screenshotPath = path.join(outDir, '05-Chatbot-Typing.png');
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+
+    // Verify conversation area/body is visible and has height > 100
+    const body = page.locator('#smartlearn-chatbot-window .chatbot-body');
+    await expect(body).toBeVisible();
+    const bodyRect = await body.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const s = window.getComputedStyle(el);
+      return { height: r.height, opacity: s.opacity, display: s.display };
+    });
+    expect(bodyRect.height).toBeGreaterThan(100);
+    expect(bodyRect.opacity).toBe('1');
+    expect(bodyRect.display).not.toBe('none');
+  });
 });

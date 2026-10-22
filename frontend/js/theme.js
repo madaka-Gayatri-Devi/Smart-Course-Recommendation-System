@@ -413,11 +413,11 @@
             if (isMobile) {
                 btn.style.setProperty('gap', '0', 'important');
                 btn.style.setProperty('padding', '0', 'important');
-                btn.style.setProperty('width', '34px', 'important');
-                btn.style.setProperty('height', '34px', 'important');
-                btn.style.setProperty('min-width', '34px', 'important');
-                btn.style.setProperty('max-width', '34px', 'important');
-                btn.style.setProperty('border-radius', '50%', 'important');
+                btn.style.setProperty('width', '32px', 'important');
+                btn.style.setProperty('height', '32px', 'important');
+                btn.style.setProperty('min-width', '32px', 'important');
+                btn.style.setProperty('max-width', '32px', 'important');
+                btn.style.setProperty('border-radius', '8px', 'important');
                 btn.style.setProperty('flex-shrink', '0', 'important');
             } else {
                 btn.style.setProperty('gap', '6px', 'important');
