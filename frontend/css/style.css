@@ -2451,6 +2451,28 @@ html[data-resolved-appearance="dark"] .theme-palette-button:hover {
     transform: rotate(180deg) !important;
 }
 
+@media (max-width: 768px) {
+    .theme-palette-btn,
+    .theme-palette-button {
+        width: 34px !important;
+        min-width: 34px !important;
+        max-width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+    }
+    .theme-palette-btn .theme-btn-text,
+    .theme-palette-button .theme-btn-text,
+    .theme-palette-btn .theme-btn-arrow,
+    .theme-palette-button .theme-btn-arrow,
+    .theme-palette-btn .theme-btn-caret,
+    .theme-palette-button .theme-btn-caret {
+        display: none !important;
+    }
+}
+
 /* Custom Popover Container */
 #smartlearnThemeDropdown,
 .smartlearn-theme-popover {

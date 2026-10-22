@@ -409,10 +409,26 @@
             btn.style.setProperty('display', 'inline-flex', 'important');
             btn.style.setProperty('align-items', 'center', 'important');
             btn.style.setProperty('justify-content', 'center', 'important');
-            btn.style.setProperty('gap', '6px', 'important');
-            btn.style.setProperty('padding', '5px 14px', 'important');
-            btn.style.setProperty('height', '36px', 'important');
-            btn.style.setProperty('border-radius', '10px', 'important');
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                btn.style.setProperty('gap', '0', 'important');
+                btn.style.setProperty('padding', '0', 'important');
+                btn.style.setProperty('width', '34px', 'important');
+                btn.style.setProperty('height', '34px', 'important');
+                btn.style.setProperty('min-width', '34px', 'important');
+                btn.style.setProperty('max-width', '34px', 'important');
+                btn.style.setProperty('border-radius', '50%', 'important');
+                btn.style.setProperty('flex-shrink', '0', 'important');
+            } else {
+                btn.style.setProperty('gap', '6px', 'important');
+                btn.style.setProperty('padding', '5px 14px', 'important');
+                btn.style.setProperty('width', 'auto', 'important');
+                btn.style.setProperty('height', '36px', 'important');
+                btn.style.setProperty('min-width', 'auto', 'important');
+                btn.style.setProperty('max-width', 'none', 'important');
+                btn.style.setProperty('border-radius', '10px', 'important');
+                btn.style.removeProperty('flex-shrink');
+            }
             btn.style.setProperty('cursor', 'pointer', 'important');
             btn.style.setProperty('font-size', '13px', 'important');
             btn.style.setProperty('font-weight', '600', 'important');
@@ -801,6 +817,7 @@
 
         // Window resize recalculates coordinates if open
         window.addEventListener('resize', () => {
+            formatThemeButtons();
             if (isDropdownVisible()) {
                 positionDropdown();
             }
