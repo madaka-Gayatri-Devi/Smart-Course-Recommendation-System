@@ -37,6 +37,12 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+        .filter-select, .filter-input {
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .filter-select, .filter-input {
             padding: 0.5rem 0.85rem;
@@ -277,10 +283,10 @@
             </div>
 
             <!-- Popular Courses Section -->
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 17px;"><i class="fa-solid fa-fire mr-1" style="color: #F59E0B;"></i> Most Popular Courses</h3>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12.5px;">
                             <thead>
                                 <tr>
@@ -319,7 +325,7 @@
             </div>
 
             <!-- Distribution Charts Grid -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <div class="chart-card-header">
                         <h3 style="color: var(--dark-navy); font-size: 15px; margin: 0;"><i class="fa-solid fa-pie-chart mr-1" style="color: #8B4AD9;"></i> User Distribution</h3>
@@ -349,13 +355,13 @@
             </div>
 
             <!-- Enrollment Status Report & Trend -->
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                         <h3 style="color: var(--dark-navy); font-size: 17px; margin: 0;"><i class="fa-solid fa-list-check mr-1" style="color: #5B3FE8;"></i> Enrollment Status Report</h3>
                         <span style="font-size: 12px; color: #64748B;" id="enrollmentReportMeta">Showing records</span>
                     </div>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12.5px;">
                             <thead>
                                 <tr>
@@ -397,10 +403,10 @@
             </div>
 
             <!-- Course Completion & Student Progress Reports -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-award mr-1" style="color: #10B981;"></i> Course Completion Performance</h3>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12px;">
                             <thead>
                                 <tr>
@@ -421,7 +427,7 @@
 
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-user-graduate mr-1" style="color: #8B4AD9;"></i> Student Progress Report</h3>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12px;">
                             <thead>
                                 <tr>
@@ -442,10 +448,10 @@
             </div>
 
             <!-- Instructor Performance & Payment Logs -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; margin-bottom: 2rem;" class="responsive-split">
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-chalkboard-user mr-1" style="color: #5B3FE8;"></i> Instructor Performance Report</h3>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12px;">
                             <thead>
                                 <tr>
@@ -466,7 +472,7 @@
 
                 <div class="dashboard-card" style="padding: 1.5rem;">
                     <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-receipt mr-1" style="color: #D97706;"></i> Payment & Revenue Log</h3>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                         <table class="admin-table" style="font-size: 12px;">
                             <thead>
                                 <tr>
@@ -489,7 +495,7 @@
             <!-- Recommendation Activity Report -->
             <div class="dashboard-card" style="padding: 1.5rem; margin-bottom: 2rem;">
                 <h3 style="margin-bottom: 1.25rem; color: var(--dark-navy); font-size: 16px;"><i class="fa-solid fa-lightbulb mr-1" style="color: #F59E0B;"></i> Recommendation Activity Report</h3>
-                <div style="overflow-x: auto;">
+                <div style="overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
                     <table class="admin-table" style="font-size: 12.5px;">
                         <thead>
                             <tr>

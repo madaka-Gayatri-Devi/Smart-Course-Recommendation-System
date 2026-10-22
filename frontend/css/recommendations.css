@@ -776,13 +776,16 @@
     gap: 0.35rem;
 }
 
+.rec-skills,
 .rec-skills-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+    margin-bottom: 0.75rem;
+    width: 100% !important;
 }
 
+.rec-skill-tag,
 .rec-skill-chip {
     background: #F1F5F9;
     color: #334155;

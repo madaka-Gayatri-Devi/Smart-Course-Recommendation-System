@@ -619,10 +619,21 @@ body.admin-theme {
     padding: 1rem !important;
   }
 
-  .btn, .btn-primary, .btn-secondary {
+  .btn-block-mobile,
+  .form-actions .btn {
     width: 100% !important;
     text-align: center !important;
     justify-content: center !important;
+  }
+
+  .admin-table-wrapper,
+  .admin-card > table,
+  .panel-body > table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .table-responsive {

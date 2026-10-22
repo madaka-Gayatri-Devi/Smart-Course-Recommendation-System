@@ -1,0 +1,27 @@
+{
+  "name": "smart-course-recommendation-system",
+  "version": "1.0.0",
+  "description": "SmartLearn provides personalized course recommendations based on student skills, interests, career goals, skill assessments, and learning needs.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:responsive": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madaka-Gayatri-Devi/Smart-Course-Recommendation-System.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/madaka-Gayatri-Devi/Smart-Course-Recommendation-System/issues"
+  },
+  "homepage": "https://github.com/madaka-Gayatri-Devi/Smart-Course-Recommendation-System#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "typescript": "^7.0.2"
+  }
+}
