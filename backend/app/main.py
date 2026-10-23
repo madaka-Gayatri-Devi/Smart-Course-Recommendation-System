@@ -1890,6 +1890,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: Optional[int] = 1
+    profile_image: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class ProfileData(BaseModel):
@@ -1911,6 +1912,9 @@ class ProfileData(BaseModel):
     learning_style: Optional[str] = None
     completion_percentage: Optional[int] = 0
     wishlist: Optional[list] = []
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+    password: Optional[str] = None
 
 class CourseCreatePayload(BaseModel):
     title: str
@@ -2318,6 +2322,8 @@ def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
         return resp
 
     access_token = create_access_token(data={"sub": db_user.email})
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == db_user.id).first()
+    profile_img = (profile.profile_image if profile and profile.profile_image else "") or ""
     return {
         "id": db_user.id,
         "access_token": access_token,
@@ -2325,11 +2331,13 @@ def login(user: UserLogin, request: Request, db: Session = Depends(get_db)):
         "role": db_user.role,
         "full_name": db_user.full_name,
         "email": db_user.email,
+        "profile_image": profile_img,
         "user": {
             "id": db_user.id,
             "email": db_user.email,
             "full_name": db_user.full_name,
-            "role": db_user.role
+            "role": db_user.role,
+            "profile_image": profile_img
         }
     }
 
@@ -2397,6 +2405,8 @@ def verify_2fa(payload: Verify2FAPayload, db: Session = Depends(get_db)):
     db.commit()
     
     access_token = create_access_token(data={"sub": db_user.email})
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == db_user.id).first()
+    profile_img = (profile.profile_image if profile and profile.profile_image else "") or ""
     return {
         "id": db_user.id,
         "access_token": access_token,
@@ -2404,11 +2414,13 @@ def verify_2fa(payload: Verify2FAPayload, db: Session = Depends(get_db)):
         "role": db_user.role,
         "full_name": db_user.full_name,
         "email": db_user.email,
+        "profile_image": profile_img,
         "user": {
             "id": db_user.id,
             "email": db_user.email,
             "full_name": db_user.full_name,
-            "role": db_user.role
+            "role": db_user.role,
+            "profile_image": profile_img
         }
     }
 
@@ -2540,14 +2552,20 @@ def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_c
     Error handling:
         Raises HTTP 400 if current password is incorrect or new password does not meet requirements.
     """
-    if not verify_password(payload.current_password, user.hashed_password):
+    db_user = db.query(UserDB).filter(UserDB.id == user.id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User account not found.")
+
+    if not verify_password(payload.current_password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect current password.")
 
     if len(payload.new_password) < 8:
         raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
 
-    user.hashed_password = get_password_hash(payload.new_password)
+    db_user.hashed_password = get_password_hash(payload.new_password)
+    db.add(db_user)
     db.commit()
+    db.refresh(db_user)
     return {"message": "Password changed successfully."}
 
 @app.post("/auth/forgot-password")
@@ -3056,7 +3074,7 @@ def send_test_email(payload: TestEmailPayload):
         )
 
 @app.get("/users/me", response_model=UserResponse)
-def get_me(user: UserDB = Depends(get_current_user)):
+def get_me(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Returns the current authenticated user's profile and active role from the database.
 
@@ -3064,9 +3082,18 @@ def get_me(user: UserDB = Depends(get_current_user)):
         current_user: Authenticated UserDB record.
 
     Returns:
-        User record dictionary { id, email, full_name, role, is_active }.
+        User record dictionary { id, email, full_name, role, is_active, profile_image }.
     """
-    return user
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    profile_img = (profile.profile_image if profile and profile.profile_image else "") or ""
+    return UserResponse(
+        id=user.id,
+        full_name=user.full_name,
+        email=user.email,
+        role=user.role,
+        is_active=getattr(user, "is_active", 1),
+        profile_image=profile_img
+    )
 
 # --- PROFILE ROUTES ---
 
@@ -3149,10 +3176,26 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
     Returns:
         Updated profile dictionary.
     """
-    if profile_data.full_name is not None and profile_data.full_name.strip():
-        user.full_name = profile_data.full_name.strip()
+    db_user = db.query(UserDB).filter(UserDB.id == user.id).first() or user
 
-    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    if profile_data.full_name is not None and profile_data.full_name.strip():
+        db_user.full_name = profile_data.full_name.strip()
+        db.add(db_user)
+
+    # Update Password if provided in profile payload
+    new_pwd = profile_data.new_password or profile_data.password
+    if new_pwd and new_pwd.strip():
+        new_pwd = new_pwd.strip()
+        if not profile_data.current_password or not profile_data.current_password.strip():
+            raise HTTPException(status_code=400, detail="Current password is required to update your password.")
+        if not verify_password(profile_data.current_password.strip(), db_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Incorrect current password.")
+        if len(new_pwd) < 8:
+            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+        db_user.hashed_password = get_password_hash(new_pwd)
+        db.add(db_user)
+
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == db_user.id).first()
     if not profile:
         profile = ProfileDB(user_id=user.id)
         db.add(profile)
@@ -3237,12 +3280,18 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
     }
 
 @app.post("/profile/avatar")
-async def upload_avatar(file: UploadFile = File(...), user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+async def upload_avatar(
+    file: Optional[UploadFile] = File(None),
+    avatar: Optional[UploadFile] = File(None),
+    user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Uploads and saves a user avatar image file to disk.
+    Accepts image uploaded under either 'file' or 'avatar' form fields.
 
     Args:
-        avatar: Uploaded image file (JPG, PNG, WEBP).
+        file/avatar: Uploaded image file (JPG, JPEG, PNG, WEBP, GIF).
         current_user: Authenticated UserDB record.
         db: Active SQLAlchemy database session.
 
@@ -3252,39 +3301,56 @@ async def upload_avatar(file: UploadFile = File(...), user: UserDB = Depends(get
     Error handling:
         Raises HTTP 400 for unsupported file types or oversized files.
     """
-    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"]
-    if file.content_type not in allowed_types:
+    upload_file = file or avatar
+    if not upload_file or not getattr(upload_file, "filename", None):
         raise HTTPException(
             status_code=400,
-            detail="Invalid image format. Allowed formats: JPG, PNG, WEBP, GIF"
+            detail="No image file was provided. Please choose a JPG, JPEG, or PNG image."
         )
-    
-    content = await file.read()
+
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"]
+    filename = upload_file.filename or ""
+    ext = (filename.rsplit(".", 1)[-1].lower() if "." in filename else "").lower()
+    allowed_exts = ["jpg", "jpeg", "png", "webp", "gif"]
+
+    content_type = (upload_file.content_type or "").lower()
+    if (content_type and content_type not in allowed_types) and (ext not in allowed_exts):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image format. Allowed formats: JPG, JPEG, PNG, WEBP, GIF"
+        )
+
+    content = await upload_file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="The selected image file is empty.")
     if len(content) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size exceeds 5MB limit")
-    
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    safe_filename = f"user_{user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+        raise HTTPException(status_code=400, detail="Image size exceeds 5MB limit. Please choose a smaller image.")
+
+    safe_ext = ext if ext in allowed_exts else "jpg"
+    safe_filename = f"user_{user.id}_{uuid.uuid4().hex[:8]}.{safe_ext}"
     file_path = AVATAR_DIR / safe_filename
-    
+
     with open(file_path, "wb") as f:
         f.write(content)
-        
+
     relative_url = f"/uploads/avatars/{safe_filename}"
-    
+
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     if not profile:
         profile = ProfileDB(user_id=user.id, profile_image=relative_url)
         db.add(profile)
     else:
         profile.profile_image = relative_url
-    
+
     db.commit()
-    
+    db.refresh(profile)
+
     return {
+        "success": True,
         "message": "Avatar uploaded successfully",
         "image_url": relative_url,
-        "relative_url": relative_url
+        "relative_url": relative_url,
+        "profile_image": relative_url
     }
 
 # --- DURATION HELPER ---

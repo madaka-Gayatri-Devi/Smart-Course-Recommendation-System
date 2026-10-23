@@ -497,6 +497,24 @@
             }
         }
 
+        function updateTopbarAndSidebarAvatars(imagePath, name) {
+            const initial = (name || 'Student').charAt(0).toUpperCase();
+            const topAv = document.getElementById('topAvatar');
+            const sideAv = document.getElementById('sidebarAvatar');
+            if (imagePath) {
+                const fullUrl = window.api.getImageUrl(imagePath);
+                if (topAv) {
+                    topAv.innerHTML = `<img src="${fullUrl}" alt="${name || 'Student'}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.textContent='${initial}'">`;
+                }
+                if (sideAv) {
+                    sideAv.innerHTML = `<img src="${fullUrl}" alt="${name || 'Student'}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.textContent='${initial}'">`;
+                }
+            } else {
+                if (topAv) topAv.textContent = initial;
+                if (sideAv) sideAv.textContent = initial;
+            }
+        }
+
         async function initPage() {
             try {
                 userData = await window.api.getMe();
@@ -516,23 +534,29 @@
             if (editEmail) editEmail.value = userData.email || '';
             if (sideRole) sideRole.textContent = userData.role || 'Student';
 
-            // Initials Avatar
+            // Initials & Profile Avatar
             const names = name.split(' ');
             let initials = names[0]?.charAt(0) || 'S';
             if (names.length > 1) initials += names[1].charAt(0);
-            if (topAvatar) topAvatar.textContent = initials.toUpperCase();
             if (avatarInitials) avatarInitials.textContent = initials.toUpperCase();
 
-            // Profile Data
-            if (profileData) {
-                if (profileData.profile_image) {
-                    const fullImgUrl = window.api.getImageUrl(profileData.profile_image);
-                    if (avatarImg) {
-                        avatarImg.src = fullImgUrl;
-                        avatarImg.style.display = 'block';
-                    }
-                    if (avatarInitials) avatarInitials.style.display = 'none';
+            // Profile Data & Picture
+            const activeProfileImg = (profileData && profileData.profile_image) || userData.profile_image;
+            if (activeProfileImg) {
+                const fullImgUrl = window.api.getImageUrl(activeProfileImg);
+                if (avatarImg) {
+                    avatarImg.src = fullImgUrl;
+                    avatarImg.style.display = 'block';
                 }
+                if (avatarInitials) avatarInitials.style.display = 'none';
+                updateTopbarAndSidebarAvatars(activeProfileImg, name);
+            } else {
+                if (avatarImg) avatarImg.style.display = 'none';
+                if (avatarInitials) avatarInitials.style.display = 'flex';
+                updateTopbarAndSidebarAvatars(null, name);
+            }
+
+            if (profileData) {
 
                 if (profileData.phone) {
                     if (sidePhone) sidePhone.textContent = profileData.phone;
@@ -658,12 +682,23 @@
             const msgBox = document.getElementById('changePasswordMsg');
             const submitBtn = document.getElementById('changePasswordSubmitBtn');
 
+            if (!oldPass) {
+                msgBox.style.display = 'block';
+                msgBox.style.background = '#FEF2F2';
+                msgBox.style.color = '#991B1B';
+                msgBox.style.border = '1px solid #FCA5A5';
+                msgBox.textContent = 'Please enter your current password.';
+                showAlert('Please enter your current password.', false);
+                return;
+            }
+
             if (newPass.length < 8) {
                 msgBox.style.display = 'block';
                 msgBox.style.background = '#FEF2F2';
                 msgBox.style.color = '#991B1B';
                 msgBox.style.border = '1px solid #FCA5A5';
                 msgBox.textContent = 'New password must be at least 8 characters long.';
+                showAlert('New password must be at least 8 characters long.', false);
                 return;
             }
 
@@ -673,6 +708,7 @@
                 msgBox.style.color = '#991B1B';
                 msgBox.style.border = '1px solid #FCA5A5';
                 msgBox.textContent = 'New passwords do not match.';
+                showAlert('New passwords do not match.', false);
                 return;
             }
 
@@ -685,7 +721,8 @@
                 msgBox.style.background = '#ECFDF5';
                 msgBox.style.color = '#065F46';
                 msgBox.style.border = '1px solid #A7F3D0';
-                msgBox.textContent = res.message || 'Password changed successfully.';
+                msgBox.textContent = res.message || 'Password updated successfully in database.';
+                showAlert('Password updated successfully! You can now log in with your new password.');
                 document.getElementById('studentChangePasswordForm').reset();
             } catch (err) {
                 msgBox.style.display = 'block';
@@ -693,6 +730,7 @@
                 msgBox.style.color = '#991B1B';
                 msgBox.style.border = '1px solid #FCA5A5';
                 msgBox.textContent = err.message || 'Failed to change password.';
+                showAlert('Failed to change password: ' + (err.message || 'Error'), false);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fa-solid fa-key mr-1"></i> Update Password';
@@ -818,23 +856,37 @@
                 const file = this.files[0];
                 if (!file) return;
 
+                // Validate file extension and format
+                const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                const fileExt = (file.name.split('.').pop() || '').toLowerCase();
+                if (!allowedExts.includes(fileExt)) {
+                    showAlert('Invalid image format (.' + fileExt + '). Please upload a JPG, JPEG, PNG, or WEBP image.', false);
+                    this.value = '';
+                    return;
+                }
+
                 if (file.size > 5 * 1024 * 1024) {
                     showAlert('Photo exceeds 5MB limit. Please choose a smaller image.', false);
+                    this.value = '';
                     return;
                 }
 
                 try {
                     const res = await window.api.uploadAvatar(file);
-                    const newUrl = window.api.getImageUrl(res.relative_url || res.image_url);
+                    const uploadedPath = res.relative_url || res.image_url || res.profile_image;
+                    const newUrl = window.api.getImageUrl(uploadedPath);
                     if (avatarImg) {
                         avatarImg.src = newUrl;
                         avatarImg.style.display = 'block';
                     }
                     if (avatarInitials) avatarInitials.style.display = 'none';
+                    updateTopbarAndSidebarAvatars(uploadedPath, editFullName?.value || 'Student');
                     showAlert('Profile photo updated successfully!');
                 } catch (err) {
                     console.error(err);
-                    showAlert('Failed to upload photo: ' + err.message, false);
+                    showAlert('Failed to upload photo: ' + (err.message || 'Server error'), false);
+                } finally {
+                    fileInput.value = '';
                 }
             });
         }
@@ -1036,6 +1088,32 @@
                     const interests = Array.from(document.querySelectorAll('#editInterestPool .interest-chip.selected')).map(c => c.textContent.trim());
                     const languages = Array.from(document.querySelectorAll('#editLangPool .lang-chip.selected')).map(c => c.textContent.trim());
 
+                    // Check if user also entered a new password in Account & Security tab
+                    const oldPassInput = document.getElementById('changeOldPassword')?.value || '';
+                    const newPassInput = document.getElementById('changeNewPassword')?.value || '';
+                    const confirmPassInput = document.getElementById('changeConfirmPassword')?.value || '';
+
+                    if (newPassInput) {
+                        if (!oldPassInput) {
+                            showAlert('Please enter your current password to update your password.', false);
+                            saveAllBtn.disabled = false;
+                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                            return;
+                        }
+                        if (newPassInput.length < 8) {
+                            showAlert('New password must be at least 8 characters long.', false);
+                            saveAllBtn.disabled = false;
+                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                            return;
+                        }
+                        if (newPassInput !== confirmPassInput) {
+                            showAlert('New passwords do not match.', false);
+                            saveAllBtn.disabled = false;
+                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                            return;
+                        }
+                    }
+
                     const payload = {
                         full_name: editFullName?.value?.trim() || '',
                         phone: editPhone?.value?.trim() || '',
@@ -1052,8 +1130,25 @@
                         projects
                     };
 
+                    if (newPassInput) {
+                        payload.current_password = oldPassInput;
+                        payload.new_password = newPassInput;
+                    }
+
                     const res = await window.api.saveProfile(payload);
-                    showAlert('Profile updated successfully! All information saved.');
+                    showAlert(newPassInput ? 'Profile and password updated successfully!' : 'Profile updated successfully! All information saved.');
+
+                    if (newPassInput) {
+                        const passMsg = document.getElementById('changePasswordMsg');
+                        if (passMsg) {
+                            passMsg.style.display = 'block';
+                            passMsg.style.background = '#ECFDF5';
+                            passMsg.style.color = '#065F46';
+                            passMsg.style.border = '1px solid #A7F3D0';
+                            passMsg.textContent = 'Password updated successfully in database.';
+                        }
+                        document.getElementById('studentChangePasswordForm')?.reset();
+                    }
                     
                     // Update side summary and topbar
                     if (payload.full_name) {

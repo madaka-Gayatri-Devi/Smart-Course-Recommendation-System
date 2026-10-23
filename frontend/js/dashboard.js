@@ -16,14 +16,38 @@ function setupHeaderAndSidebar(user) {
     const name = user.full_name || user.name || 'Student';
     const initial = name.charAt(0).toUpperCase();
 
+    // Helper to render avatar with image or initial fallback
+    function renderAvatarElement(el, imagePath, userName) {
+        if (!el) return;
+        const initialChar = (userName || 'Student').charAt(0).toUpperCase();
+        if (imagePath) {
+            const fullUrl = window.api.getImageUrl(imagePath);
+            el.innerHTML = `<img src="${fullUrl}" alt="${userName || 'Student'}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.parentElement.textContent='${initialChar}'">`;
+        } else {
+            el.textContent = initialChar;
+        }
+    }
+
     // Populate user details across topbar and sidebar
     document.getElementById('topName') && (document.getElementById('topName').textContent = name);
     document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name);
     document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = (user.role || 'STUDENT').toUpperCase());
     document.getElementById('dropdownUserName') && (document.getElementById('dropdownUserName').textContent = name);
     document.getElementById('dropdownUserRole') && (document.getElementById('dropdownUserRole').textContent = (user.role || 'STUDENT').toUpperCase());
-    document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
-    document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
+    renderAvatarElement(document.getElementById('topAvatar'), user.profile_image, name);
+    renderAvatarElement(document.getElementById('sidebarAvatar'), user.profile_image, name);
+
+    // If profile_image was not in user localStorage object, fetch it from profile
+    if (!user.profile_image && window.api && typeof window.api.getProfile === 'function') {
+        window.api.getProfile().then(prof => {
+            if (prof && prof.profile_image) {
+                renderAvatarElement(document.getElementById('topAvatar'), prof.profile_image, name);
+                renderAvatarElement(document.getElementById('sidebarAvatar'), prof.profile_image, name);
+                user.profile_image = prof.profile_image;
+                localStorage.setItem('smartlearn_user', JSON.stringify(user));
+            }
+        }).catch(() => {});
+    }
 
     // Profile Dropdown Toggle
     const dropdownToggle = document.getElementById('topProfileDropdownToggle');

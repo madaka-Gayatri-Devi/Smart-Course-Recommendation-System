@@ -464,7 +464,11 @@ const api = {
         const token = this.getToken();
         if (!token) throw new Error('Not authenticated');
 
+        if (!file) throw new Error('No image file selected.');
+        if (file.size > 5 * 1024 * 1024) throw new Error('Image size exceeds 5MB limit. Please choose a smaller image.');
+
         const formData = new FormData();
+        formData.append('file', file);
         formData.append('avatar', file);
 
         const res = await safeFetch(`${API_URL}/profile/avatar?token=${encodeURIComponent(token)}`, {
@@ -478,7 +482,16 @@ const api = {
             const msg = await parseErrorResponse(res, 'Avatar upload failed');
             throw new Error(msg);
         }
-        return res.json();
+        const data = await res.json();
+        const avatarPath = data.relative_url || data.image_url || data.profile_image;
+        if (avatarPath) {
+            const currentUser = this.getCurrentUser();
+            if (currentUser) {
+                currentUser.profile_image = avatarPath;
+                localStorage.setItem('smartlearn_user', JSON.stringify(currentUser));
+            }
+        }
+        return data;
     },
 
     // --- COURSES ---
