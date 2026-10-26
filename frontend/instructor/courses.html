@@ -122,7 +122,13 @@
             </div>
             
             <div class="topbar-right">
-                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
+                <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
+                <div class="topbar-notif-wrapper" style="position: relative;">
+                    <a href="notifications.html" class="notification-bell-btn" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="topNotificationBadge" style="display: none;"></span>
+                    </a>
+                </div>
                 <div class="profile-dropdown">
                     <div class="avatar" id="topAvatar">IN</div>
                     <span class="profile-name" id="topName">Instructor</span>
@@ -172,19 +178,19 @@
 
             <!-- Courses Table -->
             <div class="dashboard-card" style="padding: 1.5rem;">
-                <div style="overflow-x: auto;">
-                    <table class="admin-table">
+                <div style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+                    <table class="admin-table" style="min-width: 920px;">
                         <thead>
                             <tr>
-                                <th>Course Title</th>
-                                <th>Category</th>
-                                <th>Difficulty</th>
-                                <th>Duration</th>
-                                <th>Pricing</th>
-                                <th>Status</th>
-                                <th>Students</th>
-                                <th>Rating</th>
-                                <th style="text-align: right;">Actions</th>
+                                <th style="min-width: 220px;">Course Title</th>
+                                <th style="min-width: 110px;">Category</th>
+                                <th style="min-width: 90px;">Difficulty</th>
+                                <th style="min-width: 90px;">Duration</th>
+                                <th style="min-width: 80px;">Pricing</th>
+                                <th style="min-width: 90px;">Status</th>
+                                <th style="min-width: 80px;">Students</th>
+                                <th style="min-width: 75px;">Rating</th>
+                                <th style="text-align: right; min-width: 220px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="instructorMyCoursesBody">

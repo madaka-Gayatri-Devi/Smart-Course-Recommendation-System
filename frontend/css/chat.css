@@ -12354,7 +12354,7 @@
 .chat-app-container {
     flex: 1;
     display: grid;
-    grid-template-columns: clamp(200px, 18vw, 240px) clamp(280px, 24vw, 340px) minmax(0, 1fr);
+    grid-template-columns: clamp(200px, 16vw, 240px) clamp(300px, 24vw, 380px) minmax(0, 1fr);
     height: calc(100vh - 64px);
     height: calc(100dvh - 64px);
     overflow: hidden;
@@ -13249,15 +13249,16 @@
 
 /* MESSAGES CONTAINER */
 .chat-messages-container {
-    flex: 1;
+    flex: 1 1 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.15rem;
+    gap: 1rem;
     background: var(--bg-page-light, #F8F7FF);
     min-height: 0;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -13531,7 +13532,7 @@ body:has(#chatComposerTextarea:focus) #smartlearn-chatbot-toggle {
 /* TABLET (769px - 1024px) */
 @media (max-width: 1024px) {
     .chat-app-container {
-        grid-template-columns: 64px 280px 1fr !important;
+        grid-template-columns: 68px clamp(300px, 32vw, 340px) 1fr !important;
     }
 
     .chat-nav-sidebar {

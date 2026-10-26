@@ -7698,41 +7698,16 @@
 
 
         if (!messages || messages.length === 0) {
-
-
-
             container.innerHTML = `
-
-
-
-                <div style="margin: auto; text-align: center; color: #94A3B8;">
-
-
-
-                    <i class="fa-regular fa-comments" style="font-size: 2.75rem; margin-bottom: 0.75rem; color: #C7D2FE;"></i>
-
-
-
-                    <h4 style="color: #334155; font-weight: 700; margin-bottom: 0.25rem;">Start the conversation</h4>
-
-
-
-                    <p style="font-size: 0.85rem;">Send a message below to start chatting!</p>
-
-
-
+                <div class="chat-thread-empty-state" style="margin: auto; text-align: center; color: #64748B; max-width: 380px; padding: 2.5rem 1rem;">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #EDE9FE; color: #5B3FE8; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(91, 63, 232, 0.12);">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <h4 style="color: #0F172A; font-weight: 700; font-size: 16px; margin: 0 0 0.5rem 0;">Start the Discussion</h4>
+                    <p style="font-size: 13.5px; line-height: 1.5; color: #64748B; margin: 0;">Be the first to ask a question, share thoughts, or collaborate with fellow learners and instructors!</p>
                 </div>
-
-
-
             `;
-
-
-
             return;
-
-
-
         }
 
 

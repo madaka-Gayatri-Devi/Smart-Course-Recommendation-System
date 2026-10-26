@@ -446,7 +446,20 @@
          */
         setupHeaderBellAndDropdown() {
             // Target bell link/container in topbar
-            const bellLinks = document.querySelectorAll('a[href="notifications.html"], .notification-bell-btn');
+            const bellLinks = Array.from(document.querySelectorAll(
+                '.dashboard-topbar a[href="notifications.html"], ' +
+                '.dashboard-topbar .notification-bell-btn, ' +
+                '.chat-topbar a[href="notifications.html"], ' +
+                '.chat-topbar .notification-bell-btn, ' +
+                '.topbar-right a[href="notifications.html"], ' +
+                '.topbar-right .notification-bell-btn, ' +
+                '#topNotificationBellBtn, [data-notification-bell]'
+            )).filter(bell => {
+                if (bell.closest('.dashboard-sidebar') || bell.closest('.app-sidebar') || bell.closest('.sidebar-nav') || bell.classList.contains('nav-item')) {
+                    return false;
+                }
+                return true;
+            });
             
             bellLinks.forEach(bell => {
                 // Style badge nicely if needed
@@ -482,14 +495,15 @@
                     dropdown.style.cssText = `
                         display: none;
                         position: absolute;
-                        top: calc(100% + 10px);
+                        top: calc(100% + 8px);
                         right: 0;
-                        width: 340px;
+                        width: 360px;
+                        max-width: 90vw;
                         background: #FFFFFF;
                         border-radius: 12px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.2);
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.2);
                         border: 1px solid var(--border-light, #E5E7EB);
-                        z-index: 1000;
+                        z-index: 1050;
                         overflow: hidden;
                         animation: fadeInDown 0.2s ease-out;
                     `;
@@ -505,7 +519,7 @@
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.profile-dropdown-container') && !e.target.closest('a[href="notifications.html"]') && !e.target.closest('.notification-dropdown-menu')) {
+                if (!e.target.closest('.profile-dropdown-container') && (!e.target.closest('.notification-bell-btn') && !e.target.closest('.dashboard-topbar a[href="notifications.html"]')) && !e.target.closest('.notification-dropdown-menu')) {
                     const dropdowns = document.querySelectorAll('.notification-dropdown-menu');
                     dropdowns.forEach(d => d.style.display = 'none');
                     this.dropdownOpen = false;

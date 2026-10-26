@@ -16,6 +16,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
     <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/admin.css?v=20261026_instructor">
 </head>
 <body class="dashboard-body">
 
@@ -139,20 +140,23 @@
                     <h3 style="font-size: 18px; color: var(--dark-navy); margin: 0;"><i class="fa-solid fa-book-open mr-1" style="color: var(--primary-purple);"></i> My Courses</h3>
                     <a href="courses.html" style="font-size: 13px; color: var(--primary-purple); text-decoration: none; font-weight: 600;">Manage All Courses →</a>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table class="admin-table">
+                <div style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+                    <table class="admin-table" style="min-width: 920px;">
                         <thead>
                             <tr>
-                                <th>Course Title</th>
-                                <th>Category</th>
-                                <th>Status</th>
-                                <th>Students</th>
-                                <th>Rating</th>
-                                <th style="text-align: right;">Actions</th>
+                                <th style="min-width: 220px;">Course Title</th>
+                                <th style="min-width: 110px;">Category</th>
+                                <th style="min-width: 90px;">Difficulty</th>
+                                <th style="min-width: 90px;">Duration</th>
+                                <th style="min-width: 80px;">Pricing</th>
+                                <th style="min-width: 90px;">Status</th>
+                                <th style="min-width: 80px;">Students</th>
+                                <th style="min-width: 75px;">Rating</th>
+                                <th style="text-align: right; min-width: 220px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="instructorCoursesTableBody">
-                            <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--secondary-text);">Loading authored courses...</td></tr>
+                            <tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--secondary-text);"><i class="fa-solid fa-spinner fa-spin mr-2" style="color: var(--primary-purple);"></i> Loading authored courses...</td></tr>
                         </tbody>
                     </table>
                 </div>

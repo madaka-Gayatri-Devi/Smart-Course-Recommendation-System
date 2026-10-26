@@ -133,6 +133,10 @@ const api = {
      */
     clearToken() {
         localStorage.removeItem('smartlearn_token');
+        localStorage.removeItem('smartlearn_user');
+        try {
+            sessionStorage.removeItem('smartlearn_chatbot_active_conv');
+        } catch (_) {}
     },
 
     /**

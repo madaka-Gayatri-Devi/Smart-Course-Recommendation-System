@@ -2536,6 +2536,46 @@ def toggle_2fa(payload: Toggle2FAPayload, user: UserDB = Depends(get_current_use
         "two_factor_enabled": bool(user.two_factor_enabled)
     }
 
+def sync_user_to_seed_data(user_id: int, updated_user_fields: dict = None, updated_profile_fields: dict = None):
+    """
+    Synchronizes user account credentials and profile attributes directly to seed_data.json
+    and ensures root smartlearn.db matches backend/smartlearn.db.
+    Guarantees persistence across container restarts on ephemeral platforms (Render free tier)
+    and prevents regressions when instances re-seed or reload.
+    """
+    try:
+        seed_file = APP_DIR / "config" / "seed_data.json"
+        if seed_file.exists():
+            import json
+            with open(seed_file, "r", encoding="utf-8") as f:
+                seed = json.load(f)
+
+            if updated_user_fields and "users" in seed:
+                for u in seed["users"]:
+                    if u.get("id") == user_id:
+                        u.update(updated_user_fields)
+                        break
+
+            if updated_profile_fields and "profiles" in seed:
+                for p in seed["profiles"]:
+                    if p.get("user_id") == user_id:
+                        p.update(updated_profile_fields)
+                        break
+
+            with open(seed_file, "w", encoding="utf-8") as f:
+                json.dump(seed, f, indent=2, ensure_ascii=False)
+    except Exception as _seed_sync_err:
+        db_logger.warning(f"[Persistence Sync Warning] Could not sync user {user_id} to seed_data.json: {_seed_sync_err}")
+
+    # Sync SQLite database files if applicable
+    try:
+        if CANONICAL_SQLITE_PATH.exists() and ROOT_DIR.exists():
+            target_root_db = ROOT_DIR / "smartlearn.db"
+            if target_root_db.resolve() != CANONICAL_SQLITE_PATH:
+                shutil.copyfile(CANONICAL_SQLITE_PATH, target_root_db)
+    except Exception as _db_copy_err:
+        db_logger.warning(f"[Persistence Sync Warning] Could not sync SQLite DB to root: {_db_copy_err}")
+
 @app.post("/auth/change-password")
 def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
@@ -2566,6 +2606,7 @@ def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_c
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    sync_user_to_seed_data(db_user.id, updated_user_fields={"hashed_password": db_user.hashed_password})
     return {"message": "Password changed successfully."}
 
 @app.post("/auth/forgot-password")
@@ -3249,16 +3290,39 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
     
     db.commit()
     db.refresh(profile)
-    db.refresh(user)
+    db.refresh(db_user)
+
+    # Sync changes to seed_data.json and root smartlearn.db for persistence across restarts
+    user_updates = {"full_name": db_user.full_name}
+    if new_pwd:
+        user_updates["hashed_password"] = db_user.hashed_password
+    profile_updates = {
+        "phone": profile.phone or "",
+        "dob": profile.dob or "",
+        "gender": profile.gender or "",
+        "city": profile.city or "",
+        "career_goal": profile.career_goal or "",
+        "secondary_career_goal": profile.secondary_career_goal or "",
+        "skills": profile.skills or [],
+        "interests": profile.interests or [],
+        "languages": profile.languages or [],
+        "education": profile.education or [],
+        "experience": profile.experience or [],
+        "projects": profile.projects or [],
+        "courses": profile.courses or [],
+        "completion_percentage": profile.completion_percentage or 0,
+        "profile_image": profile.profile_image
+    }
+    sync_user_to_seed_data(db_user.id, updated_user_fields=user_updates, updated_profile_fields=profile_updates)
 
     return {
         "success": True,
         "message": "Profile saved successfully",
         "completion_percentage": profile.completion_percentage,
         "profile": {
-            "full_name": user.full_name,
-            "email": user.email,
-            "role": user.role,
+            "full_name": db_user.full_name,
+            "email": db_user.email,
+            "role": db_user.role,
             "phone": profile.phone or "",
             "dob": profile.dob or "",
             "gender": profile.gender or "",
@@ -3344,6 +3408,7 @@ async def upload_avatar(
 
     db.commit()
     db.refresh(profile)
+    sync_user_to_seed_data(user.id, updated_profile_fields={"profile_image": relative_url})
 
     return {
         "success": True,

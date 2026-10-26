@@ -881,6 +881,14 @@
                     }
                     if (avatarInitials) avatarInitials.style.display = 'none';
                     updateTopbarAndSidebarAvatars(uploadedPath, editFullName?.value || 'Student');
+                    try {
+                        const rawUser = localStorage.getItem('smartlearn_user');
+                        if (rawUser) {
+                            const uObj = JSON.parse(rawUser);
+                            uObj.profile_image = uploadedPath;
+                            localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
+                        }
+                    } catch (_) {}
                     showAlert('Profile photo updated successfully!');
                 } catch (err) {
                     console.error(err);
@@ -1167,6 +1175,16 @@
                         sideCompletionPct.textContent = res.completion_percentage + '%';
                         if (sideCompletionBar) sideCompletionBar.style.width = res.completion_percentage + '%';
                     }
+
+                    // Synchronize local storage user cache
+                    try {
+                        const rawUser = localStorage.getItem('smartlearn_user');
+                        if (rawUser) {
+                            const uObj = JSON.parse(rawUser);
+                            if (payload.full_name) uObj.full_name = payload.full_name;
+                            localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
+                        }
+                    } catch (_) {}
 
                 } catch (err) {
                     console.error(err);

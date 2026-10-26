@@ -674,6 +674,15 @@ function populateReview() {
                 };
 
                 await window.api.saveProfile(payload);
+
+                try {
+                    const rawUser = localStorage.getItem('smartlearn_user');
+                    if (rawUser) {
+                        const uObj = JSON.parse(rawUser);
+                        if (payload.full_name) uObj.full_name = payload.full_name;
+                        localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
+                    }
+                } catch (_) {}
                 
                 // Show success container
                 const reviewBoxFields = document.getElementById('reviewBoxFields');
