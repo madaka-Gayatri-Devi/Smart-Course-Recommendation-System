@@ -2531,6 +2531,10 @@
 
 
 
+        scrollToBottom(true);
+
+
+
 
 
 
@@ -7637,7 +7641,7 @@
 
 
 
-            scrollToBottom();
+            scrollToBottom(true);
 
 
 
@@ -15406,13 +15410,19 @@
 
     function scrollToBottom(force = false) {
         const container = document.getElementById('chatMessagesContainer');
-        if (container) {
-            const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= 180;
-            if (force || isNearBottom) {
-                setTimeout(() => {
-                    container.scrollTop = container.scrollHeight;
-                }, 60);
-            }
+        if (!container) return;
+        const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= 240;
+        if (force || isNearBottom) {
+            container.scrollTop = container.scrollHeight;
+            requestAnimationFrame(() => {
+                container.scrollTop = container.scrollHeight;
+            });
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 40);
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 120);
         }
     }
 
