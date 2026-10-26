@@ -670,29 +670,43 @@ function setupForgotPassword() {
 
     if (!modal) return;
 
+    function openModal() {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        if (emailInput) {
+            const loginEmail = document.getElementById('loginEmail');
+            if (loginEmail && loginEmail.value) {
+                emailInput.value = loginEmail.value.trim();
+            }
+            setTimeout(() => emailInput.focus(), 60);
+        }
+        if (alertBox) alertBox.style.display = 'none';
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+
     forgotLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            modal.style.display = 'flex';
-            if (emailInput) {
-                const loginEmail = document.getElementById('loginEmail');
-                if (loginEmail && loginEmail.value) {
-                    emailInput.value = loginEmail.value.trim();
-                }
-                emailInput.focus();
-            }
-            if (alertBox) alertBox.style.display = 'none';
+            openModal();
         });
     });
 
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
+        closeBtn.addEventListener('click', closeModal);
     }
 
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.style.display = 'none';
+        if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && (modal.classList.contains('active') || modal.style.display === 'flex')) {
+            closeModal();
+        }
     });
 
     if (form) {

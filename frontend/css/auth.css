@@ -122,11 +122,13 @@
 }
 
 .login-container {
-    max-width: 900px;
+    max-width: 980px;
+    width: min(94vw, 980px);
 }
 
 .register-container {
-    max-width: 960px;
+    max-width: 1060px;
+    width: min(94vw, 1060px);
 }
 
 /* Wizard Specific Container */

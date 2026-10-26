@@ -335,7 +335,7 @@ section[id], footer[id] {
 }
 
 .container {
-    width: min(100% - 48px, 1200px);
+    width: min(100% - clamp(32px, 4vw, 80px), 1360px);
     margin-inline: auto;
     padding: 0;
 }
@@ -669,20 +669,21 @@ section {
 
 .hero-container {
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-    gap: clamp(2rem, 4vw, 3.5rem);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(2rem, 4vw, 4rem);
     align-items: center;
 }
 
 .hero-content {
-    max-width: 580px;
+    max-width: 660px;
+    text-align: left;
 }
 
 .hero-content p {
-    font-size: clamp(1rem, 1vw + 0.45rem, 1.15rem);
-    line-height: 1.6;
+    font-size: clamp(1rem, 1vw + 0.45rem, 1.2rem);
+    line-height: 1.65;
     margin-bottom: 2rem;
-    max-width: 540px;
+    max-width: 600px;
 }
 
 .hero-buttons {
@@ -742,10 +743,11 @@ section {
 .hero-image-wrapper {
     position: relative;
     width: 100%;
-    max-width: 520px;
-    margin-inline: auto;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: 0;
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
 }
 
@@ -998,17 +1000,20 @@ section {
     width: 100%;
     margin: 0 auto;
     padding: 3rem 0;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: clamp(0.75rem, 1.2vw, 1.25rem);
+    align-items: stretch;
 }
 
 .timeline-track {
     position: absolute;
     top: 60px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--soft-lavender);
+    left: 40px;
+    right: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-purple) 0%, var(--primary-violet) 50%, var(--bright-pink) 100%);
+    opacity: 0.4;
     z-index: 0;
 }
 
@@ -1018,8 +1023,8 @@ section {
     align-items: center;
     position: relative;
     z-index: 1;
-    width: calc(100% / 7);
-    padding: 0 10px;
+    width: 100%;
+    padding: 0;
     text-align: center;
 }
 
@@ -2138,10 +2143,15 @@ aside.app-sidebar .nav-item:hover:not(.active) i,
 }
 
 .modal-overlay {
-    display: none !important;
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
 }
 
-.modal-overlay.active {
+.modal-overlay.active,
+.modal-overlay[style*="display: flex"],
+.modal-overlay[style*="display: block"] {
     display: flex !important;
 }
 
@@ -3178,4 +3188,22 @@ html[data-resolved-appearance="dark"] .course-content h3 {
 
 html[data-resolved-appearance="dark"] .mobile-menu-btn {
     color: #F8FAFC;
+}
+
+
+@media (max-width: 1180px) {
+    .timeline-visual {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 1.25rem !important;
+    }
+    .timeline-track {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .timeline-visual {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
 }

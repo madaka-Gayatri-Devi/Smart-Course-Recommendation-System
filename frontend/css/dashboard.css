@@ -2008,22 +2008,10 @@ a {
 }
 
 .dashboard-content {
-    padding: 2rem;
-
-
-
-    max-width: 1440px;
-
-
-
-    margin: 0 auto;
-
-
-
+    padding: 1.75rem 2rem;
+    max-width: 1600px;
+    margin: 0;
     width: 100%;
-
-
-
     box-sizing: border-box;
 
 
