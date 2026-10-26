@@ -5691,53 +5691,23 @@
 
 
 .chat-contact-panel, .chat-shared-panel {
-
-
-
-    width: 340px;
-
-
-
-    background: #FFFFFF;
-
-
-
-    border-left: 1px solid var(--chat-border);
-
-
-
+    width: 360px;
+    max-width: 100%;
+    background: var(--surface-color, #FFFFFF);
+    border-left: 1px solid var(--border-color, #E2E8F0);
     display: flex;
-
-
-
     flex-direction: column;
-
-
-
     flex-shrink: 0;
-
-
-
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-
-
-
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
     height: 100%;
-
-
-
-    z-index: 25;
-
-
-
-    position: relative;
-
-
-
-    overflow: hidden;
-
-
-
+    z-index: 50;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 
@@ -12384,7 +12354,7 @@
 .chat-app-container {
     flex: 1;
     display: grid;
-    grid-template-columns: 240px 330px 1fr;
+    grid-template-columns: clamp(200px, 18vw, 240px) clamp(280px, 24vw, 340px) minmax(0, 1fr);
     height: calc(100vh - 64px);
     height: calc(100dvh - 64px);
     overflow: hidden;
@@ -13536,10 +13506,24 @@
 }
 
 /* 6. AI ASSISTANT TOGGLE COLLISION PREVENTION */
+#smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+#smartlearn-chatbot-root.pos-right .smartlearn-chatbot-toggle,
+#smartlearn-chatbot-root.pos-left .smartlearn-chatbot-toggle,
+#smartlearn-chatbot-root.pos-bottom .smartlearn-chatbot-toggle,
 #smartlearn-chatbot-toggle {
-    bottom: 85px !important;
-    right: 18px !important;
-    z-index: 90 !important;
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 20px !important;
+    z-index: 85 !important;
+}
+
+body:has(.chat-composer:focus-within) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+body:has(.chat-composer:focus-within) #smartlearn-chatbot-toggle,
+body:has(#chatComposerTextarea:focus) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+body:has(#chatComposerTextarea:focus) #smartlearn-chatbot-toggle {
+    opacity: 0.15 !important;
+    pointer-events: none !important;
+    transform: scale(0.75) !important;
+    transition: opacity 0.2s ease, transform 0.2s ease !important;
 }
 
 /* 7. RESPONSIVE BREAKPOINTS */
@@ -13661,6 +13645,28 @@
 
 /* SMALL MOBILE (<= 480px) */
 @media (max-width: 480px) {
+    .composer-send-pill-btn {
+        width: 38px !important;
+        height: 38px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .composer-send-pill-btn span {
+        display: none !important;
+    }
+    .composer-send-pill-btn i {
+        margin: 0 !important;
+        font-size: 14px !important;
+    }
+    .composer-input-row {
+        gap: 0.4rem !important;
+    }
+    .chat-composer {
+        padding: 0.5rem 0.65rem !important;
+    }
     .chat-topbar {
         padding: 0 0.5rem !important;
     }
@@ -13715,6 +13721,36 @@
 [data-resolved-appearance="dark"] .chat-nav-sidebar {
     background: #0F172A !important;
     border-right-color: #1E293B !important;
+}
+
+[data-resolved-appearance="dark"] .chat-contact-panel,
+[data-resolved-appearance="dark"] .chat-shared-panel {
+    background: #0F172A !important;
+    border-left-color: #1E293B !important;
+    color: #F8FAFC !important;
+}
+
+[data-resolved-appearance="dark"] .panel-header {
+    background: #0F172A !important;
+    border-bottom-color: #1E293B !important;
+    color: #F8FAFC !important;
+}
+
+[data-resolved-appearance="dark"] .panel-header-title {
+    color: #F8FAFC !important;
+}
+
+[data-resolved-appearance="dark"] .panel-close-btn {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+}
+
+[data-resolved-appearance="dark"] .contact-profile-card,
+[data-resolved-appearance="dark"] .contact-card-section {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
 }
 
 [data-resolved-appearance="dark"] .chat-conv-column {
