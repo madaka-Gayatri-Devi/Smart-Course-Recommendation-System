@@ -16,188 +16,287 @@
     <!-- Styles -->
     <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
     <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
-    <link rel="stylesheet" href="../css/chat.css?v=20260928_redesign">
+    <link rel="stylesheet" href="../css/chat.css?v=20261026_responsive">
 </head>
-<body class="dashboard-body">
+<body class="dashboard-body chat-page-body">
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <div class="app-layout">
-        <!-- 🎓 STUDENT SIDEBAR -->
-        <!-- Sidebar -->
-    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
-        <div class="sidebar-glow-1"></div>
-        <div class="sidebar-glow-2"></div>
-
-        <div class="sidebar-brand">
-            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
-        </div>
-        
-        <nav class="sidebar-nav">
-            <div class="nav-label">LEARNING</div>
-            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-house"></i> <span class="nav-text">Dashboard</span></a>
-            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
-            <a href="my-courses.html" class="nav-item"><i class="fa-solid fa-graduation-cap"></i> <span class="nav-text">My Courses</span></a>
-            <a href="learning-path.html" class="nav-item"><i class="fa-solid fa-road"></i> <span class="nav-text">Learning Path</span></a>
-            <a href="progress.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Progress</span></a>
-            
-            <div class="nav-label">DISCOVER</div>
-            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-compass"></i> <span class="nav-text">Recommendations</span></a>
-            <a href="skill-gaps.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Skill Gaps</span></a>
-            <a href="assessment.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment</span></a>
-            <a href="wishlist.html" class="nav-item"><i class="fa-solid fa-heart"></i> <span class="nav-text">Wishlist</span></a>
-            
-            <div class="nav-label">COMMUNICATION</div>
-            <a href="chat.html" class="nav-item active"><i class="fa-solid fa-comments"></i> <span class="nav-text">Chat & Messages</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
-            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span></a>
-            
-            <div class="nav-label">ACCOUNT</div>
-            <a href="profile.html" class="nav-item"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
-            <a href="payment-history.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Payment History</span></a>
-        </nav>
-        
-        <div class="sidebar-footer">
-            <div class="sidebar-user-card">
-                <div class="sidebar-user-avatar" id="sidebarAvatar">ST</div>
-                <div class="sidebar-user-info">
-                    <span class="sidebar-user-name" id="sidebarName">Student</span>
-                    <span class="sidebar-user-role" id="sidebarRole">STUDENT</span>
+    <div class="chat-page-wrapper" id="chatPageWrapper">
+        <!-- TOP HEADER (Screenshot 1, 2, 3) -->
+        <header class="chat-topbar" id="chatTopbar">
+            <div class="chat-topbar-left">
+                <a href="dashboard.html" class="chat-back-to-main-btn" id="chatBackToMainBtn" title="Back to Main Dashboard">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Back to Main</span>
+                </a>
+                <div class="chat-brand">
+                    <div class="chat-brand-logo">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <span class="chat-brand-name">SHNOOR INTERNATIONAL LLC</span>
+                    <span class="chat-brand-tag">Chat</span>
                 </div>
             </div>
-            <div class="sidebar-footer-links">
-                <a href="profile.html" class="sidebar-mini-link" title="Settings"><i class="fa-solid fa-gear"></i> Settings</a>
-                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+
+            <div class="chat-topbar-center">
+                <div class="chat-topbar-search">
+                    <i class="fa-solid fa-magnifying-glass chat-search-icon"></i>
+                    <input type="text" id="chatTopbarSearchInput" placeholder="Search chat" autocomplete="off">
+                    <button type="button" class="chat-topbar-filter-btn" id="chatTopbarFilterBtn" title="Search options">
+                        <i class="fa-solid fa-filter"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-    </aside>
 
-        <!-- MAIN APPLICATION AREA -->
-        <div class="app-main dashboard-main">
-            <!-- Top Bar Header -->
-            <header class="dashboard-topbar app-header">
-                <div class="topbar-left">
-                    <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-                    <h2 class="page-title">Student Chat & Communication</h2>
-                </div>
-                
-                <div class="topbar-right">
-                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
-                    <a href="notifications.html" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem;" title="Notifications">
-                        <i class="fa-solid fa-bell"></i>
-                        <span id="topNotificationBadge" style="display: none; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%;"></span>
-                    </a>
-
-                    <div class="profile-dropdown-container" style="position: relative;">
-                        <div class="profile-dropdown" id="topProfileDropdownToggle" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: #FFFFFF; border: 1px solid var(--border-light);">
-                            <div class="avatar" id="topAvatar">ST</div>
-                            <span class="profile-name" id="topName" style="font-size: 13.5px; font-weight: 600; color: var(--dark-navy);">Student</span>
-                            <i class="fa-solid fa-chevron-down" style="font-size: 11px; color: var(--secondary-text); margin-left: 2px;"></i>
-                        </div>
+            <div class="chat-topbar-right">
+                <!-- Availability Status Dropdown -->
+                <div class="chat-status-dropdown-wrapper" id="chatStatusDropdownWrapper">
+                    <button type="button" class="chat-status-btn" id="chatStatusBtn" title="Set availability status">
+                        <span class="status-dot status-dot-active" id="statusDot"></span>
+                        <span class="status-text" id="statusText">Active</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="chat-status-menu" id="chatStatusMenu" style="display: none;">
+                        <button type="button" class="chat-status-option active" data-status="active">
+                            <span class="status-dot status-dot-active"></span> Active
+                        </button>
+                        <button type="button" class="chat-status-option" data-status="away">
+                            <span class="status-dot status-dot-away"></span> Away
+                        </button>
+                        <button type="button" class="chat-status-option" data-status="dnd">
+                            <span class="status-dot status-dot-dnd"></span> Do Not Disturb
+                        </button>
+                        <button type="button" class="chat-status-option" data-status="offline">
+                            <span class="status-dot status-dot-offline"></span> Offline
+                        </button>
                     </div>
                 </div>
-            </header>
 
-            <!-- CHAT APP WORKSPACE -->
-            <main class="dashboard-content" style="padding: 1rem 1.5rem;">
-                <div class="chat-app-container" id="chatAppContainer">
-                    <!-- LEFT SIDEBAR -->
-                    <div class="chat-sidebar">
-                        <div class="chat-sidebar-header">
-                            <div class="chat-sidebar-top">
-                                <h3 class="chat-sidebar-title"><i class="fa-solid fa-comments"></i> Messages</h3>
-                                <button class="chat-new-btn" id="chatNewBtn"><i class="fa-solid fa-plus"></i> New Chat</button>
-                            </div>
-                            <div class="chat-search-box">
-                                <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="text" class="chat-search-input" id="chatSearchInput" placeholder="Search conversations...">
-                            </div>
-                            <!-- CATEGORY NAVIGATION TABS -->
-                            <div class="chat-category-tabs" id="chatCategoryTabs">
-                                <button type="button" class="chat-cat-tab active" data-cat="chats" title="All Conversations">
-                                    <span>Chats</span>
-                                </button>
-                                <button type="button" class="chat-cat-tab" data-cat="unread" title="Unread Messages Only">
-                                    <span>Unread</span>
-                                    <span class="chat-cat-badge" id="catUnreadBadge" style="display: none;">0</span>
-                                </button>
-                                <button type="button" class="chat-cat-tab" data-cat="groups" title="Course Groups">
-                                    <span>Groups</span>
-                                    <span class="chat-cat-badge" id="catGroupsBadge" style="display: none;">0</span>
-                                </button>
-                                <button type="button" class="chat-cat-tab" data-cat="personal" title="Direct 1-on-1 Messages">
-                                    <span>Personal</span>
-                                    <span class="chat-cat-badge" id="catPersonalBadge" style="display: none;">0</span>
-                                </button>
-                            </div>
-                        </div>
+                <!-- Theme palette button -->
+                <button type="button" id="themePaletteButton" class="chat-topbar-icon-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();">
+                    <i class="fa-solid fa-palette"></i>
+                </button>
 
-                        <div class="chat-conv-list" id="chatConvListContainer">
-                            <!-- Populated dynamically by chat.js -->
-                        </div>
-                    </div>
+                <!-- Split-pane / Expanded layout toggle (Screenshot 2 vs 3) -->
+                <button type="button" class="chat-topbar-icon-btn" id="chatTopbarLayoutBtn" title="Toggle single / split pane layout">
+                    <i class="fa-regular fa-window-restore"></i>
+                </button>
 
-                    <!-- CENTER CHAT AREA -->
-                    <div class="chat-main">
-                        <div class="chat-header">
-                            <div class="chat-header-left">
-                                <button class="chat-mobile-back" id="chatMobileBackBtn"><i class="fa-solid fa-arrow-left"></i></button>
-                                <div class="chat-avatar" id="chatHeaderAvatar">SL</div>
-                                <div class="chat-header-info">
-                                    <h4 class="chat-header-title" id="chatHeaderTitle">Select a conversation</h4>
-                                    <span class="chat-header-subtitle" id="chatHeaderSubtitle">Click on a chat to start messaging</span>
-                                </div>
-                            </div>
-                            <div class="chat-header-actions">
-                                <span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: #6366F1; font-weight: 600; margin-right: 0.5rem;"></span>
-                            </div>
-                        </div>
+                <!-- Notifications -->
+                <a href="notifications.html" class="chat-topbar-icon-btn" id="chatTopbarNotifBtn" title="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="chat-notif-dot" id="chatNotifDot" style="display: none;"></span>
+                </a>
 
-                        <!-- MESSAGES CONTAINER -->
-                        <div class="chat-messages-container" id="chatMessagesContainer">
-                            <div style="margin: auto; text-align: center; color: #94A3B8;">
-                                <i class="fa-solid fa-comments" style="font-size: 3rem; margin-bottom: 0.75rem; color: #C7D2FE;"></i>
-                                <h3 style="color: #334155; font-weight: 700; margin-bottom: 0.25rem;">Welcome to SmartLearn Chat</h3>
-                                <p style="font-size: 0.9rem;">Select an enrolled course group or contact your instructor to start chatting.</p>
-                            </div>
-                        </div>
-
-                        <!-- COMPOSER AREA -->
-                        <div class="chat-composer">
-                            <div class="emoji-picker-popup" id="chatEmojiPopup" style="display: none;">
-                                <span class="emoji-option">👍</span>
-                                <span class="emoji-option">❤️</span>
-                                <span class="emoji-option">😂</span>
-                                <span class="emoji-option">😮</span>
-                                <span class="emoji-option">😢</span>
-                                <span class="emoji-option">👏</span>
-                                <span class="emoji-option">🔥</span>
-                                <span class="emoji-option">🎉</span>
-                                <span class="emoji-option">💡</span>
-                                <span class="emoji-option">🎓</span>
-                                <span class="emoji-option">🚀</span>
-                                <span class="emoji-option">✅</span>
-                            </div>
-
-                            <input type="file" id="chatFileInput" style="display: none;">
-
-                            <div class="composer-input-row">
-                                <button class="composer-btn" id="chatEmojiBtn" title="Emojis"><i class="fa-regular fa-face-smile"></i></button>
-                                <button class="composer-btn" id="chatAttachBtn" title="Attach file"><i class="fa-solid fa-paperclip"></i></button>
-                                <textarea class="composer-textarea" id="chatComposerTextarea" placeholder="Type a message..." rows="1"></textarea>
-                                <button class="composer-send-btn" id="chatSendBtn" title="Send message" disabled><i class="fa-solid fa-paper-plane"></i></button>
-                            </div>
-                        </div>
+                <!-- User Profile Pill -->
+                <div class="chat-topbar-profile" id="chatTopbarProfile" onclick="window.location.href='profile.html'">
+                    <div class="chat-topbar-avatar" id="chatTopbarAvatar">ST</div>
+                    <div class="chat-topbar-user-info">
+                        <span class="chat-topbar-username" id="chatTopbarName">Student</span>
+                        <span class="chat-topbar-userrole" id="chatTopbarRole">STUDENT</span>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </header>
+
+        <!-- MAIN CHAT APP 3-COLUMN WORKSPACE -->
+        <main class="chat-app-container" id="chatAppContainer">
+            <!-- DRAG & DROP OVERLAY -->
+            <div class="chat-drag-overlay" id="chatDragOverlay" style="display: none;">
+                <div class="chat-drag-box">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <h3>Drop your document here</h3>
+                    <p>Release to attach file to message</p>
+                </div>
+            </div>
+
+            <!-- COLUMN 1: LEFT NAVIGATION & SHORTCUTS (Screenshots 1 & 2) -->
+            <aside class="chat-nav-sidebar" id="chatNavSidebar">
+                <button type="button" class="chat-new-btn-primary" id="chatNewBtn">
+                    <i class="fa-solid fa-plus"></i> New chat
+                </button>
+
+                <!-- SHORTCUTS SECTION -->
+                <div class="chat-nav-section">
+                    <div class="chat-nav-section-title">
+                        <i class="fa-solid fa-chevron-down mr-1"></i> SHORTCUTS
+                    </div>
+                    <div class="chat-nav-shortcuts">
+                        <button type="button" class="chat-nav-item active" data-shortcut="home" id="shortcutHome">
+                            <i class="fa-solid fa-house"></i>
+                            <span>Home</span>
+                        </button>
+                        <button type="button" class="chat-nav-item" data-shortcut="mentions" id="shortcutMentions">
+                            <i class="fa-solid fa-at"></i>
+                            <span>Mentions</span>
+                        </button>
+                        <button type="button" class="chat-nav-item" data-shortcut="starred" id="shortcutStarred">
+                            <i class="fa-regular fa-star"></i>
+                            <span>Starred</span>
+                        </button>
+                        <button type="button" class="chat-nav-item" data-shortcut="archived" id="shortcutArchived">
+                            <i class="fa-solid fa-box-archive"></i>
+                            <span>Archived</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DIRECT MESSAGES SECTION -->
+                <div class="chat-nav-section">
+                    <div class="chat-nav-section-header">
+                        <span class="chat-nav-section-title">
+                            <i class="fa-solid fa-chevron-right mr-1"></i> DIRECT MESSAGES <span class="chat-nav-count" id="chatDmCount">0</span>
+                        </span>
+                        <button type="button" class="chat-nav-add-btn" id="chatNewDmBtn" title="Start Direct Message">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="chat-nav-list" id="chatDmShortcutsList">
+                        <!-- Populated dynamically by chat.js -->
+                    </div>
+                </div>
+
+                <!-- SPACES / GROUPS SECTION -->
+                <div class="chat-nav-section">
+                    <div class="chat-nav-section-header">
+                        <span class="chat-nav-section-title">
+                            <i class="fa-solid fa-chevron-down mr-1"></i> SPACES <span class="chat-nav-count" id="chatSpacesCount">0</span>
+                        </span>
+                    </div>
+                    <div class="chat-nav-list" id="chatSpacesList">
+                        <!-- Populated dynamically with course groups like Team GITMW -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- COLUMN 2: MIDDLE CONVERSATION LIST (Screenshots 1 & 2) -->
+            <section class="chat-conv-column" id="chatConvColumn">
+                <div class="chat-conv-header">
+                    <div class="chat-conv-header-top">
+                        <h3 class="chat-conv-title" id="chatConvListTitle">Home</h3>
+                        <div class="chat-conv-header-controls">
+                            <label class="chat-unread-toggle-wrapper" title="Show unread conversations only">
+                                <span class="chat-unread-toggle-label">Unread</span>
+                                <input type="checkbox" id="chatUnreadToggle" class="chat-unread-toggle-input">
+                                <span class="chat-unread-toggle-slider"></span>
+                            </label>
+                            <button type="button" class="chat-filter-icon-btn" id="chatListFilterBtn" title="Filter and sort">
+                                <i class="fa-solid fa-bars-staggered"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="chat-search-input" id="chatSearchInput" placeholder="Search chat or people...">
+                        <button type="button" id="chatSearchClearBtn" class="chat-search-clear-btn" style="display: none;">&times;</button>
+                    </div>
+                </div>
+
+                <div class="chat-conv-list" id="chatConvListContainer">
+                    <!-- Populated dynamically by chat.js -->
+                </div>
+            </section>
+
+            <!-- COLUMN 3: RIGHT ACTIVE CONVERSATION PANEL (Screenshots 1, 2, 3) -->
+            <section class="chat-main" id="chatMain">
+                <!-- ACTIVE CHAT HEADER (Screenshot 2 & 3) -->
+                <div class="chat-header" id="chatHeader" style="display: none;">
+                    <div class="chat-header-left">
+                        <button class="chat-mobile-back" id="chatMobileBackBtn" title="Back to conversations">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div class="chat-avatar" id="chatHeaderAvatar">TG</div>
+                        <div class="chat-header-info">
+                            <h4 class="chat-header-title" id="chatHeaderTitle">Team GITMW</h4>
+                            <span class="chat-header-subtitle" id="chatHeaderSubtitle">5 Members</span>
+                        </div>
+                    </div>
+                    <div class="chat-header-actions" id="chatHeaderActions">
+                        <span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: #D97706; font-weight: 600; margin-right: 0.5rem;"></span>
+                        <button type="button" class="chat-header-btn-pill" id="chatSelectBtn" title="Select messages">Select</button>
+                        <button type="button" class="chat-header-btn-pill" id="chatGroupInfoBtn" title="Group Information">
+                            <i class="fa-solid fa-circle-info"></i> <span>Group Info</span>
+                        </button>
+                        <button type="button" class="chat-header-btn-icon" id="chatExpandBtn" title="Toggle full-screen conversation">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                        <button type="button" class="chat-header-btn-icon" id="chatCloseBtn" title="Close conversation">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <button type="button" class="chat-header-btn-icon" id="chatHeaderMoreBtn" title="More options">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- EMPTY STATE VIEW (Screenshot 1) -->
+                <div class="chat-empty-selection-view" id="chatEmptySelectionView">
+                    <div class="chat-empty-illustration">
+                        <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="55" y="24" width="75" height="52" rx="14" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
+                            <rect x="70" y="36" width="45" height="3" rx="1.5" fill="#94A3B8"/>
+                            <rect x="70" y="44" width="30" height="3" rx="1.5" fill="#94A3B8"/>
+                            <rect x="35" y="48" width="65" height="48" rx="14" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
+                            <circle cx="54" cy="72" r="13" fill="#FBBF24"/>
+                            <rect x="46" y="68" width="16" height="2.5" rx="1.2" fill="#1E293B"/>
+                            <rect x="46" y="74" width="16" height="2.5" rx="1.2" fill="#1E293B"/>
+                            <path d="M102 125V92C102 86 93 86 93 92V102C93 105 90 107 86 107C82 107 80 103 80 99V88C80 83 73 83 73 88V120" stroke="#1E293B" stroke-width="3.5" stroke-linecap="round"/>
+                            <path d="M83 83C83 77 93 77 93 83V102" stroke="#1E293B" stroke-width="3" stroke-linecap="round" fill="#D97706"/>
+                            <circle cx="106" cy="72" r="7.5" fill="#10B981"/>
+                            <rect x="68" y="120" width="38" height="18" rx="4" fill="#1E293B"/>
+                        </svg>
+                    </div>
+                    <h3 class="chat-empty-title">No conversation selected</h3>
+                    <p class="chat-empty-subtitle">Use the toggle to switch between single and split pane modes, or pick a conversation from the list to start messaging.</p>
+                </div>
+
+                <!-- MESSAGES CONTAINER (Screenshot 2 & 3) -->
+                <div class="chat-messages-container" id="chatMessagesContainer" style="display: none;">
+                    <!-- Populated dynamically by chat.js -->
+                </div>
+
+                <!-- COMPOSER AREA (Screenshot 2 & 3) -->
+                <div class="chat-composer" id="chatComposer" style="display: none;">
+                    <div class="emoji-picker-popup" id="chatEmojiPopup" style="display: none;">
+                        <span class="emoji-option">👍</span>
+                        <span class="emoji-option">❤️</span>
+                        <span class="emoji-option">😂</span>
+                        <span class="emoji-option">😮</span>
+                        <span class="emoji-option">😢</span>
+                        <span class="emoji-option">👏</span>
+                        <span class="emoji-option">🔥</span>
+                        <span class="emoji-option">🎉</span>
+                        <span class="emoji-option">💡</span>
+                        <span class="emoji-option">🎓</span>
+                        <span class="emoji-option">🚀</span>
+                        <span class="emoji-option">✅</span>
+                    </div>
+
+                    <input type="file" id="chatFileInput" style="display: none;">
+                    <div class="composer-attachment-preview" id="composerAttachmentPreview" style="display: none;"></div>
+
+                    <div class="composer-input-row">
+                        <button type="button" class="composer-add-btn" id="chatAttachBtn" title="Add attachment or media">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <div class="composer-textarea-wrapper">
+                            <textarea class="composer-textarea" id="chatComposerTextarea" placeholder="Message... (Type @ to mention)" rows="1"></textarea>
+                            <button type="button" class="composer-emoji-btn" id="chatEmojiBtn" title="Insert emoji">
+                                <i class="fa-regular fa-face-smile"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="composer-send-pill-btn" id="chatSendBtn" title="Send message" disabled>
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <!-- Scripts -->
-    <script src="../js/api.js?v=20260928_redesign"></script>
-    <script src="../js/auth.js?v=20260928_redesign"></script>
-    <script src="../js/chat.js?v=20260928_redesign"></script>
+    <script src="../js/api.js?v=20261026_responsive"></script>
+    <script src="../js/auth.js?v=20261026_responsive"></script>
+    <script src="../js/chat.js?v=20261026_responsive"></script>
     <script src="../js/chatbot.js"></script>
 </body>
-
 </html>
