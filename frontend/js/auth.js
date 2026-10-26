@@ -90,6 +90,21 @@
     }
 })();
 
+// Capture intended redirect destination immediately on script parse
+(function captureAuthRedirectParams() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect');
+        const courseId = params.get('course_id') || params.get('id');
+        if (redirect) {
+            sessionStorage.setItem('smartlearn_auth_redirect', redirect);
+        }
+        if (courseId) {
+            sessionStorage.setItem('smartlearn_intended_course_id', courseId);
+        }
+    } catch (_) {}
+})();
+
 /**
  * Programmatic route guard callable inside JavaScript modules and feature controllers.
  *
@@ -477,11 +492,36 @@ function redirectUserToDashboard(role) {
         targetPage = 'instructor/dashboard.html';
     }
 
+    // Check if there was an intended course or page destination
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('course_id') || urlParams.get('id') || sessionStorage.getItem('smartlearn_intended_course_id');
+    const explicitRedirect = urlParams.get('redirect') || sessionStorage.getItem('smartlearn_auth_redirect');
+
+    // Clear temporary redirection storage once read
+    try {
+        sessionStorage.removeItem('smartlearn_auth_redirect');
+        sessionStorage.removeItem('smartlearn_intended_course_id');
+    } catch (_) {}
+
+    if (roleUpper === 'STUDENT') {
+        if (courseId) {
+            targetPage = `student/course-details.html?id=${encodeURIComponent(courseId)}`;
+        } else if (explicitRedirect) {
+            const cleanRedirect = explicitRedirect.replace(/^\/+/, '');
+            // Prevent open external redirect attacks
+            if (!cleanRedirect.startsWith('http://') && !cleanRedirect.startsWith('https://')) {
+                targetPage = cleanRedirect;
+            }
+        }
+    }
+
     const currentPath = window.location.pathname;
     let redirectUrl = targetPage;
     if (currentPath.includes('/frontend/')) {
         const basePath = currentPath.substring(0, currentPath.indexOf('/frontend/') + 10);
         redirectUrl = basePath + targetPage;
+    } else {
+        redirectUrl = '/' + targetPage.replace(/^\/+/, '');
     }
 
     setTimeout(() => {

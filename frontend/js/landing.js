@@ -1,14 +1,22 @@
+/**
+ * SmartLearn Landing Page Controller
+ * Handles header scrolling, active link tracking, mobile navigation,
+ * dynamic auth buttons, course detail links with login redirection,
+ * and interactive animations.
+ */
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. Mobile Navigation Toggle
+    // ==========================================
+    // 1. MOBILE NAVIGATION TOGGLE & CLICK-OUTSIDE
+    // ==========================================
     const mobileBtn = document.getElementById('mobile-menu-btn');
     const navbar = document.getElementById('navbar');
     
     if (mobileBtn && navbar) {
-        mobileBtn.addEventListener('click', () => {
+        mobileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             navbar.classList.toggle('active');
             
-            // Toggle icon between bars and times (close)
             const icon = mobileBtn.querySelector('i');
             if (navbar.classList.contains('active')) {
                 icon.classList.remove('fa-bars');
@@ -19,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Close mobile menu when a link is clicked
+        // Close mobile menu when a nav link is clicked
         const navLinks = navbar.querySelectorAll('a');
         navLinks.forEach(link => {
             link.addEventListener('click', () => {
@@ -31,53 +39,133 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-    }
 
-    // 2. Sticky Header & Active Nav Link Tracking
-    const header = document.getElementById('header');
-    const sections = document.querySelectorAll('section[id]');
-    
-    /**
- * Checks authentication status and dynamically updates landing page navbar.
- * Displays 'Go to Dashboard' if authenticated, or 'Sign In / Register' buttons if guest.
- */
-// ==========================================
-// LANDING PAGE AUTH NAVIGATION CONTROLLER
-// ==========================================
-function updateHeaderAndNav() {
-        const scrollY = window.pageYOffset;
-        
-        // Sticky Header
-        if (scrollY > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-        
-        // Active Nav Link
-        sections.forEach(section => {
-            const sectionHeight = section.offsetHeight;
-            const sectionTop = section.offsetTop - 150; // Offset for sticky header
-            const sectionId = section.getAttribute('id');
-            
-            if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                const activeLink = document.querySelector(`.nav-links a[href*=${sectionId}]`);
-                if (activeLink) {
-                    // Remove active from all
-                    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-                    // Add active to current
-                    activeLink.classList.add('active');
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (navbar.classList.contains('active') && !navbar.contains(e.target) && !mobileBtn.contains(e.target)) {
+                navbar.classList.remove('active');
+                const icon = mobileBtn.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-xmark');
+                    icon.classList.add('fa-bars');
                 }
             }
         });
     }
 
-    window.addEventListener('scroll', updateHeaderAndNav);
-    // Initial call
+    // ==========================================
+    // 2. STICKY HEADER & ACTIVE NAV LINK TRACKING
+    // ==========================================
+    const header = document.getElementById('header');
+    const sections = document.querySelectorAll('section[id]');
+    
+    function updateHeaderAndNav() {
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Sticky Header appearance
+        if (header) {
+            if (scrollY > 40) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        }
+        
+        // Active Nav Link Tracking
+        let currentSectionId = '';
+        sections.forEach(section => {
+            const sectionHeight = section.offsetHeight;
+            const sectionTop = section.offsetTop - 120; // Offset for fixed navbar
+            const sectionId = section.getAttribute('id');
+            
+            if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+                currentSectionId = sectionId;
+            }
+        });
+
+        if (scrollY < 100) {
+            currentSectionId = 'home';
+        }
+
+        if (currentSectionId) {
+            document.querySelectorAll('.nav-links a').forEach(a => {
+                const href = a.getAttribute('href');
+                if (href === `#${currentSectionId}`) {
+                    a.classList.add('active');
+                } else if (href && href.startsWith('#')) {
+                    a.classList.remove('active');
+                }
+            });
+        }
+    }
+
+    window.addEventListener('scroll', updateHeaderAndNav, { passive: true });
     updateHeaderAndNav();
 
-    // 3. Intersection Observer for Fade-In Animations
-    // Respect prefers-reduced-motion
+    // ==========================================
+    // 3. AUTHENTICATION STATE & DYNAMIC BUTTONS
+    // ==========================================
+    function setupAuthAndCourseLinks() {
+        const token = localStorage.getItem('smartlearn_token');
+        const userStr = localStorage.getItem('smartlearn_user');
+        let user = null;
+        if (token && userStr) {
+            try {
+                user = JSON.parse(userStr);
+            } catch (_) {}
+        }
+
+        const isStudent = user && (!user.role || user.role.toUpperCase() === 'STUDENT');
+        const isAdmin = user && user.role && user.role.toUpperCase() === 'ADMIN';
+        const isInstructor = user && user.role && user.role.toUpperCase() === 'INSTRUCTOR';
+
+        // 1. Update Header Auth Buttons
+        const navAuthButtons = document.getElementById('navAuthButtons');
+        if (user && navAuthButtons) {
+            let portalUrl = 'student/dashboard.html';
+            let portalLabel = 'Dashboard';
+            if (isAdmin) {
+                portalUrl = 'admin/dashboard.html';
+                portalLabel = 'Admin Portal';
+            } else if (isInstructor) {
+                portalUrl = 'instructor/dashboard.html';
+                portalLabel = 'Instructor Portal';
+            }
+
+            navAuthButtons.innerHTML = `
+                <a href="${portalUrl}" class="btn btn-primary" id="navDashboardBtn">
+                    <i class="fa-solid fa-gauge-high" style="margin-right: 6px;"></i> ${portalLabel}
+                </a>
+            `;
+        }
+
+        // 2. Update Course Card "View Course" Buttons
+        const courseButtons = document.querySelectorAll('.btn-course-view');
+        courseButtons.forEach(btn => {
+            const courseId = btn.getAttribute('data-course-id') || '1';
+            if (user && isStudent) {
+                btn.href = `student/course-details.html?id=${encodeURIComponent(courseId)}`;
+            } else {
+                btn.href = `login.html?redirect=student/course-details.html?id=${encodeURIComponent(courseId)}&course_id=${encodeURIComponent(courseId)}`;
+            }
+        });
+
+        // 3. Update "View All Courses" CTA
+        const viewAllBtn = document.getElementById('viewAllCoursesBtn');
+        if (viewAllBtn) {
+            if (user && isStudent) {
+                viewAllBtn.href = 'student/courses.html';
+            } else {
+                viewAllBtn.href = 'login.html?redirect=student/courses.html';
+            }
+        }
+    }
+
+    setupAuthAndCourseLinks();
+
+    // ==========================================
+    // 4. INTERSECTION OBSERVER FOR FADE-IN ANIMATIONS
+    // ==========================================
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
     if (!prefersReducedMotion) {
@@ -86,7 +174,7 @@ function updateHeaderAndNav() {
         const fadeObserverOptions = {
             root: null,
             threshold: 0.1,
-            rootMargin: "0px 0px -50px 0px"
+            rootMargin: "0px 0px -40px 0px"
         };
 
         const fadeObserver = new IntersectionObserver((entries, observer) => {
@@ -102,7 +190,6 @@ function updateHeaderAndNav() {
             fadeObserver.observe(element);
         });
     } else {
-        // If reduced motion is preferred, make everything visible immediately
         document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right').forEach(el => {
             el.classList.add('visible');
             el.style.opacity = '1';
@@ -110,7 +197,9 @@ function updateHeaderAndNav() {
         });
     }
 
-    // 4. Animated Counters
+    // ==========================================
+    // 5. ANIMATED COUNTERS
+    // ==========================================
     const counters = document.querySelectorAll('.counter');
     let hasAnimatedCounters = false;
     const statsSection = document.getElementById('statistics');
@@ -122,21 +211,19 @@ function updateHeaderAndNav() {
                 
                 counters.forEach(counter => {
                     const target = +counter.getAttribute('data-target');
-                    const duration = 2000; // 2 seconds
-                    const increment = target / (duration / 16); // 60fps
+                    const duration = 2000;
+                    const increment = target / (duration / 16);
                     
                     let current = 0;
-                    
                     const updateCounter = () => {
                         current += increment;
                         if (current < target) {
                             counter.innerText = Math.ceil(current);
                             requestAnimationFrame(updateCounter);
                         } else {
-                            counter.innerText = target.toLocaleString(); // Add commas for thousands
+                            counter.innerText = target.toLocaleString();
                         }
                     };
-                    
                     updateCounter();
                 });
             }
@@ -149,7 +236,9 @@ function updateHeaderAndNav() {
         });
     }
 
-    // 5. Skill Gap Progress Bars Animation
+    // ==========================================
+    // 6. SKILL GAP PROGRESS BARS ANIMATION
+    // ==========================================
     const skillGapSection = document.getElementById('skill-gap');
     const progressFills = document.querySelectorAll('.progress-fill');
     let hasAnimatedBars = false;
@@ -159,20 +248,17 @@ function updateHeaderAndNav() {
             const barsObserver = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !hasAnimatedBars) {
                     hasAnimatedBars = true;
-                    
-                    // Add a small delay so the section fades in first
                     setTimeout(() => {
                         progressFills.forEach(fill => {
                             const targetWidth = fill.getAttribute('data-width');
                             fill.style.width = targetWidth;
                         });
-                    }, 300);
+                    }, 250);
                 }
             }, { threshold: 0.3 });
 
             barsObserver.observe(skillGapSection);
         } else {
-            // Instant fill for reduced motion
             progressFills.forEach(fill => {
                 fill.style.width = fill.getAttribute('data-width');
                 fill.style.transition = 'none';
