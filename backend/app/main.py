@@ -9849,6 +9849,10 @@ if FRONTEND_DIR.exists():
     def redirect_register():
         return RedirectResponse(url="/register.html")
 
+    @app.get("/forgot-password", include_in_schema=False)
+    def redirect_forgot_password():
+        return RedirectResponse(url="/forgot-password.html")
+
     # Mount frontend directory at root so all pages (index.html, login.html, etc.) are accessible directly
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend_root")
 
