@@ -6,7 +6,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>Admin Communication Center - SmartLearn</title>
+    <title>Admin Chat & Discussions - SmartLearn</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,35 +14,36 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Styles -->
-    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
-    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/style.css?v=20260915_compact_theme">
     <link rel="stylesheet" href="../css/chat.css?v=20261026_responsive">
 </head>
 <body class="dashboard-body chat-page-body">
 
     <div class="chat-page-wrapper" id="chatPageWrapper">
-        <!-- TOP HEADER (Screenshot 1, 2, 3) -->
+        <!-- TOPBAR HEADER - ALIGNED WITH SMARTLEARN DASHBOARDS -->
         <header class="chat-topbar" id="chatTopbar">
             <div class="chat-topbar-left">
-                <a href="dashboard.html" class="chat-back-to-main-btn" id="chatBackToMainBtn" title="Back to Main Dashboard">
+                <a href="dashboard.html" class="chat-back-to-main-btn" id="chatBackToMainBtn" title="Back to Dashboard">
                     <i class="fa-solid fa-arrow-left"></i>
-                    <span>Back to Main</span>
+                    <span>Back to Dashboard</span>
                 </a>
                 <div class="chat-brand">
                     <div class="chat-brand-logo">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
-                    <span class="chat-brand-name">SHNOOR INTERNATIONAL LLC</span>
-                    <span class="chat-brand-tag">Chat</span>
+                    <div class="chat-brand-text">
+                        <span class="chat-brand-title">SmartLearn</span>
+                        <span class="chat-brand-badge">Discussions</span>
+                    </div>
                 </div>
             </div>
 
             <div class="chat-topbar-center">
                 <div class="chat-topbar-search">
                     <i class="fa-solid fa-magnifying-glass chat-search-icon"></i>
-                    <input type="text" id="chatTopbarSearchInput" placeholder="Search chat" autocomplete="off">
+                    <input type="text" id="chatTopbarSearchInput" placeholder="Search discussions, classmates, or instructors..." autocomplete="off">
                     <button type="button" class="chat-topbar-filter-btn" id="chatTopbarFilterBtn" title="Search options">
-                        <i class="fa-solid fa-filter"></i>
+                        <i class="fa-solid fa-sliders"></i>
                     </button>
                 </div>
             </div>
@@ -71,17 +72,21 @@
                     </div>
                 </div>
 
-                <!-- Theme palette button -->
-                <button type="button" id="themePaletteButton" class="chat-topbar-icon-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();">
-                    <i class="fa-solid fa-palette"></i>
+                <!-- SmartLearn Theme Palette Button (binds directly to theme.js) -->
+                <div class="theme-control">
+                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal data-action="open-theme" aria-label="Theme Settings" aria-haspopup="menu" aria-expanded="false" title="Theme Settings">
+                        <i class="fa-solid fa-palette theme-btn-icon"></i>
+                        <span class="theme-btn-text">Theme</span>
+                        <i class="fa-solid fa-chevron-down theme-btn-arrow"></i>
+                    </button>
+                </div>
+
+                <!-- Fullscreen / Expanded Mode Toggle -->
+                <button type="button" class="chat-topbar-icon-btn" id="chatTopbarLayoutBtn" title="Toggle full-width view">
+                    <i class="fa-solid fa-table-columns"></i>
                 </button>
 
-                <!-- Split-pane / Expanded layout toggle (Screenshot 2 vs 3) -->
-                <button type="button" class="chat-topbar-icon-btn" id="chatTopbarLayoutBtn" title="Toggle single / split pane layout">
-                    <i class="fa-regular fa-window-restore"></i>
-                </button>
-
-                <!-- Notifications -->
+                <!-- Notifications Link -->
                 <a href="notifications.html" class="chat-topbar-icon-btn" id="chatTopbarNotifBtn" title="Notifications">
                     <i class="fa-regular fa-bell"></i>
                     <span class="chat-notif-dot" id="chatNotifDot" style="display: none;"></span>
@@ -89,10 +94,10 @@
 
                 <!-- User Profile Pill -->
                 <div class="chat-topbar-profile" id="chatTopbarProfile" onclick="window.location.href='profile.html'">
-                    <div class="chat-topbar-avatar" id="chatTopbarAvatar">AD</div>
+                    <div class="chat-topbar-avatar" id="chatTopbarAvatar">ST</div>
                     <div class="chat-topbar-user-info">
-                        <span class="chat-topbar-username" id="chatTopbarName">Administrator</span>
-                        <span class="chat-topbar-userrole" id="chatTopbarRole">ADMINISTRATOR</span>
+                        <span class="chat-topbar-username" id="chatTopbarName">Admin</span>
+                        <span class="chat-topbar-userrole" id="chatTopbarRole">ADMIN</span>
                     </div>
                 </div>
             </div>
@@ -104,21 +109,54 @@
             <div class="chat-drag-overlay" id="chatDragOverlay" style="display: none;">
                 <div class="chat-drag-box">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <h3>Drop your document here</h3>
-                    <p>Release to attach file to message</p>
+                    <h3>Drop your course document here</h3>
+                    <p>Release to attach learning materials to the discussion</p>
                 </div>
             </div>
 
-            <!-- COLUMN 1: LEFT NAVIGATION & SHORTCUTS (Screenshots 1 & 2) -->
+            <!-- COLUMN 1: LEFT NAVIGATION & LMS CATEGORIES -->
             <aside class="chat-nav-sidebar" id="chatNavSidebar">
                 <button type="button" class="chat-new-btn-primary" id="chatNewBtn">
-                    <i class="fa-solid fa-plus"></i> New chat
+                    <i class="fa-solid fa-plus"></i>
+                    <span>New Discussion</span>
                 </button>
+
+                <!-- LMS Category Filter Tabs -->
+                <div class="chat-lms-category-tabs" id="chatCategoryTabs">
+                    <button type="button" class="chat-cat-tab active" data-cat="chats" id="catTabAll">
+                        <div class="chat-cat-tab-left">
+                            <i class="fa-solid fa-comments"></i>
+                            <span>All Chats</span>
+                        </div>
+                        <span class="chat-cat-badge" id="catAllBadge">0</span>
+                    </button>
+                    <button type="button" class="chat-cat-tab" data-cat="unread" id="catTabUnread">
+                        <div class="chat-cat-tab-left">
+                            <i class="fa-solid fa-envelope-open-text"></i>
+                            <span>Unread</span>
+                        </div>
+                        <span class="chat-cat-badge" id="catUnreadBadge" style="display: none;">0</span>
+                    </button>
+                    <button type="button" class="chat-cat-tab" data-cat="groups" id="catTabGroups">
+                        <div class="chat-cat-tab-left">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span>Course Groups</span>
+                        </div>
+                        <span class="chat-cat-badge" id="catGroupsBadge">0</span>
+                    </button>
+                    <button type="button" class="chat-cat-tab" data-cat="personal" id="catTabPersonal">
+                        <div class="chat-cat-tab-left">
+                            <i class="fa-solid fa-user-graduate"></i>
+                            <span>Direct Contacts</span>
+                        </div>
+                        <span class="chat-cat-badge" id="catPersonalBadge">0</span>
+                    </button>
+                </div>
 
                 <!-- SHORTCUTS SECTION -->
                 <div class="chat-nav-section">
                     <div class="chat-nav-section-title">
-                        <i class="fa-solid fa-chevron-down mr-1"></i> SHORTCUTS
+                        SHORTCUTS
                     </div>
                     <div class="chat-nav-shortcuts">
                         <button type="button" class="chat-nav-item active" data-shortcut="home" id="shortcutHome">
@@ -131,7 +169,7 @@
                         </button>
                         <button type="button" class="chat-nav-item" data-shortcut="starred" id="shortcutStarred">
                             <i class="fa-regular fa-star"></i>
-                            <span>Starred</span>
+                            <span>Starred Notes</span>
                         </button>
                         <button type="button" class="chat-nav-item" data-shortcut="archived" id="shortcutArchived">
                             <i class="fa-solid fa-box-archive"></i>
@@ -144,9 +182,9 @@
                 <div class="chat-nav-section">
                     <div class="chat-nav-section-header">
                         <span class="chat-nav-section-title">
-                            <i class="fa-solid fa-chevron-right mr-1"></i> DIRECT MESSAGES <span class="chat-nav-count" id="chatDmCount">0</span>
+                            DIRECT MESSAGES (<span id="chatDmCount">0</span>)
                         </span>
-                        <button type="button" class="chat-nav-add-btn" id="chatNewDmBtn" title="Start Direct Message">
+                        <button type="button" class="chat-nav-add-btn" id="chatNewDmBtn" title="Message a classmate or instructor">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
@@ -155,24 +193,27 @@
                     </div>
                 </div>
 
-                <!-- SPACES / GROUPS SECTION -->
+                <!-- COURSE GROUPS SECTION -->
                 <div class="chat-nav-section">
                     <div class="chat-nav-section-header">
                         <span class="chat-nav-section-title">
-                            <i class="fa-solid fa-chevron-down mr-1"></i> SPACES <span class="chat-nav-count" id="chatSpacesCount">0</span>
+                            COURSE GROUPS (<span id="chatSpacesCount">0</span>)
                         </span>
+                        <button type="button" class="chat-nav-add-btn" id="chatAddSpaceBtn" title="Browse / Join Groups">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
                     </div>
                     <div class="chat-nav-list" id="chatSpacesList">
-                        <!-- Populated dynamically with course groups like Team GITMW -->
+                        <!-- Populated dynamically by chat.js -->
                     </div>
                 </div>
             </aside>
 
-            <!-- COLUMN 2: MIDDLE CONVERSATION LIST (Screenshots 1 & 2) -->
+            <!-- COLUMN 2: MIDDLE CONVERSATION LIST -->
             <section class="chat-conv-column" id="chatConvColumn">
                 <div class="chat-conv-header">
                     <div class="chat-conv-header-top">
-                        <h3 class="chat-conv-title" id="chatConvListTitle">Home</h3>
+                        <h3 class="chat-conv-title" id="chatConvListTitle">Conversations</h3>
                         <div class="chat-conv-header-controls">
                             <label class="chat-unread-toggle-wrapper" title="Show unread conversations only">
                                 <span class="chat-unread-toggle-label">Unread</span>
@@ -186,7 +227,7 @@
                     </div>
                     <div class="chat-search-box">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" class="chat-search-input" id="chatSearchInput" placeholder="Search chat or people...">
+                        <input type="text" class="chat-search-input" id="chatSearchInput" placeholder="Search conversations, courses, or users...">
                         <button type="button" id="chatSearchClearBtn" class="chat-search-clear-btn" style="display: none;">&times;</button>
                     </div>
                 </div>
@@ -196,27 +237,27 @@
                 </div>
             </section>
 
-            <!-- COLUMN 3: RIGHT ACTIVE CONVERSATION PANEL (Screenshots 1, 2, 3) -->
+            <!-- COLUMN 3: RIGHT ACTIVE CONVERSATION PANEL -->
             <section class="chat-main" id="chatMain">
-                <!-- ACTIVE CHAT HEADER (Screenshot 2 & 3) -->
+                <!-- ACTIVE CHAT HEADER -->
                 <div class="chat-header" id="chatHeader" style="display: none;">
                     <div class="chat-header-left">
                         <button class="chat-mobile-back" id="chatMobileBackBtn" title="Back to conversations">
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
-                        <div class="chat-avatar" id="chatHeaderAvatar">TG</div>
+                        <div class="chat-avatar" id="chatHeaderAvatar">SL</div>
                         <div class="chat-header-info">
-                            <h4 class="chat-header-title" id="chatHeaderTitle">Team GITMW</h4>
-                            <span class="chat-header-subtitle" id="chatHeaderSubtitle">5 Members</span>
+                            <h4 class="chat-header-title" id="chatHeaderTitle">Course Discussion</h4>
+                            <span class="chat-header-subtitle" id="chatHeaderSubtitle">Members</span>
                         </div>
                     </div>
                     <div class="chat-header-actions" id="chatHeaderActions">
-                        <span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: #D97706; font-weight: 600; margin-right: 0.5rem;"></span>
+                        <span id="chatTypingIndicator" style="display: none; font-size: 0.8rem; color: var(--color-primary, #5B3FE8); font-weight: 600; margin-right: 0.5rem;"></span>
                         <button type="button" class="chat-header-btn-pill" id="chatSelectBtn" title="Select messages">Select</button>
                         <button type="button" class="chat-header-btn-pill" id="chatGroupInfoBtn" title="Group Information">
                             <i class="fa-solid fa-circle-info"></i> <span>Group Info</span>
                         </button>
-                        <button type="button" class="chat-header-btn-icon" id="chatExpandBtn" title="Toggle full-screen conversation">
+                        <button type="button" class="chat-header-btn-icon" id="chatExpandBtn" title="Toggle full-screen view">
                             <i class="fa-solid fa-expand"></i>
                         </button>
                         <button type="button" class="chat-header-btn-icon" id="chatCloseBtn" title="Close conversation">
@@ -228,33 +269,42 @@
                     </div>
                 </div>
 
-                <!-- EMPTY STATE VIEW (Screenshot 1) -->
+                <!-- EMPTY STATE VIEW (SmartLearn Educational Collaboration Illustration) -->
                 <div class="chat-empty-selection-view" id="chatEmptySelectionView">
                     <div class="chat-empty-illustration">
-                        <svg width="180" height="150" viewBox="0 0 180 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="55" y="24" width="75" height="52" rx="14" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
-                            <rect x="70" y="36" width="45" height="3" rx="1.5" fill="#94A3B8"/>
-                            <rect x="70" y="44" width="30" height="3" rx="1.5" fill="#94A3B8"/>
-                            <rect x="35" y="48" width="65" height="48" rx="14" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
-                            <circle cx="54" cy="72" r="13" fill="#FBBF24"/>
-                            <rect x="46" y="68" width="16" height="2.5" rx="1.2" fill="#1E293B"/>
-                            <rect x="46" y="74" width="16" height="2.5" rx="1.2" fill="#1E293B"/>
-                            <path d="M102 125V92C102 86 93 86 93 92V102C93 105 90 107 86 107C82 107 80 103 80 99V88C80 83 73 83 73 88V120" stroke="#1E293B" stroke-width="3.5" stroke-linecap="round"/>
-                            <path d="M83 83C83 77 93 77 93 83V102" stroke="#1E293B" stroke-width="3" stroke-linecap="round" fill="#D97706"/>
-                            <circle cx="106" cy="72" r="7.5" fill="#10B981"/>
-                            <rect x="68" y="120" width="38" height="18" rx="4" fill="#1E293B"/>
+                        <svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="100" cy="75" r="65" fill="#EDE7FF" opacity="0.6"/>
+                            <rect x="52" y="32" width="96" height="66" rx="14" fill="#FFFFFF" stroke="#5B3FE8" stroke-width="2"/>
+                            <rect x="68" y="48" width="54" height="4" rx="2" fill="#5B3FE8"/>
+                            <rect x="68" y="58" width="64" height="3" rx="1.5" fill="#CBD5E1"/>
+                            <rect x="68" y="66" width="45" height="3" rx="1.5" fill="#E2E8F0"/>
+                            <rect x="68" y="74" width="56" height="3" rx="1.5" fill="#E2E8F0"/>
+                            <circle cx="138" cy="40" r="14" fill="#8B4AD9"/>
+                            <path d="M138 33L145 37L138 41L131 37L138 33Z" fill="#FFFFFF"/>
+                            <path d="M133.5 39V43C133.5 44.5 135.5 45.5 138 45.5C140.5 45.5 142.5 44.5 142.5 43V39" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round"/>
+                            <path d="M145 38V43" stroke="#E83FA5" stroke-width="1.2"/>
+                            <rect x="26" y="72" width="62" height="40" rx="10" fill="#FFFFFF" stroke="#E83FA5" stroke-width="1.8"/>
+                            <circle cx="40" cy="88" r="4.5" fill="#E83FA5"/>
+                            <rect x="49" y="85" width="28" height="3" rx="1.5" fill="#E83FA5"/>
+                            <rect x="49" y="91" width="20" height="2.5" rx="1.2" fill="#CBD5E1"/>
+                            <rect x="112" y="82" width="64" height="40" rx="10" fill="#FFFFFF" stroke="#5B3FE8" stroke-width="1.8"/>
+                            <circle cx="126" cy="98" r="4.5" fill="#5B3FE8"/>
+                            <rect x="135" y="95" width="30" height="3" rx="1.5" fill="#5B3FE8"/>
+                            <rect x="135" y="101" width="22" height="2.5" rx="1.2" fill="#CBD5E1"/>
+                            <path d="M42 32L43.5 36L47 37.5L43.5 39L42 43L40.5 39L37 37.5L40.5 36L42 32Z" fill="#E83FA5" opacity="0.8"/>
+                            <path d="M165 62L166.5 65L169.5 66.5L166.5 68L165 71L163.5 68L160.5 66.5L163.5 65L165 62Z" fill="#8B4AD9" opacity="0.8"/>
                         </svg>
                     </div>
-                    <h3 class="chat-empty-title">No conversation selected</h3>
-                    <p class="chat-empty-subtitle">Use the toggle to switch between single and split pane modes, or pick a conversation from the list to start messaging.</p>
+                    <h3 class="chat-empty-title">Welcome to SmartLearn Discussions</h3>
+                    <p class="chat-empty-subtitle">Select a discussion from the left to collaborate with your classmates, ask questions to your instructors, and share course materials.</p>
                 </div>
 
-                <!-- MESSAGES CONTAINER (Screenshot 2 & 3) -->
+                <!-- MESSAGES CONTAINER -->
                 <div class="chat-messages-container" id="chatMessagesContainer" style="display: none;">
                     <!-- Populated dynamically by chat.js -->
                 </div>
 
-                <!-- COMPOSER AREA (Screenshot 2 & 3) -->
+                <!-- COMPOSER AREA -->
                 <div class="chat-composer" id="chatComposer" style="display: none;">
                     <div class="emoji-picker-popup" id="chatEmojiPopup" style="display: none;">
                         <span class="emoji-option">👍</span>
@@ -275,17 +325,17 @@
                     <div class="composer-attachment-preview" id="composerAttachmentPreview" style="display: none;"></div>
 
                     <div class="composer-input-row">
-                        <button type="button" class="composer-add-btn" id="chatAttachBtn" title="Add attachment or media">
+                        <button type="button" class="composer-add-btn" id="chatAttachBtn" title="Add course document or media">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                         <div class="composer-textarea-wrapper">
-                            <textarea class="composer-textarea" id="chatComposerTextarea" placeholder="Message... (Type @ to mention)" rows="1"></textarea>
+                            <textarea class="composer-textarea" id="chatComposerTextarea" placeholder="Message your classmates or instructor... (Type @ to mention)" rows="1"></textarea>
                             <button type="button" class="composer-emoji-btn" id="chatEmojiBtn" title="Insert emoji">
                                 <i class="fa-regular fa-face-smile"></i>
                             </button>
                         </div>
                         <button type="button" class="composer-send-pill-btn" id="chatSendBtn" title="Send message" disabled>
-                            Send
+                            <i class="fa-solid fa-paper-plane mr-1"></i> Send
                         </button>
                     </div>
                 </div>

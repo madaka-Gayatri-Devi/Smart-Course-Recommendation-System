@@ -1270,104 +1270,35 @@
 
     function updateCategoryBadges() {
 
-
-
         const unreadTotal = conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+        const groupsTotal = conversations.filter(c => c.type === 'COURSE_GROUP' || c.type === 'CUSTOM_GROUP').length;
+        const personalTotal = conversations.filter(c => c.type === 'PERSONAL').length;
 
-
-
-        const groupsUnread = conversations.filter(c => c.type === 'COURSE_GROUP' || c.type === 'CUSTOM_GROUP').reduce((acc, c) => acc + (c.unread_count || 0), 0);
-
-
-
-        const personalUnread = conversations.filter(c => c.type === 'PERSONAL').reduce((acc, c) => acc + (c.unread_count || 0), 0);
-
-
-
-
-
-
-
+        const badgeAll = document.getElementById('catAllBadge');
         const badgeUnread = document.getElementById('catUnreadBadge');
-
-
-
         const badgeGroups = document.getElementById('catGroupsBadge');
-
-
-
         const badgePersonal = document.getElementById('catPersonalBadge');
 
-
-
-
-
-
+        if (badgeAll) {
+            badgeAll.textContent = conversations ? conversations.length : 0;
+            badgeAll.style.display = 'inline-flex';
+        }
 
         if (badgeUnread) {
-
-
-
             badgeUnread.textContent = unreadTotal > 99 ? '99+' : unreadTotal;
-
-
-
-            badgeUnread.style.display = unreadTotal > 0 ? 'inline-block' : 'none';
-
-
-
+            badgeUnread.style.display = unreadTotal > 0 ? 'inline-flex' : 'none';
         }
-
-
-
-
-
-
 
         if (badgeGroups) {
-
-
-
-            badgeGroups.textContent = groupsUnread > 99 ? '99+' : groupsUnread;
-
-
-
-            badgeGroups.style.display = groupsUnread > 0 ? 'inline-block' : 'none';
-
-
-
+            badgeGroups.textContent = groupsTotal;
+            badgeGroups.style.display = 'inline-flex';
         }
-
-
-
-
-
-
 
         if (badgePersonal) {
-
-
-
-            badgePersonal.textContent = personalUnread > 99 ? '99+' : personalUnread;
-
-
-
-            badgePersonal.style.display = personalUnread > 0 ? 'inline-block' : 'none';
-
-
-
+            badgePersonal.textContent = personalTotal;
+            badgePersonal.style.display = 'inline-flex';
         }
-
-
-
     }
-
-
-
-
-
-
-
     function renderEmptyState(messageSub = 'Click "New Chat" to start messaging.') {
 
 
@@ -2141,6 +2072,21 @@
 
 
 
+                const isGroup = (c.type === 'COURSE_GROUP' || c.type === 'CUSTOM_GROUP');
+        let roleOrTypeTag = '';
+        if (isGroup) {
+            roleOrTypeTag = '<span class="chat-conv-tag course-tag"><i class="fa-solid fa-graduation-cap"></i> Group</span>';
+        } else if (c.other_user) {
+            const r = (c.other_user.role || 'Student').toUpperCase();
+            if (r === 'INSTRUCTOR') {
+                roleOrTypeTag = '<span class="chat-conv-tag instructor-tag"><i class="fa-solid fa-chalkboard-user"></i> Instructor</span>';
+            } else if (r === 'ADMIN') {
+                roleOrTypeTag = '<span class="chat-conv-tag admin-tag"><i class="fa-solid fa-user-shield"></i> Admin</span>';
+            } else {
+                roleOrTypeTag = '<span class="chat-conv-tag student-tag"><i class="fa-solid fa-user-graduate"></i> Student</span>';
+            }
+        }
+
         const avatarText = c.other_user ? getInitials(c.other_user.full_name) : (c.title ? c.title.substring(0, 2).toUpperCase() : 'GP');
 
 
@@ -2310,42 +2256,21 @@
 
 
                     <div class="chat-conv-top">
-
-
-
+                    <div class="chat-conv-name-wrapper">
+                        ${roleOrTypeTag}
                         <span class="chat-conv-name" style="${hasUnread ? 'font-weight: 800;' : ''}">
-
-
-
                             ${escapeHTML(c.title)}
-
-
-
                             ${isPinned ? `<i class="fa-solid fa-thumbtack chat-pin-badge"></i>` : ''}
-
-
-
                             ${isMuted ? `<i class="fa-solid fa-volume-xmark chat-mute-badge"></i>` : ''}
-
-
-
                         </span>
-
-
-
-                        <span class="chat-conv-time" style="${hasUnread ? 'color: #5B3FE8; font-weight: 700;' : ''}">${lastMsgTime}</span>
-
-
-
                     </div>
-
-
-
+                    <span class="chat-conv-time" style="${hasUnread ? 'color: var(--color-primary, #5B3FE8); font-weight: 700;' : ''}">${lastMsgTime}</span>
+                </div>
                     <div class="chat-conv-bottom">
 
 
 
-                        <p class="chat-conv-last-msg" style="${hasUnread ? 'font-weight: 700; color: #172033;' : ''}">${escapeHTML(lastMsgText)}</p>
+                        <p class="chat-conv-last-msg" style="${hasUnread ? 'font-weight: 700; color: var(--text-color, #172033);' : ''}">${escapeHTML(lastMsgText)}</p>
 
 
 
@@ -2434,21 +2359,9 @@
 
 
                     <div class="chat-conv-top">
-
-
-
                         <span class="chat-conv-name">${escapeHTML(ac.full_name)}</span>
-
-
-
-                        <span style="font-size: 0.65rem; font-weight: 700; background: #EEF2FF; color: #4F46E5; padding: 2px 6px; border-radius: 99px;">${roleBadge}</span>
-
-
-
+                        <span class="chat-conv-tag ${roleBadge === 'INSTRUCTOR' ? 'instructor-tag' : (roleBadge === 'ADMIN' ? 'admin-tag' : 'student-tag')}">${roleBadge}</span>
                     </div>
-
-
-
                     <div class="chat-conv-bottom">
 
 
@@ -2599,7 +2512,7 @@
 
             const composerTextarea = document.getElementById('chatComposerTextarea');
             if (composerTextarea) {
-                composerTextarea.placeholder = `Message ${conv.title || 'conversation'}... (Type @ to mention)`;
+                composerTextarea.placeholder = `Message ${conv.title || 'your classmates or instructor'}... (Type @ to mention)`;
             }
 
         }
