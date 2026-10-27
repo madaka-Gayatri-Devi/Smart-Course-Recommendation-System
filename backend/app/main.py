@@ -643,6 +643,28 @@ def run_migrations():
 run_migrations()
 
 # --- PASSWORD & TOKEN UTILITIES ---
+def validate_password_complexity(password: str) -> tuple[bool, str]:
+    """
+    Validates password complexity against SmartLearn security policy:
+    - At least 8 characters long
+    - At least one uppercase letter (A-Z)
+    - At least one lowercase letter (a-z)
+    - At least one number (0-9)
+    - At least one special character (!@#$%^&*(),.?":{}|<>)
+    """
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter (A-Z)."
+    if not any(c.islower() for c in password):
+        return False, "Password must contain at least one lowercase letter (a-z)."
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one number (0-9)."
+    special_chars = set("!@#$%^&*(),.?\":{}|<>-=_+[]\\/`~;'")
+    if not any(c in special_chars for c in password):
+        return False, "Password must contain at least one special character (e.g. @, #, !, $)."
+    return True, ""
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifies a plaintext password against a stored bcrypt hash.
@@ -790,12 +812,12 @@ def seed_initial_data():
         # 11. Chat & Conversations (Preserve persistent message history across deployments)
         try:
             try:
-                from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB
+                from app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB
             except ImportError:
                 try:
-                    from models.chat import ConversationDB, ConversationMemberDB, MessageDB
+                    from models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB
                 except ImportError:
-                    from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB
+                    from backend.app.models.chat import ConversationDB, ConversationMemberDB, MessageDB, MessageReactionDB, MessageAttachmentDB
 
             if db.query(ConversationDB).count() == 0:
                 for c in seed_data.get("conversations", []):
@@ -815,6 +837,24 @@ def seed_initial_data():
                     db.merge(MessageDB(**clean_m))
                 db.commit()
                 db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('messages', []))} chat messages.")
+
+            # 11.1 Message Attachments
+            if db.query(MessageAttachmentDB).count() == 0 and "message_attachments" in seed_data:
+                valid_att_cols = {col.name for col in MessageAttachmentDB.__table__.columns}
+                for att in seed_data.get("message_attachments", []):
+                    clean_att = {k: v for k, v in att.items() if k in valid_att_cols}
+                    db.merge(MessageAttachmentDB(**clean_att))
+                db.commit()
+                db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('message_attachments', []))} message attachments.")
+
+            # 11.2 Message Reactions
+            if db.query(MessageReactionDB).count() == 0 and "message_reactions" in seed_data:
+                valid_react_cols = {col.name for col in MessageReactionDB.__table__.columns}
+                for r in seed_data.get("message_reactions", []):
+                    clean_r = {k: v for k, v in r.items() if k in valid_react_cols}
+                    db.merge(MessageReactionDB(**clean_r))
+                db.commit()
+                db_logger.info(f"[DB Seed] Initialized {len(seed_data.get('message_reactions', []))} message reactions.")
         except Exception as _chat_seed_err:
             db_logger.warning(f"[DB Seed] Chat seeding notice: {_chat_seed_err}")
 
@@ -2165,8 +2205,9 @@ def register(user: UserRegister, request: Request, db: Session = Depends(get_db)
             detail="Admin accounts cannot be registered publicly. Please choose Student or Instructor."
         )
     
-    if len(user.password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+    valid, err_msg = validate_password_complexity(user.password)
+    if not valid:
+        raise HTTPException(status_code=400, detail=err_msg)
 
     db_user = db.query(UserDB).filter(func.lower(UserDB.email) == clean_email).first()
     if db_user:
@@ -2551,16 +2592,26 @@ def sync_user_to_seed_data(user_id: int, updated_user_fields: dict = None, updat
                 seed = json.load(f)
 
             if updated_user_fields and "users" in seed:
+                found_u = False
                 for u in seed["users"]:
                     if u.get("id") == user_id:
                         u.update(updated_user_fields)
+                        found_u = True
                         break
+                if not found_u and "id" in updated_user_fields:
+                    seed["users"].append(updated_user_fields)
 
             if updated_profile_fields and "profiles" in seed:
+                found_p = False
                 for p in seed["profiles"]:
                     if p.get("user_id") == user_id:
                         p.update(updated_profile_fields)
+                        found_p = True
                         break
+                if not found_p:
+                    prof_entry = {"user_id": user_id}
+                    prof_entry.update(updated_profile_fields)
+                    seed["profiles"].append(prof_entry)
 
             with open(seed_file, "w", encoding="utf-8") as f:
                 json.dump(seed, f, indent=2, ensure_ascii=False)
@@ -2599,8 +2650,9 @@ def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_c
     if not verify_password(payload.current_password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect current password.")
 
-    if len(payload.new_password) < 8:
-        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+    valid, err_msg = validate_password_complexity(payload.new_password)
+    if not valid:
+        raise HTTPException(status_code=400, detail=err_msg)
 
     db_user.hashed_password = get_password_hash(payload.new_password)
     db.add(db_user)
@@ -2696,8 +2748,9 @@ def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends
     Error handling:
         Raises HTTP 400 for expired or corrupted reset tokens or weak passwords.
     """
-    if len(payload.new_password) < 8:
-        raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+    valid, err_msg = validate_password_complexity(payload.new_password)
+    if not valid:
+        raise HTTPException(status_code=400, detail=err_msg)
 
     if payload.token:
         token_rec = db.query(PasswordResetTokenDB).filter(
@@ -3231,8 +3284,9 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
             raise HTTPException(status_code=400, detail="Current password is required to update your password.")
         if not verify_password(profile_data.current_password.strip(), db_user.hashed_password):
             raise HTTPException(status_code=400, detail="Incorrect current password.")
-        if len(new_pwd) < 8:
-            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long.")
+        valid, err_msg = validate_password_complexity(new_pwd)
+        if not valid:
+            raise HTTPException(status_code=400, detail=err_msg)
         db_user.hashed_password = get_password_hash(new_pwd)
         db.add(db_user)
 

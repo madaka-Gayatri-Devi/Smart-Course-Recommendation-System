@@ -4814,3 +4814,14 @@
 
 
 
+
+/* SMARTLEARN CHAT PAGE ELEVATION: Keep bot toggle above composer */
+body.chat-page-body #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+body.chat-page-body #smartlearn-chatbot-root.pos-right .smartlearn-chatbot-toggle,
+body.chat-page-body .smartlearn-chatbot-toggle,
+body:has(#chatComposerTextarea) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+body:has(.chat-composer) #smartlearn-chatbot-root .smartlearn-chatbot-toggle {
+    bottom: 84px !important;
+    right: 24px !important;
+    z-index: 85 !important;
+}

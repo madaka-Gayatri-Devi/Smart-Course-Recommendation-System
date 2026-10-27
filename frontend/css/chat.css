@@ -2716,7 +2716,7 @@
 
 
 
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 
 
 
@@ -2864,7 +2864,7 @@
 
 
 
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 
 
 
@@ -13241,7 +13241,10 @@
 .chat-msg-bubble-box {
     display: flex;
     flex-direction: column;
-    max-width: min(75%, 680px);
+    max-width: min(78%, 700px);
+    min-width: 90px;
+    width: fit-content;
+    box-sizing: border-box;
 }
 
 .chat-msg-row.outgoing .chat-msg-bubble-box {
@@ -13255,7 +13258,9 @@
     line-height: 1.5;
     position: relative;
     word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    min-width: 90px;
+    width: fit-content;
     box-sizing: border-box;
 }
 
@@ -13294,23 +13299,33 @@
 .incoming .msg-text-content a {
     color: var(--color-primary, #5B3FE8);
     text-decoration: underline;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .outgoing .msg-text-content a {
     color: #EDE7FF !important;
     text-decoration: underline;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .msg-meta-row {
-    display: flex;
+    display: inline-flex !important;
     align-items: center;
     gap: 0.35rem;
     font-size: 11px;
     color: var(--text-secondary, #94A3B8);
     margin-top: 0.35rem;
     justify-content: flex-end;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.msg-meta-row span,
+.msg-meta-row time,
+.msg-meta-row .msg-time {
+    white-space: nowrap !important;
+    font-variant-numeric: tabular-nums !important;
+    flex-shrink: 0 !important;
 }
 
 .outgoing .msg-meta-row {

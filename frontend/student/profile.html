@@ -375,11 +375,27 @@
                                     <div class="form-row mb-3">
                                         <div class="form-group">
                                             <label style="font-size: 13px; font-weight: 600;">New Password</label>
-                                            <input type="password" class="form-control" id="changeNewPassword" placeholder="Minimum 8 characters" required>
+                                            <input type="password" class="form-control" id="changeNewPassword" placeholder="Minimum 8 characters" required autocomplete="new-password">
                                         </div>
                                         <div class="form-group">
                                             <label style="font-size: 13px; font-weight: 600;">Confirm New Password</label>
-                                            <input type="password" class="form-control" id="changeConfirmPassword" placeholder="••••••••" required>
+                                            <input type="password" class="form-control" id="changeConfirmPassword" placeholder="••••••••" required autocomplete="new-password">
+                                        </div>
+                                    </div>
+                                    <div class="password-complexity-box" id="studentPasswordComplexityBox" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 12px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                            <span style="font-weight: 600; color: #475569;">Password Strength:</span>
+                                            <span id="studentPassStrengthLabel" style="font-weight: 700; color: #94A3B8;">None</span>
+                                        </div>
+                                        <div style="height: 5px; width: 100%; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-bottom: 0.65rem;">
+                                            <div id="studentPassStrengthBar" style="height: 100%; width: 0%; background: #EF4444; transition: all 0.25s ease;"></div>
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; color: #64748B;">
+                                            <div id="student-req-len"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> 8+ characters</div>
+                                            <div id="student-req-upper"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Uppercase letter (A-Z)</div>
+                                            <div id="student-req-lower"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Lowercase letter (a-z)</div>
+                                            <div id="student-req-num"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Number (0-9)</div>
+                                            <div id="student-req-spec" style="grid-column: 1 / -1;"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Special symbol (!@#$%^&*...)</div>
                                         </div>
                                     </div>
                                     <div id="changePasswordMsg" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 13px;"></div>
@@ -558,16 +574,12 @@
 
             if (profileData) {
 
-                if (profileData.phone) {
-                    if (sidePhone) sidePhone.textContent = profileData.phone;
-                    if (editPhone) editPhone.value = profileData.phone;
-                }
-                if (profileData.dob && editDob) editDob.value = profileData.dob;
-                if (profileData.gender && editGender) editGender.value = profileData.gender;
-                if (profileData.city) {
-                    if (sideCity) sideCity.textContent = profileData.city;
-                    if (editCity) editCity.value = profileData.city;
-                }
+                if (sidePhone) sidePhone.textContent = profileData.phone || 'Not provided';
+                if (editPhone) editPhone.value = profileData.phone || '';
+                if (editDob) editDob.value = profileData.dob || '';
+                if (editGender) editGender.value = profileData.gender || '';
+                if (sideCity) sideCity.textContent = profileData.city || 'Not set';
+                if (editCity) editCity.value = profileData.city || '';
 
                 // Career Goal
                 if (profileData.career_goal) {
@@ -671,6 +683,66 @@
                 e.target.checked = !enabled;
                 showAlert('Failed to update 2FA status: ' + (err.message || 'Error'), false);
             }
+        });
+
+        
+        // Password Complexity Real-Time Validator
+        function checkPasswordComplexity(pwd) {
+            return {
+                len: pwd.length >= 8,
+                upper: /[A-Z]/.test(pwd),
+                lower: /[a-z]/.test(pwd),
+                num: /[0-9]/.test(pwd),
+                spec: /[!@#$%^&*(),.?":{}|<>\-_=+[\]\/`~;']/.test(pwd)
+            };
+        }
+
+        function updateStudentPasswordMeter(pwd) {
+            const c = checkPasswordComplexity(pwd);
+            const setReq = (id, valid, text) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = valid 
+                    ? `<i class="fa-solid fa-circle-check" style="color:#10B981; margin-right:4px;"></i> <span style="color:#065F46; font-weight:600;">${text}</span>`
+                    : `<i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> <span style="color:#64748B;">${text}</span>`;
+            };
+            setReq('student-req-len', c.len, '8+ characters');
+            setReq('student-req-upper', c.upper, 'Uppercase letter (A-Z)');
+            setReq('student-req-lower', c.lower, 'Lowercase letter (a-z)');
+            setReq('student-req-num', c.num, 'Number (0-9)');
+            setReq('student-req-spec', c.spec, 'Special symbol (!@#$%^&*...)');
+
+            const score = Object.values(c).filter(Boolean).length;
+            const bar = document.getElementById('studentPassStrengthBar');
+            const lbl = document.getElementById('studentPassStrengthLabel');
+            if (bar && lbl) {
+                if (!pwd) {
+                    bar.style.width = '0%';
+                    bar.style.background = '#EF4444';
+                    lbl.textContent = 'None';
+                    lbl.style.color = '#94A3B8';
+                } else if (score <= 2) {
+                    bar.style.width = '30%';
+                    bar.style.background = '#EF4444';
+                    lbl.textContent = 'Weak';
+                    lbl.style.color = '#EF4444';
+                } else if (score < 5) {
+                    bar.style.width = '70%';
+                    bar.style.background = '#F59E0B';
+                    lbl.textContent = 'Moderate';
+                    lbl.style.color = '#F59E0B';
+                } else {
+                    bar.style.width = '100%';
+                    bar.style.background = '#10B981';
+                    lbl.textContent = 'Strong & Secure';
+                    lbl.style.color = '#10B981';
+                }
+            }
+            return score === 5;
+        }
+
+        document.getElementById('changeNewPassword')?.addEventListener('input', (e) => {
+            updateStudentPasswordMeter(e.target.value);
         });
 
         // Change Password form handler
@@ -1108,8 +1180,9 @@
                             saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
                             return;
                         }
-                        if (newPassInput.length < 8) {
-                            showAlert('New password must be at least 8 characters long.', false);
+                        const c = checkPasswordComplexity(newPassInput);
+                        if (!c.len || !c.upper || !c.lower || !c.num || !c.spec) {
+                            showAlert('New password must meet all complexity requirements: 8+ chars, uppercase, lowercase, number, and special character.', false);
                             saveAllBtn.disabled = false;
                             saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
                             return;

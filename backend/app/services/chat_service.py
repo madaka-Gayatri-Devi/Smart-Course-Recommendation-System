@@ -295,8 +295,15 @@ class ChatService:
 # ----------------------------------------------------------------------------
 # Access Control & Group Membership Management
 # ----------------------------------------------------------------------------
+    _last_course_groups_sync = 0.0
+
     @staticmethod
-    def ensure_course_groups(db: Session):
+    def ensure_course_groups(db: Session, force: bool = False):
+        import time
+        now = time.time()
+        if not force and (now - ChatService._last_course_groups_sync < 300):
+            return
+        ChatService._last_course_groups_sync = now
         """
         Auto-create course group conversations for all published/existing courses and auto-enroll members.
 
@@ -932,6 +939,13 @@ class ChatService:
 
         conversations = db.query(ConversationDB).filter(ConversationDB.id.in_(conv_ids)).order_by(ConversationDB.updated_at.desc()).all()
 
+        # Pre-fetch user deletions once for all conversations
+        user_deleted_ids = set(
+            row[0] for row in db.query(MessageUserDeletionDB.message_id).filter(
+                MessageUserDeletionDB.user_id == current_user.id
+            ).all()
+        )
+
         res = []
         for conv in conversations:
             mem = mem_map.get(conv.id)
@@ -939,12 +953,7 @@ class ChatService:
             is_pinned = bool(mem.is_pinned) if mem else False
             last_read_id = mem.last_read_message_id if mem else 0
 
-            # User deletions filter
-            user_deleted_ids = set(
-                row[0] for row in db.query(MessageUserDeletionDB.message_id).filter(
-                    MessageUserDeletionDB.user_id == current_user.id
-                ).all()
-            )
+            # User deletions filter (cached outside loop)
 
             # Last message query
             last_msg_query = db.query(MessageDB).filter(
@@ -1117,63 +1126,71 @@ class ChatService:
         messages = query.order_by(MessageDB.id.desc()).limit(limit).all()
         messages.reverse()  # Chronological order
 
+        non_del_ids = [m.id for m in messages if not (m.is_deleted or m.deleted_for_everyone)]
+
+        # 1. Batch load senders & avatars
+        sender_ids = {m.sender_id for m in messages if m.sender_id}
+        senders_map = {u.id: u for u in db.query(UserDB).filter(UserDB.id.in_(sender_ids)).all()} if sender_ids else {}
+        profiles_map = {p.user_id: p.profile_image for p in db.query(ProfileDB.user_id, ProfileDB.profile_image).filter(ProfileDB.user_id.in_(sender_ids)).all()} if sender_ids else {}
+
+        # 2. Batch load reactions
+        reactions_by_msg = {}
+        if non_del_ids:
+            all_reactions = db.query(MessageReactionDB).filter(MessageReactionDB.message_id.in_(non_del_ids)).all()
+            react_uids = {r.user_id for r in all_reactions if r.user_id}
+            react_users_map = {u.id: u.full_name for u in db.query(UserDB.id, UserDB.full_name).filter(UserDB.id.in_(react_uids)).all()} if react_uids else {}
+            for r in all_reactions:
+                reactions_by_msg.setdefault(r.message_id, []).append(MessageReactionSchema(
+                    id=r.id,
+                    message_id=r.message_id,
+                    user_id=r.user_id,
+                    user_name=react_users_map.get(r.user_id, "User"),
+                    emoji=r.emoji,
+                    created_at=r.created_at
+                ))
+
+        # 3. Batch load attachments
+        attachments_by_msg = {}
+        if non_del_ids:
+            all_attachments = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id.in_(non_del_ids)).all()
+            for a in all_attachments:
+                attachments_by_msg.setdefault(a.message_id, []).append(MessageAttachmentSchema(
+                    id=a.id,
+                    message_id=a.message_id,
+                    file_name=a.file_name,
+                    file_path=a.file_path,
+                    file_type=a.file_type,
+                    file_size=a.file_size,
+                    created_at=a.created_at,
+                    download_url=f"/chat/files/{a.id}"
+                ))
+
+        # 4. Batch load reply previews
+        reply_ids = [m.reply_to_message_id for m in messages if m.reply_to_message_id and not (m.is_deleted or m.deleted_for_everyone)]
+        replies_map = {}
+        if reply_ids:
+            reply_msgs = db.query(MessageDB).filter(MessageDB.id.in_(reply_ids)).all()
+            r_sender_ids = {rm.sender_id for rm in reply_msgs if rm.sender_id}
+            r_senders_map = {u.id: u.full_name for u in db.query(UserDB.id, UserDB.full_name).filter(UserDB.id.in_(r_sender_ids)).all()} if r_sender_ids else {}
+            for rm in reply_msgs:
+                is_r_del = bool(rm.is_deleted or rm.deleted_for_everyone or rm.id in deleted_msg_ids)
+                replies_map[rm.id] = {
+                    "id": rm.id,
+                    "sender_name": r_senders_map.get(rm.sender_id, "User"),
+                    "content": "Message deleted" if is_r_del else (rm.content or "Attachment")
+                }
+
+        # 5. Batch load forwarded flags
+        forwarded_msg_ids = set()
+        if non_del_ids:
+            fwd_rows = db.query(MessageForwardDB.forwarded_message_id).filter(MessageForwardDB.forwarded_message_id.in_(non_del_ids)).all()
+            forwarded_msg_ids = {r[0] for r in fwd_rows}
+
         res = []
         for msg in messages:
             is_del = bool(msg.is_deleted or msg.deleted_for_everyone)
-
-            # Reactions
-            reactions_schemas = []
-            if not is_del:
-                reactions_db = db.query(MessageReactionDB).filter(MessageReactionDB.message_id == msg.id).all()
-                for r in reactions_db:
-                    u = db.query(UserDB).filter(UserDB.id == r.user_id).first()
-                    reactions_schemas.append(MessageReactionSchema(
-                        id=r.id,
-                        message_id=r.message_id,
-                        user_id=r.user_id,
-                        user_name=u.full_name if u else "User",
-                        emoji=r.emoji,
-                        created_at=r.created_at
-                    ))
-
-            # Attachments
-            attach_schemas = []
-            if not is_del:
-                attach_db = db.query(MessageAttachmentDB).filter(MessageAttachmentDB.message_id == msg.id).all()
-                attach_schemas = [
-                    MessageAttachmentSchema(
-                        id=a.id,
-                        message_id=a.message_id,
-                        file_name=a.file_name,
-                        file_path=a.file_path,
-                        file_type=a.file_type,
-                        file_size=a.file_size,
-                        created_at=a.created_at,
-                        download_url=f"/chat/files/{a.id}"
-                    ) for a in attach_db
-                ]
-
-            # Reply to preview
-            reply_dict = None
-            if not is_del and msg.reply_to_message_id:
-                reply_msg = db.query(MessageDB).filter(MessageDB.id == msg.reply_to_message_id).first()
-                if reply_msg:
-                    r_sender = db.query(UserDB).filter(UserDB.id == reply_msg.sender_id).first()
-                    is_r_del = bool(reply_msg.is_deleted or reply_msg.deleted_for_everyone or reply_msg.id in deleted_msg_ids)
-                    reply_dict = {
-                        "id": reply_msg.id,
-                        "sender_name": r_sender.full_name if r_sender else "User",
-                        "content": "Message deleted" if is_r_del else (reply_msg.content or "Attachment")
-                    }
-
-            # Forward check
-            is_forwarded = False
-            if not is_del:
-                is_forwarded = db.query(MessageForwardDB).filter(MessageForwardDB.forwarded_message_id == msg.id).count() > 0
-
-            # Sender info
-            sender = db.query(UserDB).filter(UserDB.id == msg.sender_id).first()
-            prof = db.query(ProfileDB).filter(ProfileDB.user_id == msg.sender_id).first() if sender else None
+            sender = senders_map.get(msg.sender_id)
+            avatar_url = profiles_map.get(msg.sender_id)
 
             content_text = "This message was deleted" if is_del else (msg.content or "")
 
@@ -1183,23 +1200,23 @@ class ChatService:
                 sender_id=msg.sender_id,
                 sender_name=sender.full_name if sender else (msg.sender_name or "User"),
                 sender_role=sender.role if sender else (msg.sender_role or "User"),
-                sender_avatar=prof.profile_image if prof else None,
+                sender_avatar=avatar_url,
                 message_type=msg.message_type if not is_del else "TEXT",
                 content=content_text,
                 is_edited=bool(msg.is_edited) if not is_del else False,
                 original_content=msg.original_content if not is_del else None,
                 edited_at=msg.edited_at if not is_del else None,
                 reply_to_message_id=msg.reply_to_message_id if not is_del else None,
-                reply_to_message=reply_dict,
+                reply_to_message=replies_map.get(msg.reply_to_message_id) if not is_del else None,
                 is_deleted=is_del,
                 deleted_for_everyone=bool(msg.deleted_for_everyone),
                 deleted_at=msg.deleted_at,
                 deleted_by=msg.deleted_by,
                 is_announcement=bool(msg.is_announcement) if not is_del else False,
                 created_at=msg.created_at,
-                reactions=reactions_schemas,
-                attachments=attach_schemas,
-                is_forwarded=is_forwarded,
+                reactions=reactions_by_msg.get(msg.id, []) if not is_del else [],
+                attachments=attachments_by_msg.get(msg.id, []) if not is_del else [],
+                is_forwarded=(msg.id in forwarded_msg_ids) if not is_del else False,
                 status="READ" if msg.sender_id == current_user.id else "DELIVERED"
             ))
 

@@ -8380,7 +8380,7 @@
 
 
 
-                            <div class="msg-text-content">${escapeHTML(msg.content)}</div>
+                            ${(msg.content && msg.content.trim()) ? `<div class="msg-text-content">${escapeHTML(msg.content)}</div>` : (!attachmentsHtml ? `<div class="msg-text-content" style="font-style: italic; opacity: 0.85;">[Shared attachment / resource]</div>` : '')}
 
 
 

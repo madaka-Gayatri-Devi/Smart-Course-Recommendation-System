@@ -172,14 +172,30 @@
                             <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Current Password</label>
                             <input type="password" id="instOldPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required>
                         </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
                             <div>
                                 <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">New Password</label>
-                                <input type="password" id="instNewPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="Min 8 characters" required>
+                                <input type="password" id="instNewPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="Min 8 characters" required autocomplete="new-password">
                             </div>
                             <div>
                                 <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Confirm New Password</label>
-                                <input type="password" id="instConfirmPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required>
+                                <input type="password" id="instConfirmPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required autocomplete="new-password">
+                            </div>
+                        </div>
+                        <div class="password-complexity-box" id="instPasswordComplexityBox" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <span style="font-weight: 600; color: #475569;">Password Strength:</span>
+                                <span id="instPassStrengthLabel" style="font-weight: 700; color: #94A3B8;">None</span>
+                            </div>
+                            <div style="height: 5px; width: 100%; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-bottom: 0.65rem;">
+                                <div id="instPassStrengthBar" style="height: 100%; width: 0%; background: #EF4444; transition: all 0.25s ease;"></div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; color: #64748B;">
+                                <div id="inst-req-len"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> 8+ characters</div>
+                                <div id="inst-req-upper"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Uppercase letter (A-Z)</div>
+                                <div id="inst-req-lower"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Lowercase letter (a-z)</div>
+                                <div id="inst-req-num"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Number (0-9)</div>
+                                <div id="inst-req-spec" style="grid-column: 1 / -1;"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Special symbol (!@#$%^&*...)</div>
                             </div>
                         </div>
 
@@ -309,7 +325,67 @@
                 }
             });
 
-            // Change Password Form Listener
+            
+        // Password Complexity Real-Time Validator
+        function checkPasswordComplexity(pwd) {
+            return {
+                len: pwd.length >= 8,
+                upper: /[A-Z]/.test(pwd),
+                lower: /[a-z]/.test(pwd),
+                num: /[0-9]/.test(pwd),
+                spec: /[!@#$%^&*(),.?":{}|<>\-_=+[\]\/`~;']/.test(pwd)
+            };
+        }
+
+        function updateInstPasswordMeter(pwd) {
+            const c = checkPasswordComplexity(pwd);
+            const setReq = (id, valid, text) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = valid 
+                    ? `<i class="fa-solid fa-circle-check" style="color:#10B981; margin-right:4px;"></i> <span style="color:#065F46; font-weight:600;">${text}</span>`
+                    : `<i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> <span style="color:#64748B;">${text}</span>`;
+            };
+            setReq('inst-req-len', c.len, '8+ characters');
+            setReq('inst-req-upper', c.upper, 'Uppercase letter (A-Z)');
+            setReq('inst-req-lower', c.lower, 'Lowercase letter (a-z)');
+            setReq('inst-req-num', c.num, 'Number (0-9)');
+            setReq('inst-req-spec', c.spec, 'Special symbol (!@#$%^&*...)');
+
+            const score = Object.values(c).filter(Boolean).length;
+            const bar = document.getElementById('instPassStrengthBar');
+            const lbl = document.getElementById('instPassStrengthLabel');
+            if (bar && lbl) {
+                if (!pwd) {
+                    bar.style.width = '0%';
+                    bar.style.background = '#EF4444';
+                    lbl.textContent = 'None';
+                    lbl.style.color = '#94A3B8';
+                } else if (score <= 2) {
+                    bar.style.width = '30%';
+                    bar.style.background = '#EF4444';
+                    lbl.textContent = 'Weak';
+                    lbl.style.color = '#EF4444';
+                } else if (score < 5) {
+                    bar.style.width = '70%';
+                    bar.style.background = '#F59E0B';
+                    lbl.textContent = 'Moderate';
+                    lbl.style.color = '#F59E0B';
+                } else {
+                    bar.style.width = '100%';
+                    bar.style.background = '#10B981';
+                    lbl.textContent = 'Strong & Secure';
+                    lbl.style.color = '#10B981';
+                }
+            }
+            return score === 5;
+        }
+
+        document.getElementById('instNewPassword')?.addEventListener('input', (e) => {
+            updateInstPasswordMeter(e.target.value);
+        });
+
+        // Change Password Form Listener
             document.getElementById('instChangePasswordForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const oldPass = document.getElementById('instOldPassword').value;
@@ -318,12 +394,13 @@
                 const msgBox = document.getElementById('instPassMsg');
                 const btn = document.getElementById('instChangePassBtn');
 
-                if (newPass.length < 8) {
+                const c = checkPasswordComplexity(newPass);
+                if (!c.len || !c.upper || !c.lower || !c.num || !c.spec) {
                     msgBox.style.display = 'block';
                     msgBox.style.background = '#FEF2F2';
                     msgBox.style.color = '#991B1B';
                     msgBox.style.border = '1px solid #FECACA';
-                    msgBox.textContent = 'New password must be at least 8 characters long.';
+                    msgBox.textContent = 'Password must meet all complexity requirements: 8+ chars, uppercase, lowercase, number, and special character.';
                     return;
                 }
 

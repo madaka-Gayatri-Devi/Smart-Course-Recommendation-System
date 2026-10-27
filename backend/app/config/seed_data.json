@@ -255,9 +255,9 @@
     },
     {
       "id": 31,
-      "full_name": "Harsha",
+      "full_name": "Harsha Vardhan",
       "email": "harsha@gmail.com",
-      "hashed_password": "$2b$12$U3JFefDt33rmDN2se3jMw.y1GBgnLF/9BJOvgUb2u3dpZHjxniif.",
+      "hashed_password": "$2b$12$fCrhyg9k/siZATIzJs0sJeWjePe/JLKzSNsWiTUflPmwZBBdrxta2",
       "role": "Student",
       "is_active": 1,
       "created_at": "2026-09-17",
@@ -995,100 +995,19 @@
     {
       "id": 28,
       "user_id": 31,
-      "phone": "+91 9032202647",
+      "phone": "9876543210",
       "dob": "2005-10-10",
       "gender": "Male",
       "city": "Hyderabad",
       "career_goal": "Cyber Security Analyst",
-      "skills": [
-        {
-          "skill": "Python",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Java",
-          "level": "Advanced"
-        },
-        {
-          "skill": "HTML",
-          "level": "Expert"
-        },
-        {
-          "skill": "CSS",
-          "level": "Expert"
-        },
-        {
-          "skill": "JavaScript",
-          "level": "Advanced"
-        },
-        {
-          "skill": "React",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Node.js",
-          "level": "Intermediate"
-        },
-        {
-          "skill": "SQL",
-          "level": "Advanced"
-        },
-        {
-          "skill": "TypeScript",
-          "level": "Advanced"
-        },
-        {
-          "skill": "Prompt Engineering",
-          "level": "Expert"
-        },
-        {
-          "skill": "C",
-          "level": "Advanced"
-        },
-        {
-          "skill": "OOPs",
-          "level": "Advanced"
-        },
-        {
-          "skill": "DSA",
-          "level": "Advanced"
-        }
-      ],
-      "interests": [
-        "Cyber Security"
-      ],
-      "languages": [
-        "English"
-      ],
-      "education": [
-        {
-          "qualification": "B.Tech / B.E",
-          "institution": "JNTUA",
-          "specialization": "Computer Science and Engineering",
-          "year": "2026",
-          "cgpa": "8.5"
-        }
-      ],
-      "experience": [
-        {
-          "company": "Shnoor International LLC",
-          "role": "Software Engineer Intern",
-          "startDate": "2026-06-01",
-          "endDate": "",
-          "description": ""
-        }
-      ],
-      "projects": [
-        {
-          "title": "AI Based Detection of DeepFake Videos for Digital Forensics",
-          "type": "Full stack Web App",
-          "description": "To identify whether the video is real or deepfake",
-          "githubUrl": "",
-          "liveUrl": ""
-        }
-      ],
+      "skills": [],
+      "interests": [],
+      "languages": [],
+      "education": [],
+      "experience": [],
+      "projects": [],
       "courses": [],
-      "completion_percentage": 100,
+      "completion_percentage": 50,
       "secondary_career_goal": "AI Engineer",
       "profile_image": null,
       "learning_style": null,
@@ -21881,6 +21800,406 @@
       "failure_reason": null,
       "created_at": "2026-10-01 13:13:40",
       "updated_at": "2026-10-01 13:13:40"
+    }
+  ],
+  "message_attachments": [
+    {
+      "id": 1,
+      "message_id": 20,
+      "file_name": "Ai_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/dbe4f5ea015e4495a6312ade41cfb250.pdf",
+      "file_type": "application/pdf",
+      "file_size": 567546,
+      "created_at": "2026-09-29 05:47:30"
+    },
+    {
+      "id": 2,
+      "message_id": 22,
+      "file_name": "admin.jpg",
+      "file_path": "/uploads/chat_files/630f0636f4eb4034907957d48a88a3d0.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 30590,
+      "created_at": "2026-09-29 05:50:30"
+    },
+    {
+      "id": 3,
+      "message_id": 22,
+      "file_name": "admin.jpg",
+      "file_path": "/uploads/chat_files/03a611c8aff84e58bb006061d119af05.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 30590,
+      "created_at": "2026-09-29 05:50:44"
+    },
+    {
+      "id": 4,
+      "message_id": 23,
+      "file_name": "Smart-Course-Recommendation-System(1).zip",
+      "file_path": "/uploads/chat_files/0fc48cc616604fcebab7e0cc82383810.zip",
+      "file_type": "application/x-zip-compressed",
+      "file_size": 38897,
+      "created_at": "2026-09-29 05:51:43"
+    },
+    {
+      "id": 5,
+      "message_id": 25,
+      "file_name": "UNIT III_cybersecurity.pdf",
+      "file_path": "/uploads/chat_files/bef533ad40e54044bfa447da8738d301.pdf",
+      "file_type": "application/pdf",
+      "file_size": 4913466,
+      "created_at": "2026-09-29 05:54:23"
+    },
+    {
+      "id": 6,
+      "message_id": 29,
+      "file_name": "c1.pdf",
+      "file_path": "/uploads/chat_files/fb243253f8f64ba98ea1def8da9a09ec.pdf",
+      "file_type": "application/pdf",
+      "file_size": 491139,
+      "created_at": "2026-09-29 06:23:43"
+    },
+    {
+      "id": 7,
+      "message_id": 29,
+      "file_name": "c2.pdf",
+      "file_path": "/uploads/chat_files/897ade97bec24a3a911975109ac8d128.pdf",
+      "file_type": "application/pdf",
+      "file_size": 878377,
+      "created_at": "2026-09-29 06:23:51"
+    },
+    {
+      "id": 8,
+      "message_id": 30,
+      "file_name": "c2.pdf",
+      "file_path": "/uploads/chat_files/9fc47fdab3c74a51bd08955fc353a2ef.pdf",
+      "file_type": "application/pdf",
+      "file_size": 878377,
+      "created_at": "2026-09-29 07:40:43"
+    },
+    {
+      "id": 9,
+      "message_id": 31,
+      "file_name": "c1.pdf",
+      "file_path": "/uploads/chat_files/96a0b47b639b448cb205efbd0293de22.pdf",
+      "file_type": "application/pdf",
+      "file_size": 491139,
+      "created_at": "2026-09-29 12:23:59"
+    },
+    {
+      "id": 10,
+      "message_id": 32,
+      "file_name": "test_report.pdf",
+      "file_path": "/uploads/chat_files/42733d46974f4fa783775222bcfc21dc.pdf",
+      "file_type": "application/pdf",
+      "file_size": 45,
+      "created_at": "2026-09-29 13:26:38"
+    },
+    {
+      "id": 11,
+      "message_id": 34,
+      "file_name": "SmartLearn_Project_Report.pdf",
+      "file_path": "/uploads/chat_files/0ae328038af34078b35df87488907e42.pdf",
+      "file_type": "application/pdf",
+      "file_size": 233521,
+      "created_at": "2026-09-29 18:28:16"
+    },
+    {
+      "id": 12,
+      "message_id": 35,
+      "file_name": "Book1.xlsx",
+      "file_path": "/uploads/chat_files/21d30e6cf49641e4896050f8436c62f2.xlsx",
+      "file_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "file_size": 8994,
+      "created_at": "2026-09-29 18:28:33"
+    },
+    {
+      "id": 13,
+      "message_id": 0,
+      "file_name": "admin.jpg",
+      "file_path": "/uploads/chat_files/aaaddd66edec42d696870727e11d11dd.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 30590,
+      "created_at": "2026-09-29 18:28:50"
+    },
+    {
+      "id": 14,
+      "message_id": 36,
+      "file_name": "Lord_shiva.jpg",
+      "file_path": "/uploads/chat_files/065ea875a23043f5bab5920569f638d8.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 99473,
+      "created_at": "2026-09-29 18:29:04"
+    },
+    {
+      "id": 15,
+      "message_id": 37,
+      "file_name": "SmartLearn_Complete_Project_Presentation [Repaired].pptx",
+      "file_path": "/uploads/chat_files/6b1a033c576141b9badf2c6eaea04e19.pptx",
+      "file_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "file_size": 1342871,
+      "created_at": "2026-09-29 18:29:43"
+    },
+    {
+      "id": 16,
+      "message_id": 41,
+      "file_name": "suj.jpg",
+      "file_path": "/uploads/chat_files/6425bd655b8f4f11aac7a1f730bf92df.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 23421,
+      "created_at": "2026-09-30 12:19:13"
+    },
+    {
+      "id": 17,
+      "message_id": 43,
+      "file_name": "Ai_in_CyberSecurity_4.docx",
+      "file_path": "/uploads/chat_files/0a7c61d8e2504cb3b68f4ceb44178676.docx",
+      "file_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "file_size": 2515074,
+      "created_at": "2026-09-30 12:41:31"
+    },
+    {
+      "id": 18,
+      "message_id": 44,
+      "file_name": "Ai_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/d784340bd9034825956fa4ae0c6785a5.pdf",
+      "file_type": "application/pdf",
+      "file_size": 567546,
+      "created_at": "2026-10-01 04:45:43"
+    },
+    {
+      "id": 19,
+      "message_id": 47,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/20cf8130aa444cf48d9380c1eb3d7d4f.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-01 05:36:08"
+    },
+    {
+      "id": 20,
+      "message_id": 48,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/ec96068806be4684bb113cf1890067db.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-01 05:39:55"
+    },
+    {
+      "id": 21,
+      "message_id": 49,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/ee79c6ea9620426cbec02ac421638992.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-01 05:44:34"
+    },
+    {
+      "id": 22,
+      "message_id": 53,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/3d0b476b43c2426c97d77f19b0458ead.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-01 06:18:36"
+    },
+    {
+      "id": 23,
+      "message_id": 56,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/3e7024078aee4b00a525fd4797acdcd8.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-01 06:38:07"
+    },
+    {
+      "id": 24,
+      "message_id": 71,
+      "file_name": "test_report.pdf",
+      "file_path": "/uploads/chat_files/d88ea82136b14499a46ed98be887db23.pdf",
+      "file_type": "application/pdf",
+      "file_size": 45,
+      "created_at": "2026-10-05 05:11:53"
+    },
+    {
+      "id": 25,
+      "message_id": 73,
+      "file_name": "Python_Notes.pdf",
+      "file_path": "/uploads/chat_files/ebff891551d1402b810bb3190fd97085.pdf",
+      "file_type": "application/pdf",
+      "file_size": 49,
+      "created_at": "2026-10-05 05:27:11"
+    },
+    {
+      "id": 26,
+      "message_id": 74,
+      "file_name": "Python_Notes.pdf",
+      "file_path": "/uploads/chat_files/ebff891551d1402b810bb3190fd97085.pdf",
+      "file_type": "application/pdf",
+      "file_size": 49,
+      "created_at": "2026-10-05 05:27:12"
+    },
+    {
+      "id": 27,
+      "message_id": 75,
+      "file_name": "Python_Notes.pdf",
+      "file_path": "/uploads/chat_files/ebff891551d1402b810bb3190fd97085.pdf",
+      "file_type": "application/pdf",
+      "file_size": 49,
+      "created_at": "2026-10-05 05:27:12"
+    },
+    {
+      "id": 28,
+      "message_id": 76,
+      "file_name": "test_report.pdf",
+      "file_path": "/uploads/chat_files/64a34971b42b405d973d145b85881aea.pdf",
+      "file_type": "application/pdf",
+      "file_size": 45,
+      "created_at": "2026-10-05 05:28:07"
+    },
+    {
+      "id": 29,
+      "message_id": 80,
+      "file_name": "AI_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/fdbf03ebf6c64af2a480b8bdb5cdeb27.pdf",
+      "file_type": "application/pdf",
+      "file_size": 25,
+      "created_at": "2026-10-05 05:28:25"
+    },
+    {
+      "id": 30,
+      "message_id": 86,
+      "file_name": "Smart-Course-Recommendation-System(1).zip",
+      "file_path": "/uploads/chat_files/0fc48cc616604fcebab7e0cc82383810.zip",
+      "file_type": "application/x-zip-compressed",
+      "file_size": 38897,
+      "created_at": "2026-10-05 05:32:05"
+    },
+    {
+      "id": 31,
+      "message_id": 87,
+      "file_name": "Lord_shiva.jpg",
+      "file_path": "/uploads/chat_files/065ea875a23043f5bab5920569f638d8.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 99473,
+      "created_at": "2026-10-05 05:32:57"
+    },
+    {
+      "id": 32,
+      "message_id": 88,
+      "file_name": "Ai_in_CyberSecurity_5.pdf",
+      "file_path": "/uploads/chat_files/0ed0321a59fb414cb44e6ca075fdf10e.pdf",
+      "file_type": "application/pdf",
+      "file_size": 745531,
+      "created_at": "2026-10-05 12:23:12"
+    },
+    {
+      "id": 33,
+      "message_id": 89,
+      "file_name": "Ai_in_CyberSecurity_5.pdf",
+      "file_path": "/uploads/chat_files/0ed0321a59fb414cb44e6ca075fdf10e.pdf",
+      "file_type": "application/pdf",
+      "file_size": 745531,
+      "created_at": "2026-10-05 12:23:31"
+    },
+    {
+      "id": 34,
+      "message_id": 90,
+      "file_name": "Lord_shiva.jpg",
+      "file_path": "/uploads/chat_files/065ea875a23043f5bab5920569f638d8.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 99473,
+      "created_at": "2026-10-05 12:46:29"
+    },
+    {
+      "id": 35,
+      "message_id": 0,
+      "file_name": "Ai_in_CyberSecurity_5.pdf",
+      "file_path": "/uploads/chat_files/634a84e30ff24ed0bb5c544842b5351f.pdf",
+      "file_type": "application/pdf",
+      "file_size": 745531,
+      "created_at": "2026-10-06 05:33:12"
+    },
+    {
+      "id": 36,
+      "message_id": 95,
+      "file_name": "Ai_in_CyberSecurity_5.pdf",
+      "file_path": "/uploads/chat_files/f1309a1861f94e8fb0caf5603ed677df.pdf",
+      "file_type": "application/pdf",
+      "file_size": 745531,
+      "created_at": "2026-10-06 05:38:37"
+    },
+    {
+      "id": 37,
+      "message_id": 111,
+      "file_name": "Ai_in_CyberSecurity_4.pdf",
+      "file_path": "/uploads/chat_files/21e76898bfb444ba95ae74e137c78470.pdf",
+      "file_type": "application/pdf",
+      "file_size": 567546,
+      "created_at": "2026-10-14 14:22:30"
+    }
+  ],
+  "message_reactions": [
+    {
+      "id": 1,
+      "message_id": 3,
+      "user_id": 1,
+      "emoji": "❤️",
+      "created_at": "2026-09-25 07:16:49"
+    },
+    {
+      "id": 2,
+      "message_id": 5,
+      "user_id": 1,
+      "emoji": "heart",
+      "created_at": "2026-09-25 07:17:08"
+    },
+    {
+      "id": 3,
+      "message_id": 9,
+      "user_id": 1,
+      "emoji": "heart",
+      "created_at": "2026-09-25 09:06:31"
+    },
+    {
+      "id": 4,
+      "message_id": 12,
+      "user_id": 28,
+      "emoji": "👍",
+      "created_at": "2026-09-28 12:28:32"
+    },
+    {
+      "id": 5,
+      "message_id": 23,
+      "user_id": 4,
+      "emoji": "👍",
+      "created_at": "2026-09-29 05:52:43"
+    },
+    {
+      "id": 6,
+      "message_id": 68,
+      "user_id": 4,
+      "emoji": "👍",
+      "created_at": "2026-10-05 04:44:23"
+    },
+    {
+      "id": 7,
+      "message_id": 66,
+      "user_id": 4,
+      "emoji": "👍",
+      "created_at": "2026-10-05 04:44:28"
+    },
+    {
+      "id": 8,
+      "message_id": 78,
+      "user_id": 1,
+      "emoji": "heart",
+      "created_at": "2026-10-05 05:28:17"
+    },
+    {
+      "id": 9,
+      "message_id": 97,
+      "user_id": 1,
+      "emoji": "heart",
+      "created_at": "2026-10-07 05:00:28"
     }
   ]
 }
