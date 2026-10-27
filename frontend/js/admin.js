@@ -143,15 +143,25 @@ if (document.readyState === 'loading') {
  * @param {Object} adminUser - Authenticated admin profile object.
  * Purpose: Synchronizes navigation bar state across all admin views.
  */
+function setAdminAvatarHelper(el, image, initial) {
+    if (!el) return;
+    if (image && image.trim()) {
+        el.innerHTML = `<img src="${image}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    } else {
+        el.textContent = initial;
+    }
+}
+
 function setupAdminHeader(user) {
     const name = user.full_name || user.name || 'Administrator';
     const initial = name.charAt(0).toUpperCase();
+    const photo = user.profile_image || '';
 
     document.getElementById('topName') && (document.getElementById('topName').textContent = name);
     document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name);
     document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = 'ADMIN');
-    document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
-    document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
+    setAdminAvatarHelper(document.getElementById('topAvatar'), photo, initial);
+    setAdminAvatarHelper(document.getElementById('sidebarAvatar'), photo, initial);
 }
 
 // =========================================================================

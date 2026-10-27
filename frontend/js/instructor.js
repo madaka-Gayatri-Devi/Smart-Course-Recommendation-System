@@ -71,15 +71,25 @@ if (document.readyState === 'loading') {
  * Sets instructor display name, initials avatar, and binds logout button in the top navbar.
  * @param {Object} instructorUser - Authenticated instructor profile object.
  */
+function setInstructorAvatarHelper(el, image, initial) {
+    if (!el) return;
+    if (image && image.trim()) {
+        el.innerHTML = `<img src="${image}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    } else {
+        el.textContent = initial;
+    }
+}
+
 function setupInstructorHeader(user) {
     const name = user.full_name || user.name || 'Instructor';
     const initial = name.charAt(0).toUpperCase();
+    const photo = user.profile_image || '';
 
     document.getElementById('topName') && (document.getElementById('topName').textContent = name);
     document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = name);
     document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = 'Instructor');
-    document.getElementById('topAvatar') && (document.getElementById('topAvatar').textContent = initial);
-    document.getElementById('sidebarAvatar') && (document.getElementById('sidebarAvatar').textContent = initial);
+    setInstructorAvatarHelper(document.getElementById('topAvatar'), photo, initial);
+    setInstructorAvatarHelper(document.getElementById('sidebarAvatar'), photo, initial);
 }
 
 // =========================================================================

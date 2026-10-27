@@ -498,6 +498,33 @@ const api = {
         return data;
     },
 
+    /**
+     * Removes the current user's profile photo and returns to initials avatar.
+     * @returns {Promise<Object>} Success response.
+     */
+    async removeAvatar() {
+        const token = this.getToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const res = await safeFetch(`${API_URL}/profile/avatar?token=${encodeURIComponent(token)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        if (!res.ok) {
+            const msg = await parseErrorResponse(res, 'Failed to remove avatar image');
+            throw new Error(msg);
+        }
+        const data = await res.json();
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+            currentUser.profile_image = '';
+            localStorage.setItem('smartlearn_user', JSON.stringify(currentUser));
+        }
+        return data;
+    },
+
     // --- COURSES ---
 
     /**

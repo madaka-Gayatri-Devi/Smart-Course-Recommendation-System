@@ -1894,7 +1894,8 @@ class Toggle2FAPayload(BaseModel):
     current_password: Optional[str] = None
 
 class ChangePasswordPayload(BaseModel):
-    current_password: str
+    current_password: Optional[str] = None
+    old_password: Optional[str] = None
     new_password: str
 
 class ForgotPasswordPayload(BaseModel):
@@ -1942,6 +1943,11 @@ class ProfileData(BaseModel):
     career_goal: Optional[str] = None
     secondary_career_goal: Optional[str] = None
     profile_image: Optional[str] = None
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    department: Optional[str] = None
+    website: Optional[str] = None
+    credentials: Optional[str] = None
     skills: Optional[list] = []
     interests: Optional[list] = []
     languages: Optional[list] = []
@@ -2647,7 +2653,10 @@ def change_password(payload: ChangePasswordPayload, user: UserDB = Depends(get_c
     if not db_user:
         raise HTTPException(status_code=404, detail="User account not found.")
 
-    if not verify_password(payload.current_password, db_user.hashed_password):
+    curr_pwd = payload.current_password or payload.old_password
+    if not curr_pwd:
+        raise HTTPException(status_code=400, detail="Current password is required.")
+    if not verify_password(curr_pwd, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect current password.")
 
     valid, err_msg = validate_password_complexity(payload.new_password)
@@ -3192,6 +3201,7 @@ def get_me(user: UserDB = Depends(get_current_user), db: Session = Depends(get_d
 # --- PROFILE ROUTES ---
 
 @app.get("/profile")
+@app.get("/api/profile")
 def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Retrieves the complete profile data for the currently authenticated user.
@@ -3225,7 +3235,13 @@ def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(
             "courses": [],
             "learning_style": "",
             "completion_percentage": 0,
-            "wishlist": []
+            "wishlist": [],
+            "title": "",
+            "bio": "",
+            "department": "",
+            "website": "",
+            "created_at": user.created_at or "",
+            "is_active": getattr(user, "is_active", 1)
         }
     
     return {
@@ -3248,11 +3264,19 @@ def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(
         "courses": profile.courses or [],
         "learning_style": profile.learning_style or "",
         "completion_percentage": profile.completion_percentage or 0,
-        "wishlist": profile.wishlist or []
+        "wishlist": profile.wishlist or [],
+        "title": profile.career_goal or "",
+        "bio": profile.learning_style or "",
+        "department": profile.career_goal or "",
+        "website": profile.secondary_career_goal or "",
+        "created_at": user.created_at or "",
+        "is_active": getattr(user, "is_active", 1)
     }
 
 @app.post("/profile")
+@app.post("/api/profile")
 @app.put("/profile")
+@app.put("/api/profile")
 @app.put("/users/me")
 @app.patch("/users/me")
 @app.post("/student/profile")
@@ -3324,7 +3348,17 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
     if profile_data.courses is not None:
         profile.courses = profile_data.courses
     if profile_data.learning_style is not None:
-        profile.learning_style = profile_data.learning_style
+        profile.learning_style = profile_data.learning_style.strip() if isinstance(profile_data.learning_style, str) else profile_data.learning_style
+    if profile_data.bio is not None:
+        profile.learning_style = profile_data.bio.strip()
+    if profile_data.title is not None:
+        profile.career_goal = profile_data.title.strip()
+    if profile_data.department is not None:
+        profile.career_goal = profile_data.department.strip()
+    if profile_data.website is not None:
+        profile.secondary_career_goal = profile_data.website.strip()
+    if profile_data.credentials is not None:
+        profile.secondary_career_goal = profile_data.credentials.strip()
     if profile_data.wishlist is not None:
         profile.wishlist = profile_data.wishlist
     
@@ -3392,12 +3426,19 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
             "projects": profile.projects or [],
             "courses": profile.courses or [],
             "learning_style": profile.learning_style or "",
+            "title": profile.career_goal or "",
+            "bio": profile.learning_style or "",
+            "department": profile.career_goal or "",
+            "website": profile.secondary_career_goal or "",
+            "created_at": db_user.created_at or "",
+            "is_active": getattr(db_user, "is_active", 1),
             "completion_percentage": profile.completion_percentage or 0,
             "wishlist": profile.wishlist or []
         }
     }
 
 @app.post("/profile/avatar")
+@app.post("/api/profile/avatar")
 async def upload_avatar(
     file: Optional[UploadFile] = File(None),
     avatar: Optional[UploadFile] = File(None),
@@ -3471,6 +3512,20 @@ async def upload_avatar(
         "relative_url": relative_url,
         "profile_image": relative_url
     }
+
+@app.delete("/profile/avatar")
+@app.delete("/api/profile/avatar")
+def delete_avatar(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Removes the current user's profile photo and returns to initials avatar.
+    """
+    profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
+    if profile:
+        profile.profile_image = ""
+        db.commit()
+        db.refresh(profile)
+        sync_user_to_seed_data(user.id, updated_profile_fields={"profile_image": ""})
+    return {"success": True, "message": "Avatar removed successfully.", "profile_image": ""}
 
 # --- DURATION HELPER ---
 def parse_duration_hours(dur_str: Optional[str]) -> float:

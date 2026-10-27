@@ -21,8 +21,6 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- INSTRUCTOR SIDEBAR -->
-        <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
     <!-- 👨‍🏫 INSTRUCTOR SIDEBAR -->
     <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
         <div class="sidebar-glow-1"></div>
@@ -52,7 +50,7 @@
         </nav>
         
         <div class="sidebar-footer">
-            <div class="sidebar-user-card">
+            <div class="sidebar-user-card" onclick="window.location.href='profile.html'" style="cursor: pointer;" title="View Instructor Profile">
                 <div class="sidebar-user-avatar" id="sidebarAvatar">IN</div>
                 <div class="sidebar-user-info">
                     <span class="sidebar-user-name" id="sidebarName">Instructor</span>
@@ -75,14 +73,14 @@
             </div>
             
             <div class="topbar-right">
-                    <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
-                                <div class="topbar-notif-wrapper" style="position: relative;">
+                <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme & Appearance" title="Theme & Appearance" onclick="if(window.openThemeAppearanceModal) window.openThemeAppearanceModal(); else if(window.SmartLearnTheme) window.SmartLearnTheme.openModal();" style="background:none; border:none; cursor:pointer; font-size:18px; padding:0.4rem; display:inline-flex; align-items:center; justify-content:center;"><i class="fa-solid fa-palette"></i></button>
+                <div class="topbar-notif-wrapper" style="position: relative;">
                     <a href="notifications.html" class="notification-bell-btn" style="position: relative; color: var(--dark-navy); font-size: 18px; padding: 0.4rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Notifications">
                         <i class="fa-solid fa-bell"></i>
                         <span id="topNotificationBadge" style="display: none;"></span>
                     </a>
                 </div>
-<div class="profile-dropdown">
+                <div class="profile-dropdown" onclick="window.location.href='profile.html'" style="cursor: pointer;" title="Instructor Profile">
                     <div class="avatar" id="topAvatar">IN</div>
                     <span class="profile-name" id="topName">Instructor</span>
                 </div>
@@ -90,67 +88,172 @@
         </header>
 
         <div class="dashboard-content fade-in-up">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <div class="dashboard-card" style="padding: 2rem;">
-                    <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; border-bottom:1px solid #EDE9FE; padding-bottom:1.5rem;">
-                        <div id="profileAvatarBig" style="width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg, #7C3AED, #A855F7); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800;">IN</div>
-                        <div>
-                            <h2 style="margin:0 0 4px 0; color:var(--dark-navy);" id="profileDisplayName">Instructor Name</h2>
-                            <span class="badge-role instructor" style="font-size:12px;">Verified Instructor</span>
+            <div style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.75rem;">
+                
+                <!-- 1. INSTRUCTOR OVERVIEW & STATS CARD -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px;">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color, #EDE9FE);">
+                        <div style="display: flex; align-items: center; gap: 1.5rem; min-width: 0;">
+                            <!-- AVATAR CONTAINER WITH CAMERA OVERLAY -->
+                            <div style="position: relative; flex-shrink: 0;">
+                                <div id="profileAvatarBig" style="width: 86px; height: 86px; border-radius: 50%; background: linear-gradient(135deg, #7C3AED, #A855F7); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; overflow: hidden; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25); border: 3px solid #FFFFFF;">
+                                    IN
+                                </div>
+                                <label for="instPhotoInput" style="position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary, #5B3FE8); color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #FFFFFF; font-size: 12px; transition: transform 0.2s;" title="Upload photo">
+                                    <i class="fa-solid fa-camera"></i>
+                                </label>
+                                <input type="file" id="instPhotoInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            </div>
+
+                            <div style="min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                                    <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--dark-navy, #172033); letter-spacing: -0.01em;" id="profileDisplayName">Instructor Name</h2>
+                                    <span class="badge-role instructor" style="font-size: 12px;">Verified Instructor</span>
+                                    <span style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981;"></span> Active
+                                    </span>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 12.5px; color: var(--text-secondary, #64748B);">
+                                    <span><i class="fa-regular fa-envelope" style="margin-right: 4px;"></i> <span id="instDisplayEmail">instructor@smartlearn.com</span></span>
+                                    <span><i class="fa-solid fa-award" style="margin-right: 4px;"></i> <span id="instDisplayTitle">Faculty Member</span></span>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- PHOTO ACTION BUTTONS -->
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button type="button" class="btn-secondary" id="instUploadPhotoBtn" style="padding: 0.45rem 0.95rem; font-size: 12.5px; font-weight: 600; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0); background: var(--surface-color, #FFFFFF); cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;">
+                                <i class="fa-solid fa-arrow-up-from-bracket"></i> Change Photo
+                            </button>
+                            <button type="button" class="btn-secondary" id="instRemovePhotoBtn" style="padding: 0.45rem 0.85rem; font-size: 12.5px; font-weight: 600; border-radius: 8px; border: 1px solid #FECACA; background: #FEF2F2; color: #991B1B; cursor: pointer; display: none; align-items: center; gap: 0.45rem;" title="Remove Photo">
+                                <i class="fa-solid fa-trash-can"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TEACHING IMPACT & SUMMARY KPI STATS -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                        <!-- Published Courses -->
+                        <div style="background: var(--bg-page-light, #F8F7FF); border: 1px solid var(--border-color, #E2E8F0); border-radius: 12px; padding: 1.15rem 1rem; display: flex; align-items: center; gap: 0.9rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(91, 63, 232, 0.12); color: var(--color-primary, #5B3FE8); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                <i class="fa-solid fa-book-open"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--text-color, #172033); line-height: 1.1;" id="statPublishedCourses">0</div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary, #64748B);">Published Courses</div>
+                            </div>
+                        </div>
+
+                        <!-- Draft Courses -->
+                        <div style="background: var(--bg-page-light, #F8F7FF); border: 1px solid var(--border-color, #E2E8F0); border-radius: 12px; padding: 1.15rem 1rem; display: flex; align-items: center; gap: 0.9rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #D97706; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                <i class="fa-solid fa-file-pen"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--text-color, #172033); line-height: 1.1;" id="statDraftCourses">0</div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary, #64748B);">Draft Courses</div>
+                            </div>
+                        </div>
+
+                        <!-- Total Students -->
+                        <div style="background: var(--bg-page-light, #F8F7FF); border: 1px solid var(--border-color, #E2E8F0); border-radius: 12px; padding: 1.15rem 1rem; display: flex; align-items: center; gap: 0.9rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--text-color, #172033); line-height: 1.1;" id="statTotalStudents">0</div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary, #64748B);">Enrolled Students</div>
+                            </div>
+                        </div>
+
+                        <!-- Average Rating -->
+                        <div style="background: var(--bg-page-light, #F8F7FF); border: 1px solid var(--border-color, #E2E8F0); border-radius: 12px; padding: 1.15rem 1rem; display: flex; align-items: center; gap: 0.9rem;">
+                            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(234, 179, 8, 0.14); color: #CA8A04; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                                <i class="fa-solid fa-star"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--text-color, #172033); line-height: 1.1;" id="statAvgRating">5.0 ★</div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary, #64748B);">Average Rating</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. PERSONAL & PROFESSIONAL DETAILS FORM -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px;">
+                    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color, #E2E8F0);">
+                        <h3 style="margin: 0 0 0.25rem 0; font-size: 18px; font-weight: 800; color: var(--dark-navy, #172033);">
+                            <i class="fa-solid fa-id-card" style="color: var(--color-primary, #5B3FE8); margin-right: 8px;"></i> Personal & Professional Information
+                        </h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #64748B);">
+                            Update your public instructor credentials, contact details, and teaching portfolio information.
+                        </p>
                     </div>
 
                     <form id="instructorProfileForm">
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Full Name</label>
-                                <input type="text" id="instFullName" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Full Name</label>
+                                <input type="text" id="instFullName" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="e.g. Tulasi" required>
                             </div>
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Email (Read-only)</label>
-                                <input type="email" id="instEmail" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #E5E7EB; background:#F9FAFB; border-radius:8px;" readonly>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Email Address <span style="font-size:11px; font-weight:500; color:#64748B;">(Read-only)</span></label>
+                                <input type="email" id="instEmail" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #E5E7EB; background:#F9FAFB; border-radius:8px; color:#64748B; cursor:not-allowed;" readonly>
                             </div>
                         </div>
 
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Phone Number</label>
-                                <input type="text" id="instPhone" placeholder="+1 (555) 000-0000" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Phone Number</label>
+                                <input type="text" id="instPhone" placeholder="+1 (555) 000-0000" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;">
                             </div>
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">City / Location</label>
-                                <input type="text" id="instCity" placeholder="San Francisco, CA" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">City / Location</label>
+                                <input type="text" id="instCity" placeholder="San Francisco, CA" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;">
                             </div>
                         </div>
 
-                        <div style="margin-bottom:1.25rem;">
-                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Primary Teaching Specialization / Title</label>
-                            <input type="text" id="instTitle" placeholder="e.g. Senior Machine Learning Engineer & Cloud Architect" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem;">
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Primary Teaching Specialization / Title</label>
+                                <input type="text" id="instTitle" placeholder="e.g. Senior Machine Learning Engineer & Cloud Architect" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;">
+                            </div>
+                            <div>
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Website / Portfolio Link</label>
+                                <input type="url" id="instWebsite" placeholder="https://tulasi.dev or LinkedIn profile" class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;">
+                            </div>
                         </div>
 
                         <div style="margin-bottom:1.5rem;">
-                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Instructor Bio & Credentials</label>
-                            <textarea id="instBio" rows="4" placeholder="Brief bio describing your academic and industrial background..." class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px; font-family:inherit;"></textarea>
+                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Instructor Bio & Academic / Industry Credentials</label>
+                            <textarea id="instBio" rows="4" placeholder="Brief bio describing your academic and industrial background..." class="form-input" style="width:100%; padding:0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px; font-family:inherit; resize:vertical;"></textarea>
                         </div>
 
                         <div id="profileMsg" style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:13.5px;"></div>
 
-                        <div style="text-align:right;">
-                            <button type="submit" id="saveProfileBtn" class="btn-primary" style="padding:0.75rem 2rem; border:none; cursor:pointer;">Save Profile Changes</button>
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end; align-items: center;">
+                            <button type="button" id="cancelProfileBtn" class="btn-secondary" style="padding:0.75rem 1.5rem; border-radius:8px; border:1px solid #D1D5DB; background:#FFFFFF; cursor:pointer; font-weight:600;">Cancel</button>
+                            <button type="submit" id="saveProfileBtn" class="btn-primary" style="padding:0.75rem 2rem; border-radius:8px; border:none; cursor:pointer; font-weight:600;">Save Profile Changes</button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Account Security & 2FA Card -->
-                <div class="dashboard-card" style="padding: 2rem; margin-top: 2rem;">
-                    <h3 style="font-size: 18px; color: var(--dark-navy); margin-bottom: 0.5rem;"><i class="fa-solid fa-shield-halved mr-2" style="color: #4F46E5;"></i> Account Security & 2FA</h3>
-                    <p style="font-size: 13px; color: #64748B; margin-bottom: 1.5rem;">Configure authentication security preferences and update your password.</p>
+                <!-- 3. ACCOUNT SECURITY, 2FA & PASSWORD MANAGEMENT -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px;">
+                    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color, #E2E8F0);">
+                        <h3 style="margin: 0 0 0.25rem 0; font-size: 18px; font-weight: 800; color: var(--dark-navy, #172033);">
+                            <i class="fa-solid fa-shield-halved" style="color: var(--color-primary, #5B3FE8); margin-right: 8px;"></i> Account Security & 2FA
+                        </h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #64748B);">
+                            Configure authentication security preferences and securely update your login password.
+                        </p>
+                    </div>
 
                     <!-- 2FA Control -->
-                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
                         <div>
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                <h4 style="font-size: 15px; color: #1E1B4B; margin: 0;">Two-Factor Authentication (2FA)</h4>
+                                <h4 style="font-size: 15px; color: #1E1B4B; margin: 0; font-weight: 700;">Two-Factor Authentication (2FA)</h4>
                                 <span id="inst2FABadge" style="background: #F1F5F9; color: #64748B; font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid #CBD5E1; font-weight: 600;">Disabled (Default)</span>
                             </div>
                             <p style="font-size: 12.5px; color: #64748B; margin: 0;">Requires a 6-digit OTP verification code sent via email upon login.</p>
@@ -167,21 +270,44 @@
 
                     <!-- Change Password -->
                     <form id="instChangePasswordForm">
-                        <h4 style="font-size: 15px; color: var(--dark-navy); margin-bottom: 1rem;"><i class="fa-solid fa-lock mr-2" style="color: #4F46E5;"></i> Change Password</h4>
-                        <div style="margin-bottom: 1rem;">
-                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Current Password</label>
-                            <input type="password" id="instOldPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required>
+                        <h4 style="font-size: 15px; color: var(--dark-navy); margin-bottom: 1rem; font-weight: 700;">
+                            <i class="fa-solid fa-lock" style="color: var(--color-primary, #5B3FE8); margin-right: 6px;"></i> Change Password
+                        </h4>
+                        
+                        <!-- CURRENT PASSWORD WITH TOGGLE -->
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Current Password</label>
+                            <div style="position: relative;">
+                                <input type="password" id="instOldPassword" class="form-input" placeholder="Enter your current password" style="width:100%; padding:0.75rem 2.5rem 0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;" required>
+                                <button type="button" id="toggleOldPass" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94A3B8; cursor: pointer; padding: 0.25rem;" aria-label="Toggle password visibility">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- NEW AND CONFIRM PASSWORDS -->
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1rem;">
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">New Password</label>
-                                <input type="password" id="instNewPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="Min 8 characters" required autocomplete="new-password">
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">New Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="instNewPassword" class="form-input" style="width:100%; padding:0.75rem 2.5rem 0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="Min 8 characters" required autocomplete="new-password">
+                                    <button type="button" id="toggleNewPass" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94A3B8; cursor: pointer; padding: 0.25rem;" aria-label="Toggle password visibility">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div>
-                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem;">Confirm New Password</label>
-                                <input type="password" id="instConfirmPassword" class="form-input" style="width:100%; padding:0.75rem; border:1px solid #D1D5DB; border-radius:8px;" required autocomplete="new-password">
+                                <label style="display:block; font-weight:600; font-size:13px; margin-bottom:0.4rem; color: var(--dark-navy);">Confirm New Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="instConfirmPassword" class="form-input" style="width:100%; padding:0.75rem 2.5rem 0.75rem 1rem; border:1px solid #D1D5DB; border-radius:8px;" placeholder="Repeat new password" required autocomplete="new-password">
+                                    <button type="button" id="toggleConfirmPass" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94A3B8; cursor: pointer; padding: 0.25rem;" aria-label="Toggle password visibility">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- 5-POINT REAL-TIME COMPLEXITY CHECKLIST & STRENGTH METER -->
                         <div class="password-complexity-box" id="instPasswordComplexityBox" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                                 <span style="font-weight: 600; color: #475569;">Password Strength:</span>
@@ -202,19 +328,19 @@
                         <div id="instPassMsg" style="display:none; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1.25rem; font-size:13.5px;"></div>
 
                         <div style="text-align:right;">
-                            <button type="submit" id="instChangePassBtn" class="btn-primary" style="padding:0.65rem 1.5rem; border:none; cursor:pointer;">Update Password</button>
+                            <button type="submit" id="instChangePassBtn" class="btn-primary" style="padding:0.75rem 1.75rem; border:none; border-radius:8px; cursor:pointer; font-weight:600;">Update Password</button>
                         </div>
                     </form>
                 </div>
 
-                <!-- Theme & Appearance Customization Card -->
-                <div class="dashboard-card" style="padding: 2rem; margin-top: 2rem;">
+                <!-- 4. THEME & APPEARANCE CUSTOMIZATION CARD -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px;">
                     <div class="smartlearn-theme-section" style="border: none; padding: 0; margin-bottom: 0;">
-                        <h3 style="font-size: 18px; margin-bottom: 0.5rem; color: var(--theme-text-primary);"><i class="fa-solid fa-palette" style="color: var(--theme-primary);"></i> Appearance & Theme Customization</h3>
-                        <p style="font-size: 13px; color: var(--theme-text-secondary); margin-bottom: 1.5rem;">Customize your interface appearance mode and brand color scheme. Preferences are saved automatically across all pages and sessions.</p>
+                        <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 0.5rem; color: var(--theme-text-primary, #172033);"><i class="fa-solid fa-palette" style="color: var(--theme-primary, #5B3FE8); margin-right: 8px;"></i> Appearance & Theme Customization</h3>
+                        <p style="font-size: 13px; color: var(--theme-text-secondary, #64748B); margin-bottom: 1.5rem;">Customize your interface appearance mode and brand color scheme. Preferences are saved automatically across all pages and sessions.</p>
 
                         <!-- APPEARANCE MODE -->
-                        <div class="theme-group-label">
+                        <div class="theme-group-label" style="font-weight: 700; font-size: 11px; letter-spacing: 0.05em; color: #64748B; margin-bottom: 0.75rem;">
                             <i class="fa-solid fa-sun-moon"></i> APPEARANCE MODE
                         </div>
                         <div class="appearance-options-grid">
@@ -233,7 +359,7 @@
                         </div>
 
                         <!-- COLOR THEME -->
-                        <div class="theme-group-label">
+                        <div class="theme-group-label" style="font-weight: 700; font-size: 11px; letter-spacing: 0.05em; color: #64748B; margin-top: 1.25rem; margin-bottom: 0.75rem;">
                             <i class="fa-solid fa-droplet"></i> COLOR THEME
                         </div>
                         <div class="color-options-grid">
@@ -260,6 +386,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </main>
@@ -267,6 +394,7 @@
     <!-- Scripts -->
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
+    <script src="../js/instructor.js"></script>
     <script src="../js/notifications.js"></script>
     <script src="../js/chatbot.js"></script>
     <script>
@@ -274,23 +402,235 @@
             const user = window.guardPage('INSTRUCTOR');
             if (!user) return;
 
-            const fullName = user.full_name || user.name || 'Instructor';
-            document.getElementById('topName') && (document.getElementById('topName').textContent = fullName);
-            document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = fullName);
-            document.getElementById('profileDisplayName') && (document.getElementById('profileDisplayName').textContent = fullName);
-            document.getElementById('instFullName') && (document.getElementById('instFullName').value = fullName);
-            document.getElementById('instEmail') && (document.getElementById('instEmail').value = user.email || '');
+            let initialFormData = {};
 
+            // Function to get initials from full name
+            function getInitials(name) {
+                if (!name) return 'IN';
+                const parts = name.trim().split(/\s+/);
+                if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+
+            // Function to render Avatar across UI elements
+            function renderInstructorAvatar(avatarPath, fullName) {
+                const bigAvatar = document.getElementById('profileAvatarBig');
+                const removeBtn = document.getElementById('instRemovePhotoBtn');
+                const topAvatar = document.getElementById('topAvatar');
+                const sideAvatar = document.getElementById('sidebarAvatar');
+                const initials = getInitials(fullName);
+
+                if (avatarPath) {
+                    const fullUrl = window.api.getImageUrl(avatarPath);
+                    const imgHtml = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                    if (bigAvatar) {
+                        bigAvatar.innerHTML = imgHtml;
+                        bigAvatar.style.background = 'transparent';
+                    }
+                    if (removeBtn) removeBtn.style.display = 'inline-flex';
+                    if (topAvatar) {
+                        topAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                        topAvatar.style.background = 'transparent';
+                    }
+                    if (sideAvatar) {
+                        sideAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                        sideAvatar.style.background = 'transparent';
+                    }
+                } else {
+                    if (bigAvatar) {
+                        bigAvatar.innerHTML = initials;
+                        bigAvatar.style.background = 'linear-gradient(135deg, #7C3AED, #A855F7)';
+                    }
+                    if (removeBtn) removeBtn.style.display = 'none';
+                    if (topAvatar) {
+                        topAvatar.innerHTML = initials;
+                        topAvatar.style.background = 'linear-gradient(135deg, #7C3AED, #A855F7)';
+                    }
+                    if (sideAvatar) {
+                        sideAvatar.innerHTML = initials;
+                        sideAvatar.style.background = 'linear-gradient(135deg, #7C3AED, #A855F7)';
+                    }
+                }
+            }
+
+            // Initial UI sync with user state
+            const currentFullName = user.full_name || user.name || 'Instructor';
+            document.getElementById('topName') && (document.getElementById('topName').textContent = currentFullName);
+            document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = currentFullName);
+            document.getElementById('profileDisplayName') && (document.getElementById('profileDisplayName').textContent = currentFullName);
+            document.getElementById('instFullName') && (document.getElementById('instFullName').value = currentFullName);
+            document.getElementById('instEmail') && (document.getElementById('instEmail').value = user.email || '');
+            document.getElementById('instDisplayEmail') && (document.getElementById('instDisplayEmail').textContent = user.email || '');
+
+            renderInstructorAvatar(user.profile_image, currentFullName);
+
+            // Fetch live profile details
             let profile = {};
             try {
                 profile = await window.api.getProfile();
                 if (profile) {
-                    document.getElementById('instPhone') && (document.getElementById('instPhone').value = profile.phone || '');
-                    document.getElementById('instCity') && (document.getElementById('instCity').value = profile.city || '');
-                    document.getElementById('instTitle') && (document.getElementById('instTitle').value = profile.career_goal || '');
-                    document.getElementById('instBio') && (document.getElementById('instBio').value = profile.learning_style || '');
+                    const phone = profile.phone || '';
+                    const city = profile.city || '';
+                    const title = profile.career_goal || profile.title || '';
+                    const bio = profile.learning_style || profile.bio || '';
+                    const website = profile.secondary_career_goal || profile.website || '';
+
+                    document.getElementById('instPhone') && (document.getElementById('instPhone').value = phone);
+                    document.getElementById('instCity') && (document.getElementById('instCity').value = city);
+                    document.getElementById('instTitle') && (document.getElementById('instTitle').value = title);
+                    document.getElementById('instBio') && (document.getElementById('instBio').value = bio);
+                    document.getElementById('instWebsite') && (document.getElementById('instWebsite').value = website);
+
+                    if (title && document.getElementById('instDisplayTitle')) {
+                        document.getElementById('instDisplayTitle').textContent = title;
+                    }
+
+                    if (profile.full_name) {
+                        document.getElementById('instFullName').value = profile.full_name;
+                        document.getElementById('profileDisplayName').textContent = profile.full_name;
+                    }
+
+                    if (profile.profile_image) {
+                        renderInstructorAvatar(profile.profile_image, profile.full_name || currentFullName);
+                    }
+
+                    // Cache for cancel reset
+                    initialFormData = {
+                        full_name: profile.full_name || currentFullName,
+                        phone: phone,
+                        city: city,
+                        title: title,
+                        bio: bio,
+                        website: website
+                    };
                 }
-            } catch (_) {}
+            } catch (err) {
+                console.error('Failed to load instructor profile:', err);
+            }
+
+            // Fetch live Teaching Summary Stats
+            try {
+                const summary = await window.api.getInstructorDashboardSummary();
+                if (summary && summary.stats) {
+                    const stats = summary.stats;
+                    const pubEl = document.getElementById('statPublishedCourses');
+                    const draftEl = document.getElementById('statDraftCourses');
+                    const studEl = document.getElementById('statTotalStudents');
+                    const rateEl = document.getElementById('statAvgRating');
+
+                    if (pubEl) pubEl.textContent = stats.published_courses_count !== undefined ? stats.published_courses_count : 0;
+                    if (draftEl) draftEl.textContent = stats.draft_courses_count !== undefined ? stats.draft_courses_count : 0;
+                    if (studEl) studEl.textContent = stats.total_students !== undefined ? stats.total_students : 0;
+                    if (rateEl) {
+                        const r = stats.avg_rating !== undefined ? Number(stats.avg_rating).toFixed(1) : '5.0';
+                        rateEl.textContent = `${r} ★`;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to load instructor dashboard summary stats:', err);
+            }
+
+            // Cancel button click -> reset form
+            document.getElementById('cancelProfileBtn')?.addEventListener('click', () => {
+                if (initialFormData) {
+                    document.getElementById('instFullName').value = initialFormData.full_name || '';
+                    document.getElementById('instPhone').value = initialFormData.phone || '';
+                    document.getElementById('instCity').value = initialFormData.city || '';
+                    document.getElementById('instTitle').value = initialFormData.title || '';
+                    document.getElementById('instBio').value = initialFormData.bio || '';
+                    document.getElementById('instWebsite').value = initialFormData.website || '';
+                }
+                const msgBox = document.getElementById('profileMsg');
+                if (msgBox) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#F1F5F9';
+                    msgBox.style.color = '#475569';
+                    msgBox.style.border = '1px solid #CBD5E1';
+                    msgBox.textContent = 'Changes canceled. Form reset to current saved profile.';
+                    setTimeout(() => { msgBox.style.display = 'none'; }, 2500);
+                }
+            });
+
+            // Photo Upload & Remove Listeners
+            const photoInput = document.getElementById('instPhotoInput');
+            const uploadBtn = document.getElementById('instUploadPhotoBtn');
+            const removeBtn = document.getElementById('instRemovePhotoBtn');
+
+            uploadBtn?.addEventListener('click', () => {
+                photoInput?.click();
+            });
+
+            photoInput?.addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                // Validate file size and type
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Profile picture size must not exceed 5MB.');
+                    return;
+                }
+
+                // Show immediate local preview
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const bigAvatar = document.getElementById('profileAvatarBig');
+                    if (bigAvatar) {
+                        bigAvatar.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                        bigAvatar.style.background = 'transparent';
+                    }
+                };
+                reader.readAsDataURL(file);
+
+                // Upload to backend
+                try {
+                    const uploadRes = await window.api.uploadAvatar(file);
+                    const newAvatarPath = uploadRes.profile_image || uploadRes.avatar_url || uploadRes.avatar;
+                    
+                    // Update current user in localStorage
+                    const storedUser = window.api.getUser() || {};
+                    storedUser.profile_image = newAvatarPath;
+                    localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));
+
+                    renderInstructorAvatar(newAvatarPath, storedUser.full_name || storedUser.name || 'Instructor');
+
+                    const msgBox = document.getElementById('profileMsg');
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#ECFDF5';
+                        msgBox.style.color = '#065F46';
+                        msgBox.style.border = '1px solid #A7F3D0';
+                        msgBox.textContent = 'Profile photo successfully uploaded and updated!';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
+                    }
+                } catch (err) {
+                    alert('Failed to upload photo: ' + (err.message || 'Server error'));
+                    renderInstructorAvatar(user.profile_image, user.full_name || user.name);
+                }
+            });
+
+            removeBtn?.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to remove your profile photo?')) return;
+                try {
+                    await window.api.removeAvatar();
+                    const storedUser = window.api.getUser() || {};
+                    storedUser.profile_image = '';
+                    localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));
+
+                    renderInstructorAvatar('', storedUser.full_name || storedUser.name || 'Instructor');
+
+                    const msgBox = document.getElementById('profileMsg');
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#ECFDF5';
+                        msgBox.style.color = '#065F46';
+                        msgBox.style.border = '1px solid #A7F3D0';
+                        msgBox.textContent = 'Profile photo removed successfully.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
+                    }
+                } catch (err) {
+                    alert('Failed to remove photo: ' + (err.message || 'Server error'));
+                }
+            });
 
             // Load 2FA status
             try {
@@ -325,67 +665,85 @@
                 }
             });
 
-            
-        // Password Complexity Real-Time Validator
-        function checkPasswordComplexity(pwd) {
-            return {
-                len: pwd.length >= 8,
-                upper: /[A-Z]/.test(pwd),
-                lower: /[a-z]/.test(pwd),
-                num: /[0-9]/.test(pwd),
-                spec: /[!@#$%^&*(),.?":{}|<>\-_=+[\]\/`~;']/.test(pwd)
-            };
-        }
-
-        function updateInstPasswordMeter(pwd) {
-            const c = checkPasswordComplexity(pwd);
-            const setReq = (id, valid, text) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.innerHTML = valid 
-                    ? `<i class="fa-solid fa-circle-check" style="color:#10B981; margin-right:4px;"></i> <span style="color:#065F46; font-weight:600;">${text}</span>`
-                    : `<i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> <span style="color:#64748B;">${text}</span>`;
-            };
-            setReq('inst-req-len', c.len, '8+ characters');
-            setReq('inst-req-upper', c.upper, 'Uppercase letter (A-Z)');
-            setReq('inst-req-lower', c.lower, 'Lowercase letter (a-z)');
-            setReq('inst-req-num', c.num, 'Number (0-9)');
-            setReq('inst-req-spec', c.spec, 'Special symbol (!@#$%^&*...)');
-
-            const score = Object.values(c).filter(Boolean).length;
-            const bar = document.getElementById('instPassStrengthBar');
-            const lbl = document.getElementById('instPassStrengthLabel');
-            if (bar && lbl) {
-                if (!pwd) {
-                    bar.style.width = '0%';
-                    bar.style.background = '#EF4444';
-                    lbl.textContent = 'None';
-                    lbl.style.color = '#94A3B8';
-                } else if (score <= 2) {
-                    bar.style.width = '30%';
-                    bar.style.background = '#EF4444';
-                    lbl.textContent = 'Weak';
-                    lbl.style.color = '#EF4444';
-                } else if (score < 5) {
-                    bar.style.width = '70%';
-                    bar.style.background = '#F59E0B';
-                    lbl.textContent = 'Moderate';
-                    lbl.style.color = '#F59E0B';
-                } else {
-                    bar.style.width = '100%';
-                    bar.style.background = '#10B981';
-                    lbl.textContent = 'Strong & Secure';
-                    lbl.style.color = '#10B981';
-                }
+            // Password Toggle Show/Hide Helper
+            function wirePasswordToggle(buttonId, inputId) {
+                const btn = document.getElementById(buttonId);
+                const input = document.getElementById(inputId);
+                if (!btn || !input) return;
+                btn.addEventListener('click', () => {
+                    const isPass = input.type === 'password';
+                    input.type = isPass ? 'text' : 'password';
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isPass ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                    }
+                });
             }
-            return score === 5;
-        }
 
-        document.getElementById('instNewPassword')?.addEventListener('input', (e) => {
-            updateInstPasswordMeter(e.target.value);
-        });
+            wirePasswordToggle('toggleOldPass', 'instOldPassword');
+            wirePasswordToggle('toggleNewPass', 'instNewPassword');
+            wirePasswordToggle('toggleConfirmPass', 'instConfirmPassword');
 
-        // Change Password Form Listener
+            // Password Complexity Real-Time Validator
+            function checkPasswordComplexity(pwd) {
+                return {
+                    len: pwd.length >= 8,
+                    upper: /[A-Z]/.test(pwd),
+                    lower: /[a-z]/.test(pwd),
+                    num: /[0-9]/.test(pwd),
+                    spec: /[!@#$%^&*(),.?":{}|<>\-_=+[\]\/`~;']/.test(pwd)
+                };
+            }
+
+            function updateInstPasswordMeter(pwd) {
+                const c = checkPasswordComplexity(pwd);
+                const setReq = (id, valid, text) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.innerHTML = valid 
+                        ? `<i class="fa-solid fa-circle-check" style="color:#10B981; margin-right:4px;"></i> <span style="color:#065F46; font-weight:600;">${text}</span>`
+                        : `<i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> <span style="color:#64748B;">${text}</span>`;
+                };
+                setReq('inst-req-len', c.len, '8+ characters');
+                setReq('inst-req-upper', c.upper, 'Uppercase letter (A-Z)');
+                setReq('inst-req-lower', c.lower, 'Lowercase letter (a-z)');
+                setReq('inst-req-num', c.num, 'Number (0-9)');
+                setReq('inst-req-spec', c.spec, 'Special symbol (!@#$%^&*...)');
+
+                const score = Object.values(c).filter(Boolean).length;
+                const bar = document.getElementById('instPassStrengthBar');
+                const lbl = document.getElementById('instPassStrengthLabel');
+                if (bar && lbl) {
+                    if (!pwd) {
+                        bar.style.width = '0%';
+                        bar.style.background = '#EF4444';
+                        lbl.textContent = 'None';
+                        lbl.style.color = '#94A3B8';
+                    } else if (score <= 2) {
+                        bar.style.width = '30%';
+                        bar.style.background = '#EF4444';
+                        lbl.textContent = 'Weak';
+                        lbl.style.color = '#EF4444';
+                    } else if (score < 5) {
+                        bar.style.width = '70%';
+                        bar.style.background = '#F59E0B';
+                        lbl.textContent = 'Moderate';
+                        lbl.style.color = '#F59E0B';
+                    } else {
+                        bar.style.width = '100%';
+                        bar.style.background = '#10B981';
+                        lbl.textContent = 'Strong & Secure';
+                        lbl.style.color = '#10B981';
+                    }
+                }
+                return score === 5;
+            }
+
+            document.getElementById('instNewPassword')?.addEventListener('input', (e) => {
+                updateInstPasswordMeter(e.target.value);
+            });
+
+            // Change Password Form Listener
             document.getElementById('instChangePasswordForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const oldPass = document.getElementById('instOldPassword').value;
@@ -424,6 +782,7 @@
                     msgBox.style.border = '1px solid #A7F3D0';
                     msgBox.textContent = res.message || 'Password updated successfully!';
                     document.getElementById('instChangePasswordForm').reset();
+                    updateInstPasswordMeter('');
                     setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
                 } catch (err) {
                     msgBox.style.display = 'block';
@@ -437,6 +796,7 @@
                 }
             });
 
+            // Profile Form Submit Listener
             const form = document.getElementById('instructorProfileForm');
             form?.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -445,15 +805,53 @@
 
                 if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
 
+                const updatedName = document.getElementById('instFullName').value.trim();
+                const updatedPhone = document.getElementById('instPhone').value.trim();
+                const updatedCity = document.getElementById('instCity').value.trim();
+                const updatedTitle = document.getElementById('instTitle').value.trim();
+                const updatedBio = document.getElementById('instBio').value.trim();
+                const updatedWebsite = document.getElementById('instWebsite').value.trim();
+
                 try {
                     const updatedData = {
-                        phone: document.getElementById('instPhone').value.trim(),
-                        city: document.getElementById('instCity').value.trim(),
-                        career_goal: document.getElementById('instTitle').value.trim(),
-                        learning_style: document.getElementById('instBio').value.trim()
+                        full_name: updatedName,
+                        phone: updatedPhone,
+                        city: updatedCity,
+                        title: updatedTitle,
+                        career_goal: updatedTitle,
+                        bio: updatedBio,
+                        learning_style: updatedBio,
+                        website: updatedWebsite,
+                        secondary_career_goal: updatedWebsite
                     };
 
                     await window.api.updateProfile(updatedData);
+
+                    // Update UI and Local Storage
+                    const storedUser = window.api.getUser() || {};
+                    storedUser.full_name = updatedName;
+                    storedUser.name = updatedName;
+                    localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));
+
+                    document.getElementById('profileDisplayName').textContent = updatedName;
+                    document.getElementById('topName').textContent = updatedName;
+                    document.getElementById('sidebarName').textContent = updatedName;
+                    if (updatedTitle && document.getElementById('instDisplayTitle')) {
+                        document.getElementById('instDisplayTitle').textContent = updatedTitle;
+                    }
+
+                    // Update initials or image
+                    renderInstructorAvatar(storedUser.profile_image, updatedName);
+
+                    // Update cache for cancel reset
+                    initialFormData = {
+                        full_name: updatedName,
+                        phone: updatedPhone,
+                        city: updatedCity,
+                        title: updatedTitle,
+                        bio: updatedBio,
+                        website: updatedWebsite
+                    };
 
                     msgBox.style.display = 'block';
                     msgBox.style.background = '#ECFDF5';

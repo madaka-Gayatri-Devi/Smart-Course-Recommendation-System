@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Theme Manager -->
+    <script src="../js/theme.js?v=20261008_v9"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <title>Admin Profile - SmartLearn</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/style.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/dashboard.css?v=20261008_v9">
+    <link rel="stylesheet" href="../css/admin.css?v=20260915_indigo_theme">
+</head>
+<body class="dashboard-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="dashboard-sidebar app-sidebar" id="dashboardSidebar">
+        <div class="sidebar-glow-1"></div>
+        <div class="sidebar-glow-2"></div>
+
+        <div class="sidebar-brand">
+            <i class="fa-solid fa-graduation-cap"></i> SmartLearn
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-label">ADMINISTRATION</div>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-gauge-high"></i> <span class="nav-text">Dashboard</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i> <span class="nav-text">Users</span></a>
+            <a href="students.html" class="nav-item"><i class="fa-solid fa-user-graduate"></i> <span class="nav-text">Students</span></a>
+            <a href="instructors.html" class="nav-item"><i class="fa-solid fa-chalkboard-user"></i> <span class="nav-text">Instructors</span></a>
+            <a href="courses.html" class="nav-item"><i class="fa-solid fa-book-open"></i> <span class="nav-text">Course Catalog</span></a>
+            <a href="categories.html" class="nav-item"><i class="fa-solid fa-layer-group"></i> <span class="nav-text">Categories</span></a>
+            <a href="skills.html" class="nav-item"><i class="fa-solid fa-bolt"></i> <span class="nav-text">Skills</span></a>
+            <a href="career-goals.html" class="nav-item"><i class="fa-solid fa-bullseye"></i> <span class="nav-text">Career Goals</span></a>
+            <a href="assessment-questions.html" class="nav-item"><i class="fa-solid fa-clipboard-question"></i> <span class="nav-text">Assessment Questions</span></a>
+            <a href="enrollments.html" class="nav-item"><i class="fa-solid fa-receipt"></i> <span class="nav-text">Enrollments</span></a>
+            <a href="recommendations.html" class="nav-item"><i class="fa-solid fa-lightbulb"></i> <span class="nav-text">Recommendations</span></a>
+            <a href="reports.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> <span class="nav-text">Reports</span></a>
+            <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i> <span class="nav-text">Analytics</span></a>
+            
+            <div class="nav-label">COMMUNICATION & GOVERNANCE</div>
+            <a href="chat.html" class="nav-item"><i class="fa-solid fa-comments"></i> <span class="nav-text">Chat & Group Management</span> <span class="chat-unread-nav-badge badge" id="chatUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+            <a href="notifications.html" class="nav-item"><i class="fa-solid fa-bell"></i> <span class="nav-text">Notifications</span> <span class="notif-badge badge" id="notifUnreadBadge" style="display:none; background:#EF4444; color:#fff; font-size:10px; padding:2px 6px; border-radius:99px; margin-left:auto;">0</span></a>
+
+            <div class="nav-label">ACCOUNT</div>
+            <a href="dashboard.html#settings" class="nav-item"><i class="fa-solid fa-gear"></i> <span class="nav-text">Settings</span></a>
+            <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i> <span class="nav-text">Profile</span></a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card" onclick="window.location.href='profile.html'" style="cursor: pointer;" title="View Admin Profile">
+                <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarName">System Administrator</span>
+                    <span class="sidebar-user-role" id="sidebarRole">ADMIN</span>
+                </div>
+            </div>
+            <div class="sidebar-footer-links">
+                <a href="#" class="sidebar-mini-link text-danger logout-btn" id="logoutBtn" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="dashboard-main">
+        <header class="dashboard-topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="page-title">Admin Profile</h2>
+            </div>
+            
+            <div class="topbar-right">
+                <button type="button" id="themePaletteButton" class="theme-palette-btn" data-open-theme-modal aria-label="Theme Settings" aria-haspopup="menu" aria-expanded="false" title="Theme Settings">
+                    <i class="fa-solid fa-palette theme-btn-icon"></i>
+                    <span class="theme-btn-text">Theme</span>
+                    <i class="fa-solid fa-chevron-down theme-btn-arrow"></i>
+                </button>
+                
+                <div class="topbar-notif-wrapper" style="position: relative;">
+                    <a href="notifications.html" class="notification-bell-btn" style="position: relative; color: var(--dark-text); font-size: 1.1rem; padding: 0.5rem;" title="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="topNotificationBadge" style="display: none; position: absolute; top: 0; right: 0; background: #EF4444; color: white; font-size: 10px; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold;">0</span>
+                    </a>
+                </div>
+
+                <div class="profile-dropdown" onclick="window.location.href='profile.html'" style="cursor: pointer;" title="Admin Profile">
+                    <div class="avatar" id="topAvatar">AD</div>
+                    <span class="profile-name" id="topName">System Administrator</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content fade-in-up">
+            <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.75rem;">
+                
+                <!-- 1. PROFILE OVERVIEW HEADER CARD -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1.5rem; min-width: 0;">
+                            <!-- AVATAR CONTAINER WITH UPLOAD OVERLAY -->
+                            <div style="position: relative; flex-shrink: 0;">
+                                <div id="adminProfileAvatarBig" style="width: 86px; height: 86px; border-radius: 50%; background: linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%); color: #FFFFFF; font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 4px 14px rgba(91, 63, 232, 0.28); border: 3px solid #FFFFFF;">
+                                    AD
+                                </div>
+                                <label for="adminPhotoInput" style="position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary, #5B3FE8); color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid #FFFFFF; font-size: 12px; transition: transform 0.2s;" title="Upload photo">
+                                    <i class="fa-solid fa-camera"></i>
+                                </label>
+                                <input type="file" id="adminPhotoInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            </div>
+
+                            <div style="min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                                    <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: var(--text-color, #172033); letter-spacing: -0.01em;" id="adminDisplayName">System Administrator</h2>
+                                    <span class="badge-role admin" style="background: rgba(91, 63, 232, 0.12); color: var(--color-primary, #5B3FE8); border: 1px solid rgba(91, 63, 232, 0.25); font-size: 11.5px; font-weight: 700; padding: 2px 10px; border-radius: 9999px;">
+                                        <i class="fa-solid fa-shield-halved" style="margin-right: 4px;"></i> Administrator
+                                    </span>
+                                    <span style="background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981;"></span> Active
+                                    </span>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 12.5px; color: var(--text-secondary, #64748B);">
+                                    <span><i class="fa-regular fa-envelope" style="margin-right: 4px;"></i> <span id="adminDisplayEmail">admin@smartlearn.com</span></span>
+                                    <span><i class="fa-regular fa-calendar" style="margin-right: 4px;"></i> Member since <span id="adminMemberSince">January 2026</span></span>
+                                    <span><i class="fa-solid fa-clock-rotate-left" style="margin-right: 4px;"></i> Current Session</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PHOTO BUTTON CONTROLS -->
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button type="button" class="btn-secondary" id="adminUploadPhotoBtn" style="padding: 0.45rem 0.95rem; font-size: 12.5px; font-weight: 600; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0); background: var(--surface-color, #FFFFFF); cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem;">
+                                <i class="fa-solid fa-arrow-up-from-bracket"></i> Change Photo
+                            </button>
+                            <button type="button" class="btn-secondary" id="adminRemovePhotoBtn" style="padding: 0.45rem 0.85rem; font-size: 12.5px; font-weight: 600; border-radius: 8px; border: 1px solid #FECACA; background: #FEF2F2; color: #991B1B; cursor: pointer; display: none; align-items: center; gap: 0.45rem;" title="Remove Photo">
+                                <i class="fa-solid fa-trash-can"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. PERSONAL INFORMATION FORM -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+                    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color, #E2E8F0);">
+                        <h3 style="margin: 0 0 0.25rem 0; font-size: 17px; font-weight: 800; color: var(--text-color, #172033);">
+                            <i class="fa-solid fa-id-card" style="color: var(--color-primary, #5B3FE8); margin-right: 8px;"></i> Personal Information
+                        </h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #64748B);">
+                            Manage your administrative profile attributes, primary title, and operational contact coordinates.
+                        </p>
+                    </div>
+
+                    <form id="adminProfileForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">Full Name</label>
+                                <input type="text" id="adminFullName" class="form-input" placeholder="e.g. System Administrator" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);" required>
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">
+                                    Email Address <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary, #64748B);">(Read-only)</span>
+                                </label>
+                                <input type="email" id="adminEmail" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0); background: var(--bg-page-light, #F8F7FF); color: var(--text-secondary, #64748B); cursor: not-allowed;" readonly>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">Phone Number</label>
+                                <input type="text" id="adminPhone" placeholder="+1 (555) 019-2834" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);">
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">City / Location</label>
+                                <input type="text" id="adminCity" placeholder="San Francisco, CA" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">Department / Operational Title</label>
+                            <input type="text" id="adminTitle" placeholder="e.g. System Administration & Platform Operations" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);">
+                        </div>
+
+                        <!-- Feedback Message -->
+                        <div id="profileMsg" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 13px; font-weight: 600;"></div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
+                            <button type="button" id="cancelProfileBtn" class="btn-secondary" style="padding: 0.75rem 1.5rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0); background: transparent; color: var(--text-color, #172033); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                                Cancel
+                            </button>
+                            <button type="submit" id="saveProfileBtn" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--color-gradient-primary, linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%)); border: none; color: #FFFFFF; font-size: 13.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(91, 63, 232, 0.3); transition: all 0.2s;">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. ACCOUNT SECURITY & CHANGE PASSWORD CARD -->
+                <div class="dashboard-card" style="padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+                    <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color, #E2E8F0);">
+                        <h3 style="margin: 0 0 0.25rem 0; font-size: 17px; font-weight: 800; color: var(--text-color, #172033);">
+                            <i class="fa-solid fa-shield-halved" style="color: var(--color-primary, #5B3FE8); margin-right: 8px;"></i> Account Security & Change Password
+                        </h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #64748B);">
+                            Keep your platform administration account secure with a strong cryptographic password policy.
+                        </p>
+                    </div>
+
+                    <form id="adminChangePasswordForm">
+                        <div style="margin-bottom: 1.25rem;">
+                            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">Current Password</label>
+                            <div style="position: relative;">
+                                <input type="password" id="adminOldPassword" placeholder="Enter current password" class="form-input" style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);" required>
+                                <button type="button" class="pwd-toggle-btn" data-target="adminOldPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: var(--text-secondary, #94A3B8); cursor: pointer; padding: 4px;" title="Show/Hide Password">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">New Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="adminNewPassword" placeholder="e.g. Admin@2026!" class="form-input" style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);" required>
+                                    <button type="button" class="pwd-toggle-btn" data-target="adminNewPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: var(--text-secondary, #94A3B8); cursor: pointer; padding: 4px;" title="Show/Hide Password">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.4rem; color: var(--text-color, #172033);">Confirm New Password</label>
+                                <div style="position: relative;">
+                                    <input type="password" id="adminConfirmPassword" placeholder="Re-enter new password" class="form-input" style="width: 100%; padding: 0.75rem 2.5rem 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color, #E2E8F0);" required>
+                                    <button type="button" class="pwd-toggle-btn" data-target="adminConfirmPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: var(--text-secondary, #94A3B8); cursor: pointer; padding: 4px;" title="Show/Hide Password">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIVE PASSWORD COMPLEXITY BOX -->
+                        <div class="password-complexity-box" id="adminPasswordComplexityBox" style="margin-bottom: 1.25rem; padding: 0.85rem 1rem; border-radius: 8px; background: #F8FAFC; border: 1px solid #E2E8F0; font-size: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <span style="font-weight: 600; color: #475569;">Password Strength:</span>
+                                <span id="adminPassStrengthLabel" style="font-weight: 700; color: #94A3B8;">None</span>
+                            </div>
+                            <div style="height: 5px; width: 100%; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-bottom: 0.65rem;">
+                                <div id="adminPassStrengthBar" style="height: 100%; width: 0%; background: #EF4444; transition: all 0.25s ease;"></div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.75rem; color: #64748B;">
+                                <div id="admin-req-len"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> 8+ characters</div>
+                                <div id="admin-req-upper"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Uppercase letter (A-Z)</div>
+                                <div id="admin-req-lower"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Lowercase letter (a-z)</div>
+                                <div id="admin-req-num"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Number (0-9)</div>
+                                <div id="admin-req-spec" style="grid-column: 1 / -1;"><i class="fa-solid fa-circle-xmark" style="color:#EF4444; margin-right:4px;"></i> Special symbol (!@#$%^&*...)</div>
+                            </div>
+                        </div>
+
+                        <div id="passwordMsg" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 13px; font-weight: 600;"></div>
+
+                        <div style="text-align: right;">
+                            <button type="submit" id="adminChangePassBtn" class="btn-primary" style="padding: 0.75rem 2rem; border-radius: 8px; background: var(--color-gradient-primary, linear-gradient(135deg, #5B3FE8 0%, #8B4AD9 100%)); border: none; color: #FFFFFF; font-size: 13.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(91, 63, 232, 0.3); transition: all 0.2s;">
+                                <i class="fa-solid fa-key"></i> Update Admin Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 4. GOVERNANCE & PRIVILEGES SUMMARY CARD -->
+                <div class="dashboard-card" style="padding: 1.75rem 2rem; border-radius: 16px; background: linear-gradient(135deg, rgba(91, 63, 232, 0.04) 0%, rgba(139, 74, 217, 0.06) 100%); border: 1px solid rgba(91, 63, 232, 0.15);">
+                    <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.75rem;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--color-primary, #5B3FE8); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <div>
+                            <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-color, #172033);">Administrator Role & Governance Scope</h4>
+                            <p style="margin: 0; font-size: 12px; color: var(--text-secondary, #64748B);">Authorized Superuser Credentials</p>
+                        </div>
+                    </div>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-secondary, #64748B); line-height: 1.55;">
+                        Your administrator session grants root authority over the Course Catalog, User Moderation, Skills Mapping, Assessment Creation, and Platform Reports. All profile updates and password modifications are committed with immediate database consistency.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPTS -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js?v=20260924_banner_fix"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/chatbot.js"></script>
+    <script src="../js/admin.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = window.guardPage('ADMIN');
+            if (!user) return;
+
+            // Shared header setup
+            if (typeof setupAdminHeader === 'function') {
+                setupAdminHeader(user);
+            }
+
+            let profileData = {};
+
+            // Helper to render avatar in overview card
+            function updateAvatarVisual(photoUrl, name) {
+                const avatarEl = document.getElementById('adminProfileAvatarBig');
+                const removeBtn = document.getElementById('adminRemovePhotoBtn');
+                const initial = (name || 'Administrator').charAt(0).toUpperCase();
+
+                if (!avatarEl) return;
+
+                if (photoUrl && photoUrl.trim()) {
+                    avatarEl.innerHTML = `<img src="${photoUrl}" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    if (removeBtn) removeBtn.style.display = 'inline-flex';
+                } else {
+                    avatarEl.textContent = initial;
+                    if (removeBtn) removeBtn.style.display = 'none';
+                }
+
+                // Also update topbar & sidebar avatars
+                if (typeof setAdminAvatarHelper === 'function') {
+                    setAdminAvatarHelper(document.getElementById('topAvatar'), photoUrl, initial);
+                    setAdminAvatarHelper(document.getElementById('sidebarAvatar'), photoUrl, initial);
+                }
+            }
+
+            // Populate form with real values
+            async function loadAdminProfile() {
+                try {
+                    const res = await window.api.getProfile();
+                    profileData = res || {};
+
+                    const fullName = profileData.full_name || user.full_name || 'System Administrator';
+                    const email = profileData.email || user.email || 'admin@smartlearn.com';
+                    const phone = profileData.phone || '';
+                    const city = profileData.city || '';
+                    const title = profileData.title || profileData.career_goal || 'System Administration & Platform Operations';
+                    const photo = profileData.profile_image || '';
+                    const createdAt = profileData.created_at || 'January 2026';
+
+                    document.getElementById('adminDisplayName').textContent = fullName;
+                    document.getElementById('adminDisplayEmail').textContent = email;
+                    document.getElementById('adminMemberSince').textContent = createdAt;
+                    document.getElementById('adminFullName').value = fullName;
+                    document.getElementById('adminEmail').value = email;
+                    document.getElementById('adminPhone').value = phone;
+                    document.getElementById('adminCity').value = city;
+                    document.getElementById('adminTitle').value = title;
+
+                    updateAvatarVisual(photo, fullName);
+
+                    // Sync localStorage user
+                    const cur = window.api.getCurrentUser() || {};
+                    cur.full_name = fullName;
+                    cur.profile_image = photo;
+                    localStorage.setItem('smartlearn_user', JSON.stringify(cur));
+                } catch (err) {
+                    console.error('Failed to load admin profile:', err);
+                }
+            }
+
+            await loadAdminProfile();
+
+            // Cancel button resets to saved DB state
+            document.getElementById('cancelProfileBtn')?.addEventListener('click', () => {
+                loadAdminProfile();
+                const msgBox = document.getElementById('profileMsg');
+                if (msgBox) msgBox.style.display = 'none';
+            });
+
+            // Photo Upload
+            const photoInput = document.getElementById('adminPhotoInput');
+            document.getElementById('adminUploadPhotoBtn')?.addEventListener('click', () => {
+                photoInput && photoInput.click();
+            });
+
+            photoInput?.addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                // Client validation
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size exceeds 5MB limit. Please select a smaller photo.');
+                    return;
+                }
+                const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+                if (!allowed.includes(file.type.toLowerCase())) {
+                    alert('Invalid format. Allowed formats: JPG, PNG, WEBP.');
+                    return;
+                }
+
+                // Show local preview immediately
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const avatarEl = document.getElementById('adminProfileAvatarBig');
+                    if (avatarEl) {
+                        avatarEl.innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                    }
+                };
+                reader.readAsDataURL(file);
+
+                const msgBox = document.getElementById('profileMsg');
+                try {
+                    const uploadRes = await window.api.uploadAvatar(file);
+                    const newPath = uploadRes.relative_url || uploadRes.image_url || uploadRes.profile_image;
+                    updateAvatarVisual(newPath, document.getElementById('adminFullName').value);
+                    
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#ECFDF5';
+                        msgBox.style.color = '#065F46';
+                        msgBox.style.border = '1px solid #A7F3D0';
+                        msgBox.textContent = 'Profile photo uploaded successfully!';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 3500);
+                    }
+                } catch (err) {
+                    alert('Failed to upload photo: ' + (err.message || 'Error'));
+                    loadAdminProfile(); // revert preview
+                }
+            });
+
+            // Remove Photo
+            document.getElementById('adminRemovePhotoBtn')?.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to remove your profile photo?')) return;
+                try {
+                    await window.api.removeAvatar();
+                    updateAvatarVisual('', document.getElementById('adminFullName').value);
+                    const msgBox = document.getElementById('profileMsg');
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#ECFDF5';
+                        msgBox.style.color = '#065F46';
+                        msgBox.style.border = '1px solid #A7F3D0';
+                        msgBox.textContent = 'Profile photo removed successfully.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 3500);
+                    }
+                } catch (err) {
+                    alert('Failed to remove photo: ' + (err.message || 'Error'));
+                }
+            });
+
+            // Save Personal Information
+            const profileForm = document.getElementById('adminProfileForm');
+            profileForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveBtn = document.getElementById('saveProfileBtn');
+                const msgBox = document.getElementById('profileMsg');
+
+                const fullName = document.getElementById('adminFullName').value.trim();
+                const phone = document.getElementById('adminPhone').value.trim();
+                const city = document.getElementById('adminCity').value.trim();
+                const title = document.getElementById('adminTitle').value.trim();
+
+                if (!fullName) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = 'Full Name is required.';
+                    return;
+                }
+
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+                }
+
+                try {
+                    const updatePayload = {
+                        full_name: fullName,
+                        phone: phone,
+                        city: city,
+                        title: title,
+                        department: title
+                    };
+
+                    const res = await window.api.updateProfile(updatePayload);
+                    const updated = res.profile || res;
+
+                    // Update UI titles & headers
+                    document.getElementById('adminDisplayName').textContent = fullName;
+                    document.getElementById('sidebarName') && (document.getElementById('sidebarName').textContent = fullName);
+                    document.getElementById('topName') && (document.getElementById('topName').textContent = fullName);
+
+                    // Update cached user
+                    const cur = window.api.getCurrentUser() || {};
+                    cur.full_name = fullName;
+                    localStorage.setItem('smartlearn_user', JSON.stringify(cur));
+
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#ECFDF5';
+                    msgBox.style.color = '#065F46';
+                    msgBox.style.border = '1px solid #A7F3D0';
+                    msgBox.textContent = 'Admin profile updated successfully!';
+                    setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                } catch (err) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = err.message || 'Failed to update profile.';
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+                    }
+                }
+            });
+
+            // Password Complexity Checker
+            function checkPasswordComplexity(pwd) {
+                return {
+                    len: pwd.length >= 8,
+                    upper: /[A-Z]/.test(pwd),
+                    lower: /[a-z]/.test(pwd),
+                    num: /[0-9]/.test(pwd),
+                    spec: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+                };
+            }
+
+            function updateRequirementIcon(elId, passed) {
+                const el = document.getElementById(elId);
+                if (!el) return;
+                const icon = el.querySelector('i');
+                if (icon) {
+                    icon.className = passed ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark';
+                    icon.style.color = passed ? '#10B981' : '#EF4444';
+                }
+            }
+
+            const newPassInput = document.getElementById('adminNewPassword');
+            const passBar = document.getElementById('adminPassStrengthBar');
+            const passLabel = document.getElementById('adminPassStrengthLabel');
+
+            newPassInput?.addEventListener('input', () => {
+                const val = newPassInput.value;
+                if (!val) {
+                    passBar.style.width = '0%';
+                    passLabel.textContent = 'None';
+                    passLabel.style.color = '#94A3B8';
+                    ['admin-req-len', 'admin-req-upper', 'admin-req-lower', 'admin-req-num', 'admin-req-spec'].forEach(id => updateRequirementIcon(id, false));
+                    return;
+                }
+
+                const res = checkPasswordComplexity(val);
+                updateRequirementIcon('admin-req-len', res.len);
+                updateRequirementIcon('admin-req-upper', res.upper);
+                updateRequirementIcon('admin-req-lower', res.lower);
+                updateRequirementIcon('admin-req-num', res.num);
+                updateRequirementIcon('admin-req-spec', res.spec);
+
+                const passedCount = Object.values(res).filter(Boolean).length;
+                if (passedCount <= 2) {
+                    passBar.style.width = '33%';
+                    passBar.style.background = '#EF4444';
+                    passLabel.textContent = 'Weak';
+                    passLabel.style.color = '#EF4444';
+                } else if (passedCount <= 4) {
+                    passBar.style.width = '66%';
+                    passBar.style.background = '#F59E0B';
+                    passLabel.textContent = 'Moderate';
+                    passLabel.style.color = '#D97706';
+                } else {
+                    passBar.style.width = '100%';
+                    passBar.style.background = '#10B981';
+                    passLabel.textContent = 'Strong';
+                    passLabel.style.color = '#10B981';
+                }
+            });
+
+            // Password Toggle Buttons
+            document.querySelectorAll('.pwd-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    if (!input) return;
+                    const isPass = input.type === 'password';
+                    input.type = isPass ? 'text' : 'password';
+                    const icon = btn.querySelector('i');
+                    if (icon) {
+                        icon.className = isPass ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                    }
+                });
+            });
+
+            // Change Password Form Submission
+            const changePassForm = document.getElementById('adminChangePasswordForm');
+            changePassForm?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('adminChangePassBtn');
+                const msgBox = document.getElementById('passwordMsg');
+
+                const oldPass = document.getElementById('adminOldPassword').value;
+                const newPass = document.getElementById('adminNewPassword').value;
+                const confirmPass = document.getElementById('adminConfirmPassword').value;
+
+                if (newPass !== confirmPass) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = 'New password and confirmation do not match.';
+                    return;
+                }
+
+                const complexity = checkPasswordComplexity(newPass);
+                if (!complexity.len || !complexity.upper || !complexity.lower || !complexity.num || !complexity.spec) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = 'New password does not satisfy all complexity requirements.';
+                    return;
+                }
+
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+                }
+
+                try {
+                    const res = await window.api.changePassword(oldPass, newPass);
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#ECFDF5';
+                    msgBox.style.color = '#065F46';
+                    msgBox.style.border = '1px solid #A7F3D0';
+                    msgBox.textContent = res.message || 'Admin password updated successfully!';
+                    changePassForm.reset();
+                    passBar.style.width = '0%';
+                    passLabel.textContent = 'None';
+                    ['admin-req-len', 'admin-req-upper', 'admin-req-lower', 'admin-req-num', 'admin-req-spec'].forEach(id => updateRequirementIcon(id, false));
+                    setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                } catch (err) {
+                    msgBox.style.display = 'block';
+                    msgBox.style.background = '#FEF2F2';
+                    msgBox.style.color = '#991B1B';
+                    msgBox.style.border = '1px solid #FECACA';
+                    msgBox.textContent = err.message || 'Failed to update Admin password.';
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-key"></i> Update Admin Password';
+                    }
+                }
+            });
+
+            // Mobile menu toggle
+            document.getElementById('menuToggle')?.addEventListener('click', () => {
+                document.getElementById('dashboardSidebar')?.classList.toggle('active');
+                document.getElementById('sidebarOverlay')?.classList.toggle('active');
+            });
+            document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
+                document.getElementById('dashboardSidebar')?.classList.remove('active');
+                document.getElementById('sidebarOverlay')?.classList.remove('active');
+            });
+
+            // Logout listener
+            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.api && typeof window.api.logout === 'function') {
+                    window.api.logout();
+                } else {
+                    localStorage.removeItem('smartlearn_token');
+                    localStorage.removeItem('smartlearn_user');
+                    window.location.replace('../login.html');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
