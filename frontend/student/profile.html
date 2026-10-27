@@ -111,7 +111,7 @@
                 <!-- Left Column: User Summary Card -->
                 <aside class="profile-sidebar-card">
                     <div class="profile-avatar-large" id="avatarContainer">
-                        <img id="profilePageAvatar" src="" alt="Profile Photo" style="display: none;">
+                        <img id="profilePageAvatar" src="" alt="Profile Photo" style="display: none;" onerror="this.style.display='none'; const initEl = document.getElementById('avatarInitials'); if (initEl) initEl.style.display='flex';">
                         <span id="avatarInitials">ST</span>
                         <label for="profilePhotoFileInput" class="avatar-edit-btn" title="Change Photo">
                             <i class="fa-solid fa-camera"></i>
@@ -563,6 +563,10 @@
                 if (avatarImg) {
                     avatarImg.src = fullImgUrl;
                     avatarImg.style.display = 'block';
+                    avatarImg.onerror = function() {
+                        this.style.display = 'none';
+                        if (avatarInitials) avatarInitials.style.display = 'flex';
+                    };
                 }
                 if (avatarInitials) avatarInitials.style.display = 'none';
                 updateTopbarAndSidebarAvatars(activeProfileImg, name);
@@ -848,11 +852,19 @@
                 b.addEventListener('click', function() {
                     const sk = this.getAttribute('data-skill');
                     skillsMap.delete(sk);
-                    document.querySelectorAll('#editSkillPool .skill-chip').forEach(chip => {
-                        if (chip.textContent.trim().toLowerCase() === sk.toLowerCase()) chip.classList.remove('selected');
-                    });
                     renderSkillsUI();
                 });
+            });
+
+            // Synchronize pool chip highlight states
+            document.querySelectorAll('#editSkillPool .skill-chip').forEach(chip => {
+                const skName = chip.textContent.trim().toLowerCase();
+                let isSel = false;
+                for (let k of skillsMap.keys()) {
+                    if (k.toLowerCase() === skName) { isSel = true; break; }
+                }
+                if (isSel) chip.classList.add('selected');
+                else chip.classList.remove('selected');
             });
         }
 

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import shutil
 import uuid
@@ -51,7 +52,7 @@ except ImportError:
         from backend.app.services.notification_service import NotificationService, ws_manager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, Response
 from sqlalchemy import create_engine, Column, Integer, String, Float, JSON, ForeignKey, inspect, text, func, or_, and_
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
@@ -1948,16 +1949,16 @@ class ProfileData(BaseModel):
     department: Optional[str] = None
     website: Optional[str] = None
     credentials: Optional[str] = None
-    skills: Optional[list] = []
-    interests: Optional[list] = []
-    languages: Optional[list] = []
-    education: Optional[list] = []
-    experience: Optional[list] = []
-    projects: Optional[list] = []
-    courses: Optional[list] = []
+    skills: Optional[list] = None
+    interests: Optional[list] = None
+    languages: Optional[list] = None
+    education: Optional[list] = None
+    experience: Optional[list] = None
+    projects: Optional[list] = None
+    courses: Optional[list] = None
     learning_style: Optional[str] = None
-    completion_percentage: Optional[int] = 0
-    wishlist: Optional[list] = []
+    completion_percentage: Optional[int] = None
+    wishlist: Optional[list] = None
     current_password: Optional[str] = None
     new_password: Optional[str] = None
     password: Optional[str] = None
@@ -2781,6 +2782,8 @@ def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends
         user.hashed_password = get_password_hash(payload.new_password)
         token_rec.is_used = 1
         db.commit()
+        db.refresh(user)
+        sync_user_to_seed_data(user.id, updated_user_fields={"hashed_password": user.hashed_password})
 
         return {"message": "Password reset successfully. You can now log in with your new password."}
 
@@ -2791,6 +2794,8 @@ def reset_password(payload: ResetPasswordWithTokenPayload, db: Session = Depends
             raise HTTPException(status_code=404, detail="No account found with this email address.")
         db_user.hashed_password = get_password_hash(payload.new_password)
         db.commit()
+        db.refresh(db_user)
+        sync_user_to_seed_data(db_user.id, updated_user_fields={"hashed_password": db_user.hashed_password})
         return {"message": "Password updated successfully. You can now log in."}
     else:
         raise HTTPException(status_code=400, detail="Password reset token is required.")
@@ -3202,6 +3207,8 @@ def get_me(user: UserDB = Depends(get_current_user), db: Session = Depends(get_d
 
 @app.get("/profile")
 @app.get("/api/profile")
+@app.get("/profile/me")
+@app.get("/api/profile/me")
 def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Retrieves the complete profile data for the currently authenticated user.
@@ -3277,6 +3284,9 @@ def get_profile(user: UserDB = Depends(get_current_user), db: Session = Depends(
 @app.post("/api/profile")
 @app.put("/profile")
 @app.put("/api/profile")
+@app.post("/profile/me")
+@app.put("/profile/me")
+@app.put("/api/profile/me")
 @app.put("/users/me")
 @app.patch("/users/me")
 @app.post("/student/profile")
@@ -3439,6 +3449,8 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
 
 @app.post("/profile/avatar")
 @app.post("/api/profile/avatar")
+@app.post("/upload/avatar")
+@app.post("/api/upload/avatar")
 async def upload_avatar(
     file: Optional[UploadFile] = File(None),
     avatar: Optional[UploadFile] = File(None),
@@ -3485,6 +3497,7 @@ async def upload_avatar(
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image size exceeds 5MB limit. Please choose a smaller image.")
 
+    import base64
     safe_ext = ext if ext in allowed_exts else "jpg"
     safe_filename = f"user_{user.id}_{uuid.uuid4().hex[:8]}.{safe_ext}"
     file_path = AVATAR_DIR / safe_filename
@@ -3494,23 +3507,44 @@ async def upload_avatar(
 
     relative_url = f"/uploads/avatars/{safe_filename}"
 
+    # Generate durable Base64 Data URI for persistent cross-restart rendering
+    mime = content_type if content_type in allowed_types else f"image/{safe_ext}"
+    data_uri = None
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(content))
+        img.thumbnail((300, 300))
+        thumb_io = io.BytesIO()
+        img.save(thumb_io, format="JPEG", quality=85, optimize=True)
+        thumb_bytes = thumb_io.getvalue()
+        thumb_b64 = base64.b64encode(thumb_bytes).decode("utf-8")
+        data_uri = f"data:image/jpeg;base64,{thumb_b64}"
+    except Exception:
+        if len(content) <= 300 * 1024:
+            b64_str = base64.b64encode(content).decode("utf-8")
+            data_uri = f"data:{mime};base64,{b64_str}"
+
+    avatar_val = data_uri if data_uri else relative_url
+
     profile = db.query(ProfileDB).filter(ProfileDB.user_id == user.id).first()
     if not profile:
-        profile = ProfileDB(user_id=user.id, profile_image=relative_url)
+        profile = ProfileDB(user_id=user.id, profile_image=avatar_val)
         db.add(profile)
     else:
-        profile.profile_image = relative_url
+        profile.profile_image = avatar_val
 
     db.commit()
     db.refresh(profile)
-    sync_user_to_seed_data(user.id, updated_profile_fields={"profile_image": relative_url})
+    sync_user_to_seed_data(user.id, updated_profile_fields={"profile_image": avatar_val})
 
     return {
         "success": True,
         "message": "Avatar uploaded successfully",
-        "image_url": relative_url,
+        "image_url": avatar_val,
         "relative_url": relative_url,
-        "profile_image": relative_url
+        "profile_image": avatar_val,
+        "avatar_url": avatar_val
     }
 
 @app.delete("/profile/avatar")
@@ -9993,6 +10027,75 @@ def get_instructor_payments(
             "total_earnings": round(total_revenue, 2)
         },
         "payments": records
+    }
+
+# --- AUTO-HEALING AVATAR ROUTE ---
+@app.get("/uploads/avatars/{filename}", include_in_schema=False)
+def serve_avatar_with_fallback(filename: str, db: Session = Depends(get_db)):
+    """
+    Serves avatar images with automatic database recovery and initials SVG fallback.
+    Prevents broken 404 image icons across ephemeral container restarts.
+    """
+    file_path = AVATAR_DIR / filename
+    if file_path.exists():
+        return FileResponse(file_path)
+
+    user_id = None
+    match = re.match(r"user_(\d+)_", filename)
+    if match:
+        user_id = int(match.group(1))
+        profile = db.query(ProfileDB).filter(ProfileDB.user_id == user_id).first()
+        if profile and profile.profile_image and profile.profile_image.startswith("data:image/"):
+            try:
+                import base64
+                header, b64_data = profile.profile_image.split(";base64,", 1)
+                img_bytes = base64.b64decode(b64_data)
+                with open(file_path, "wb") as f:
+                    f.write(img_bytes)
+                return FileResponse(file_path)
+            except Exception:
+                pass
+
+    # Clean SVG Initials fallback
+    initials = "SL"
+    if user_id:
+        u = db.query(UserDB).filter(UserDB.id == user_id).first()
+        if u and u.full_name:
+            parts = u.full_name.strip().split()
+            initials = (parts[0][0] + (parts[-1][0] if len(parts) > 1 else "")).upper()
+
+    svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+        <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5B3FE8" />
+                <stop offset="100%" stop-color="#8B4AD9" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="100" fill="url(#grad)" />
+        <text x="100" y="115" font-family="Inter, Arial, sans-serif" font-size="70" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="middle">{initials}</text>
+    </svg>"""
+    return Response(content=svg_content.encode("utf-8"), media_type="image/svg+xml")
+
+@app.get("/api/system/db-status")
+@app.get("/health/db")
+def get_db_status(db: Session = Depends(get_db)):
+    """
+    Returns deployment database diagnostics: active engine, persistence mode,
+    table counts, and configuration status.
+    """
+    is_postgres = "postgresql" in DATABASE_URL
+    user_count = db.query(UserDB).count()
+    course_count = db.query(CourseDB).count()
+    profile_count = db.query(ProfileDB).count()
+    return {
+        "status": "healthy",
+        "database_engine": "PostgreSQL" if is_postgres else "SQLite",
+        "is_persistent": is_postgres,
+        "users_count": user_count,
+        "courses_count": course_count,
+        "profiles_count": profile_count,
+        "storage_mode": "Cloud Managed PostgreSQL (Persistent)" if is_postgres else "Local SQLite (Ephemeral on Cloud Web Service)",
+        "persistence_notice": "Connected to persistent PostgreSQL." if is_postgres else "Running on SQLite. For permanent data retention on Render/cloud, set DATABASE_URL to a persistent PostgreSQL instance (e.g. Supabase, Neon, or Render Postgres)."
     }
 
 # --- MOUNT STATIC ASSETS & FRONTEND ---

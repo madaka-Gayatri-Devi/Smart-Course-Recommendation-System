@@ -321,7 +321,8 @@
                 if (!avatarEl) return;
 
                 if (photoUrl && photoUrl.trim()) {
-                    avatarEl.innerHTML = `<img src="${photoUrl}" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    const fullPhoto = window.api ? window.api.getImageUrl(photoUrl) : photoUrl;
+                    avatarEl.innerHTML = `<img src="${fullPhoto}" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.textContent='${initial}'">`;
                     if (removeBtn) removeBtn.style.display = 'inline-flex';
                 } else {
                     avatarEl.textContent = initial;

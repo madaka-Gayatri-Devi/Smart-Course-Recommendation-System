@@ -422,18 +422,18 @@
 
                 if (avatarPath) {
                     const fullUrl = window.api.getImageUrl(avatarPath);
-                    const imgHtml = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                    const imgHtml = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentElement.textContent='${initials}'; this.parentElement.style.background='linear-gradient(135deg, #7C3AED, #A855F7)';">`;
                     if (bigAvatar) {
                         bigAvatar.innerHTML = imgHtml;
                         bigAvatar.style.background = 'transparent';
                     }
                     if (removeBtn) removeBtn.style.display = 'inline-flex';
                     if (topAvatar) {
-                        topAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                        topAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentElement.textContent='${initials}'; this.parentElement.style.background='linear-gradient(135deg, #7C3AED, #A855F7)';">`;
                         topAvatar.style.background = 'transparent';
                     }
                     if (sideAvatar) {
-                        sideAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+                        sideAvatar.innerHTML = `<img src="${fullUrl}" alt="${fullName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentElement.textContent='${initials}'; this.parentElement.style.background='linear-gradient(135deg, #7C3AED, #A855F7)';">`;
                         sideAvatar.style.background = 'transparent';
                     }
                 } else {
