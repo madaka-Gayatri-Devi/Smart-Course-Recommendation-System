@@ -461,6 +461,12 @@
                         </div>
 
                     </div>
+                    <!-- Bottom Save Bar for Mobile and Long Forms -->
+                    <div class="profile-bottom-save-bar" style="border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; padding: 1.25rem 2rem; background: var(--card-bg, #ffffff); border-radius: 0 0 16px 16px;">
+                        <button type="button" class="btn-primary-full" id="saveAllProfileBtnBottom" style="width: auto; min-width: 220px; padding: 12px 24px; font-size: 14px; font-weight: 600; border-radius: 8px;">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -957,7 +963,7 @@
 
                 try {
                     const res = await window.api.uploadAvatar(file);
-                    const uploadedPath = res.relative_url || res.image_url || res.profile_image;
+                    const uploadedPath = res.profile_image || res.image_url || res.relative_url;
                     const newUrl = window.api.getImageUrl(uploadedPath);
                     if (avatarImg) {
                         avatarImg.src = newUrl;
@@ -988,11 +994,29 @@
         function renderEducationList(items) {
             if (!eduContainer) return;
             eduContainer.innerHTML = '';
-            const list = (items && items.length > 0) ? items : [{ qualification: 'B.Tech / B.E', institution: '', specialization: '', year: '', cgpa: '' }];
-            list.forEach(edu => addEduEntry(edu));
+            if (items && items.length > 0) {
+                items.forEach(edu => addEduEntry(edu));
+            } else {
+                eduContainer.innerHTML = '<p style="color:var(--secondary-text); font-size:13px; margin-bottom:1rem;">No education history listed yet.</p>';
+            }
         }
 
         function addEduEntry(data = {}) {
+            const pEmpty = eduContainer.querySelector('p');
+            if (pEmpty) pEmpty.remove();
+
+            const qualVal = (data.qualification || data.degree || 'B.Tech / B.E').trim();
+            const instVal = data.institution || data.college || data.school || '';
+            const specVal = data.specialization || data.branch || data.field_of_study || '';
+            const yearVal = data.year || data.graduation_year || data.passing_year || '';
+            const scoreVal = data.cgpa || data.percentage || data.score || data.grade || '';
+
+            const standardQuals = ['B.Tech / B.E', 'B.Sc', 'BCA', 'MCA', 'MBA', 'Diploma', '12th', 'Other'];
+            let customOption = '';
+            if (qualVal && !standardQuals.includes(qualVal)) {
+                customOption = `<option value="${qualVal}" selected>${qualVal}</option>`;
+            }
+
             const card = document.createElement('div');
             card.className = 'repeatable-card box-entry mb-3';
             card.innerHTML = `
@@ -1000,34 +1024,35 @@
                     <div class="form-group">
                         <label>Highest Qualification</label>
                         <select class="form-select edu-qual">
-                            <option ${data.qualification==='B.Tech / B.E'?'selected':''}>B.Tech / B.E</option>
-                            <option ${data.qualification==='B.Sc'?'selected':''}>B.Sc</option>
-                            <option ${data.qualification==='BCA'?'selected':''}>BCA</option>
-                            <option ${data.qualification==='MCA'?'selected':''}>MCA</option>
-                            <option ${data.qualification==='MBA'?'selected':''}>MBA</option>
-                            <option ${data.qualification==='Diploma'?'selected':''}>Diploma</option>
-                            <option ${data.qualification==='12th'?'selected':''}>12th</option>
-                            <option ${data.qualification==='Other'?'selected':''}>Other</option>
+                            ${customOption}
+                            <option ${qualVal==='B.Tech / B.E'?'selected':''}>B.Tech / B.E</option>
+                            <option ${qualVal==='B.Sc'?'selected':''}>B.Sc</option>
+                            <option ${qualVal==='BCA'?'selected':''}>BCA</option>
+                            <option ${qualVal==='MCA'?'selected':''}>MCA</option>
+                            <option ${qualVal==='MBA'?'selected':''}>MBA</option>
+                            <option ${qualVal==='Diploma'?'selected':''}>Diploma</option>
+                            <option ${qualVal==='12th'?'selected':''}>12th</option>
+                            <option ${qualVal==='Other'?'selected':''}>Other</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>College / University</label>
-                        <input type="text" class="form-control edu-inst" value="${data.institution || ''}" placeholder="e.g. Stanford University">
+                        <input type="text" class="form-control edu-inst" value="${instVal}" placeholder="e.g. Stanford University">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Specialization</label>
-                        <input type="text" class="form-control edu-spec" value="${data.specialization || ''}" placeholder="e.g. Computer Science">
+                        <input type="text" class="form-control edu-spec" value="${specVal}" placeholder="e.g. Computer Science">
                     </div>
                     <div class="form-group">
                         <label>Graduation Year</label>
-                        <input type="number" class="form-control edu-yr" value="${data.year || ''}" placeholder="2025">
+                        <input type="text" class="form-control edu-yr" value="${yearVal}" placeholder="e.g. 2025 or 2022 - 2026">
                     </div>
                 </div>
                 <div class="form-group mb-2" style="width: 48%;">
                     <label>CGPA / Percentage</label>
-                    <input type="text" class="form-control edu-score" value="${data.cgpa || ''}" placeholder="e.g. 8.5">
+                    <input type="text" class="form-control edu-score" value="${scoreVal}" placeholder="e.g. 8.5 CGPA">
                 </div>
                 <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
             `;
@@ -1052,32 +1077,38 @@
             const pEmpty = expContainer.querySelector('p');
             if (pEmpty) pEmpty.remove();
 
+            const compVal = data.company || data.organization || data.employer || '';
+            const roleVal = data.role || data.position || data.title || data.designation || '';
+            const sDateVal = data.startDate || data.start_date || data.from || '';
+            const eDateVal = data.endDate || data.end_date || data.to || '';
+            const descVal = data.description || data.summary || data.responsibilities || '';
+
             const card = document.createElement('div');
             card.className = 'repeatable-card box-entry mb-3';
             card.innerHTML = `
                 <div class="form-row">
                     <div class="form-group">
                         <label>Company Name</label>
-                        <input type="text" class="form-control exp-comp" value="${data.company || ''}" placeholder="e.g. Google">
+                        <input type="text" class="form-control exp-comp" value="${compVal}" placeholder="e.g. Google">
                     </div>
                     <div class="form-group">
                         <label>Role</label>
-                        <input type="text" class="form-control exp-pos" value="${data.role || ''}" placeholder="e.g. Frontend Intern">
+                        <input type="text" class="form-control exp-pos" value="${roleVal}" placeholder="e.g. Frontend Intern">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Start Date</label>
-                        <input type="date" class="form-control exp-sdate" value="${data.startDate || ''}">
+                        <input type="text" class="form-control exp-sdate" value="${sDateVal}" placeholder="e.g. 2023 or 2023-01">
                     </div>
                     <div class="form-group">
                         <label>End Date</label>
-                        <input type="date" class="form-control exp-edate" value="${data.endDate || ''}">
+                        <input type="text" class="form-control exp-edate" value="${eDateVal}" placeholder="e.g. Present or 2024-05">
                     </div>
                 </div>
                 <div class="form-group mb-2">
                     <label>Description</label>
-                    <textarea class="form-control exp-details" rows="2" placeholder="Responsibilities and accomplishments...">${data.description || ''}</textarea>
+                    <textarea class="form-control exp-details" rows="2" placeholder="Responsibilities and accomplishments...">${descVal}</textarea>
                 </div>
                 <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
             `;
@@ -1102,31 +1133,37 @@
             const pEmpty = projContainer.querySelector('p');
             if (pEmpty) pEmpty.remove();
 
+            const titleVal = data.title || data.name || data.project_name || '';
+            const typeVal = data.type || data.kind || data.category || '';
+            const descVal = data.description || data.summary || '';
+            const gitVal = data.githubUrl || data.github_url || data.github || data.repo || '';
+            const liveVal = data.liveUrl || data.live_url || data.live || data.demo || data.url || '';
+
             const card = document.createElement('div');
             card.className = 'repeatable-card box-entry mb-3';
             card.innerHTML = `
                 <div class="form-row">
                     <div class="form-group">
                         <label>Project Title</label>
-                        <input type="text" class="form-control prj-name" value="${data.title || ''}" placeholder="e.g. Smart Course Recommender">
+                        <input type="text" class="form-control prj-name" value="${titleVal}" placeholder="e.g. Smart Course Recommender">
                     </div>
                     <div class="form-group">
                         <label>Project Type</label>
-                        <input type="text" class="form-control prj-kind" value="${data.type || ''}" placeholder="e.g. Full Stack Web App">
+                        <input type="text" class="form-control prj-kind" value="${typeVal}" placeholder="e.g. Full Stack Web App">
                     </div>
                 </div>
                 <div class="form-group mb-2">
                     <label>Description</label>
-                    <textarea class="form-control prj-summary" rows="2" placeholder="Tech stack and key features...">${data.description || ''}</textarea>
+                    <textarea class="form-control prj-summary" rows="2" placeholder="Tech stack and key features...">${descVal}</textarea>
                 </div>
                 <div class="form-row mb-2">
                     <div class="form-group">
                         <label>GitHub Link</label>
-                        <input type="url" class="form-control prj-repo" value="${data.githubUrl || ''}" placeholder="https://github.com/...">
+                        <input type="url" class="form-control prj-repo" value="${gitVal}" placeholder="https://github.com/...">
                     </div>
                     <div class="form-group">
                         <label>Live Demo URL</label>
-                        <input type="url" class="form-control prj-demo" value="${data.liveUrl || ''}" placeholder="https://...">
+                        <input type="url" class="form-control prj-demo" value="${liveVal}" placeholder="https://...">
                     </div>
                 </div>
                 <button type="button" class="btn-remove-card" style="background:none; border:none; color:#ef4444; font-size:13px; font-weight:600; cursor:pointer;" onclick="this.closest('.box-entry').remove()"><i class="fa-solid fa-trash mr-1"></i> Remove</button>
@@ -1136,149 +1173,199 @@
 
         document.getElementById('btnEditAddProj')?.addEventListener('click', () => addProjEntry());
 
-        // Save All Changes Button
+        // Unified Save Changes Handler (wired to both top sidebar and bottom save buttons)
+        async function handleSaveAllProfile(triggerBtn) {
+            const btns = [document.getElementById('saveAllProfileBtn'), document.getElementById('saveAllProfileBtnBottom')].filter(Boolean);
+            btns.forEach(b => {
+                b.disabled = true;
+                b.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+            });
+
+            try {
+                // Education
+                const education = [];
+                document.querySelectorAll('#editEducationContainer .box-entry').forEach(card => {
+                    const qualification = card.querySelector('.edu-qual')?.value?.trim();
+                    const institution = card.querySelector('.edu-inst')?.value?.trim();
+                    const specialization = card.querySelector('.edu-spec')?.value?.trim();
+                    const year = card.querySelector('.edu-yr')?.value?.trim();
+                    const cgpa = card.querySelector('.edu-score')?.value?.trim();
+                    if (qualification || institution) {
+                        education.push({
+                            qualification: qualification || 'Other',
+                            degree: qualification || 'Other',
+                            institution: institution || '',
+                            specialization: specialization || '',
+                            year: year || '',
+                            cgpa: cgpa || '',
+                            percentage: cgpa || ''
+                        });
+                    }
+                });
+
+                // Experience
+                const experience = [];
+                document.querySelectorAll('#editExperienceContainer .box-entry').forEach(card => {
+                    const company = card.querySelector('.exp-comp')?.value?.trim();
+                    const role = card.querySelector('.exp-pos')?.value?.trim();
+                    const startDate = card.querySelector('.exp-sdate')?.value?.trim();
+                    const endDate = card.querySelector('.exp-edate')?.value?.trim();
+                    const description = card.querySelector('.exp-details')?.value?.trim();
+                    if (company || role) {
+                        experience.push({
+                            company: company || '',
+                            role: role || '',
+                            position: role || '',
+                            startDate: startDate || '',
+                            start_date: startDate || '',
+                            endDate: endDate || '',
+                            end_date: endDate || '',
+                            description: description || ''
+                        });
+                    }
+                });
+
+                // Projects
+                const projects = [];
+                document.querySelectorAll('#editProjectsContainer .box-entry').forEach(card => {
+                    const title = card.querySelector('.prj-name')?.value?.trim();
+                    const type = card.querySelector('.prj-kind')?.value?.trim();
+                    const description = card.querySelector('.prj-summary')?.value?.trim();
+                    const githubUrl = card.querySelector('.prj-repo')?.value?.trim();
+                    const liveUrl = card.querySelector('.prj-demo')?.value?.trim();
+                    if (title) {
+                        projects.push({
+                            title: title,
+                            name: title,
+                            type: type || '',
+                            description: description || '',
+                            githubUrl: githubUrl || '',
+                            github_url: githubUrl || '',
+                            liveUrl: liveUrl || '',
+                            live_url: liveUrl || ''
+                        });
+                    }
+                });
+
+                const interests = Array.from(document.querySelectorAll('#editInterestPool .interest-chip.selected')).map(c => c.textContent.trim());
+                const languages = Array.from(document.querySelectorAll('#editLangPool .lang-chip.selected')).map(c => c.textContent.trim());
+
+                // Check if user also entered a new password in Account & Security tab
+                const oldPassInput = document.getElementById('changeOldPassword')?.value || '';
+                const newPassInput = document.getElementById('changeNewPassword')?.value || '';
+                const confirmPassInput = document.getElementById('changeConfirmPassword')?.value || '';
+
+                if (newPassInput) {
+                    if (!oldPassInput) {
+                        showAlert('Please enter your current password to update your password.', false);
+                        btns.forEach(b => {
+                            b.disabled = false;
+                            b.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                        });
+                        return;
+                    }
+                    const c = checkPasswordComplexity(newPassInput);
+                    if (!c.len || !c.upper || !c.lower || !c.num || !c.spec) {
+                        showAlert('New password must meet all complexity requirements: 8+ chars, uppercase, lowercase, number, and special character.', false);
+                        btns.forEach(b => {
+                            b.disabled = false;
+                            b.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                        });
+                        return;
+                    }
+                    if (newPassInput !== confirmPassInput) {
+                        showAlert('New passwords do not match.', false);
+                        btns.forEach(b => {
+                            b.disabled = false;
+                            b.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                        });
+                        return;
+                    }
+                }
+
+                const payload = {
+                    full_name: editFullName?.value?.trim() || '',
+                    phone: editPhone?.value?.trim() || '',
+                    dob: editDob?.value || '',
+                    gender: editGender?.value || '',
+                    city: editCity?.value?.trim() || '',
+                    career_goal: editPrimaryCareerVal?.value || '',
+                    secondary_career_goal: editSecondaryCareerVal?.value || '',
+                    skills: Array.from(skillsMap.values()),
+                    interests,
+                    languages,
+                    education,
+                    experience,
+                    projects
+                };
+
+                if (newPassInput) {
+                    payload.current_password = oldPassInput;
+                    payload.new_password = newPassInput;
+                }
+
+                const res = await window.api.saveProfile(payload);
+                showAlert(newPassInput ? 'Profile and password updated successfully!' : 'Profile updated successfully! All information saved.');
+
+                if (newPassInput) {
+                    const passMsg = document.getElementById('changePasswordMsg');
+                    if (passMsg) {
+                        passMsg.style.display = 'block';
+                        passMsg.style.background = '#ECFDF5';
+                        passMsg.style.color = '#065F46';
+                        passMsg.style.border = '1px solid #A7F3D0';
+                        passMsg.textContent = 'Password updated successfully in database.';
+                    }
+                    document.getElementById('studentChangePasswordForm')?.reset();
+                }
+                
+                // Update side summary and topbar
+                if (payload.full_name) {
+                    if (sideFullName) sideFullName.textContent = payload.full_name;
+                    if (topName) topName.textContent = payload.full_name;
+                    const names = payload.full_name.split(' ');
+                    let initials = names[0]?.charAt(0) || 'S';
+                    if (names.length > 1) initials += names[1].charAt(0);
+                    if (topAvatar && !topAvatar.querySelector('img')) topAvatar.textContent = initials.toUpperCase();
+                    if (avatarInitials) avatarInitials.textContent = initials.toUpperCase();
+                }
+                if (sidePhone) sidePhone.textContent = payload.phone || 'Not provided';
+                if (sideCity) sideCity.textContent = payload.city || 'Not set';
+                if (sideCareer) sideCareer.textContent = payload.career_goal ? ('Goal: ' + payload.career_goal) : 'Target Goal: Not set';
+                if (sideCompletionPct && res.completion_percentage !== undefined) {
+                    sideCompletionPct.textContent = res.completion_percentage + '%';
+                    if (sideCompletionBar) sideCompletionBar.style.width = res.completion_percentage + '%';
+                }
+
+                // Synchronize local storage user cache
+                try {
+                    const rawUser = localStorage.getItem('smartlearn_user');
+                    if (rawUser) {
+                        const uObj = JSON.parse(rawUser);
+                        if (payload.full_name) uObj.full_name = payload.full_name;
+                        localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
+                    }
+                } catch (_) {}
+
+            } catch (err) {
+                console.error(err);
+                showAlert('Failed to save profile: ' + (err.message || 'Server error'), false);
+            } finally {
+                btns.forEach(b => {
+                    b.disabled = false;
+                    b.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
+                });
+            }
+        }
+
+        // Save All Changes Buttons (sidebar top and tabs bottom)
         const saveAllBtn = document.getElementById('saveAllProfileBtn');
         if (saveAllBtn) {
-            saveAllBtn.addEventListener('click', async () => {
-                saveAllBtn.disabled = true;
-                saveAllBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
-
-                try {
-                    // Education
-                    const education = [];
-                    document.querySelectorAll('#editEducationContainer .box-entry').forEach(card => {
-                        const qualification = card.querySelector('.edu-qual')?.value;
-                        const institution = card.querySelector('.edu-inst')?.value;
-                        const specialization = card.querySelector('.edu-spec')?.value;
-                        const year = card.querySelector('.edu-yr')?.value;
-                        const cgpa = card.querySelector('.edu-score')?.value;
-                        if (qualification) education.push({ qualification, institution, specialization, year, cgpa });
-                    });
-
-                    // Experience
-                    const experience = [];
-                    document.querySelectorAll('#editExperienceContainer .box-entry').forEach(card => {
-                        const company = card.querySelector('.exp-comp')?.value;
-                        const role = card.querySelector('.exp-pos')?.value;
-                        const startDate = card.querySelector('.exp-sdate')?.value;
-                        const endDate = card.querySelector('.exp-edate')?.value;
-                        const description = card.querySelector('.exp-details')?.value;
-                        if (company || role) experience.push({ company, role, startDate, endDate, description });
-                    });
-
-                    // Projects
-                    const projects = [];
-                    document.querySelectorAll('#editProjectsContainer .box-entry').forEach(card => {
-                        const title = card.querySelector('.prj-name')?.value;
-                        const type = card.querySelector('.prj-kind')?.value;
-                        const description = card.querySelector('.prj-summary')?.value;
-                        const githubUrl = card.querySelector('.prj-repo')?.value;
-                        const liveUrl = card.querySelector('.prj-demo')?.value;
-                        if (title) projects.push({ title, type, description, githubUrl, liveUrl });
-                    });
-
-                    const interests = Array.from(document.querySelectorAll('#editInterestPool .interest-chip.selected')).map(c => c.textContent.trim());
-                    const languages = Array.from(document.querySelectorAll('#editLangPool .lang-chip.selected')).map(c => c.textContent.trim());
-
-                    // Check if user also entered a new password in Account & Security tab
-                    const oldPassInput = document.getElementById('changeOldPassword')?.value || '';
-                    const newPassInput = document.getElementById('changeNewPassword')?.value || '';
-                    const confirmPassInput = document.getElementById('changeConfirmPassword')?.value || '';
-
-                    if (newPassInput) {
-                        if (!oldPassInput) {
-                            showAlert('Please enter your current password to update your password.', false);
-                            saveAllBtn.disabled = false;
-                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
-                            return;
-                        }
-                        const c = checkPasswordComplexity(newPassInput);
-                        if (!c.len || !c.upper || !c.lower || !c.num || !c.spec) {
-                            showAlert('New password must meet all complexity requirements: 8+ chars, uppercase, lowercase, number, and special character.', false);
-                            saveAllBtn.disabled = false;
-                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
-                            return;
-                        }
-                        if (newPassInput !== confirmPassInput) {
-                            showAlert('New passwords do not match.', false);
-                            saveAllBtn.disabled = false;
-                            saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
-                            return;
-                        }
-                    }
-
-                    const payload = {
-                        full_name: editFullName?.value?.trim() || '',
-                        phone: editPhone?.value?.trim() || '',
-                        dob: editDob?.value || '',
-                        gender: editGender?.value || '',
-                        city: editCity?.value?.trim() || '',
-                        career_goal: editPrimaryCareerVal?.value || '',
-                        secondary_career_goal: editSecondaryCareerVal?.value || '',
-                        skills: Array.from(skillsMap.values()),
-                        interests,
-                        languages,
-                        education,
-                        experience,
-                        projects
-                    };
-
-                    if (newPassInput) {
-                        payload.current_password = oldPassInput;
-                        payload.new_password = newPassInput;
-                    }
-
-                    const res = await window.api.saveProfile(payload);
-                    showAlert(newPassInput ? 'Profile and password updated successfully!' : 'Profile updated successfully! All information saved.');
-
-                    if (newPassInput) {
-                        const passMsg = document.getElementById('changePasswordMsg');
-                        if (passMsg) {
-                            passMsg.style.display = 'block';
-                            passMsg.style.background = '#ECFDF5';
-                            passMsg.style.color = '#065F46';
-                            passMsg.style.border = '1px solid #A7F3D0';
-                            passMsg.textContent = 'Password updated successfully in database.';
-                        }
-                        document.getElementById('studentChangePasswordForm')?.reset();
-                    }
-                    
-                    // Update side summary and topbar
-                    if (payload.full_name) {
-                        if (sideFullName) sideFullName.textContent = payload.full_name;
-                        if (topName) topName.textContent = payload.full_name;
-                        const names = payload.full_name.split(' ');
-                        let initials = names[0]?.charAt(0) || 'S';
-                        if (names.length > 1) initials += names[1].charAt(0);
-                        if (topAvatar && !topAvatar.querySelector('img')) topAvatar.textContent = initials.toUpperCase();
-                        if (avatarInitials) avatarInitials.textContent = initials.toUpperCase();
-                    }
-                    if (sidePhone) sidePhone.textContent = payload.phone || 'Not provided';
-                    if (sideCity) sideCity.textContent = payload.city || 'Not set';
-                    if (sideCareer) sideCareer.textContent = payload.career_goal ? ('Goal: ' + payload.career_goal) : 'Target Goal: Not set';
-                    if (sideCompletionPct && res.completion_percentage !== undefined) {
-                        sideCompletionPct.textContent = res.completion_percentage + '%';
-                        if (sideCompletionBar) sideCompletionBar.style.width = res.completion_percentage + '%';
-                    }
-
-                    // Synchronize local storage user cache
-                    try {
-                        const rawUser = localStorage.getItem('smartlearn_user');
-                        if (rawUser) {
-                            const uObj = JSON.parse(rawUser);
-                            if (payload.full_name) uObj.full_name = payload.full_name;
-                            localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
-                        }
-                    } catch (_) {}
-
-                } catch (err) {
-                    console.error(err);
-                    showAlert('Failed to save profile: ' + (err.message || 'Server error'), false);
-                } finally {
-                    saveAllBtn.disabled = false;
-                    saveAllBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Save Profile Changes';
-                }
-            });
+            saveAllBtn.addEventListener('click', () => handleSaveAllProfile(saveAllBtn));
+        }
+        const saveAllBtnBottom = document.getElementById('saveAllProfileBtnBottom');
+        if (saveAllBtnBottom) {
+            saveAllBtnBottom.addEventListener('click', () => handleSaveAllProfile(saveAllBtnBottom));
         }
 
         // Mobile Sidebar Toggle

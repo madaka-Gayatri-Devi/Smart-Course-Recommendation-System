@@ -564,9 +564,33 @@
                 const file = e.target.files && e.target.files[0];
                 if (!file) return;
 
+                const msgBox = document.getElementById('profileMsg');
+
                 // Validate file size and type
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('Profile picture size must not exceed 5MB.');
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Profile picture size must not exceed 5MB.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
+                    photoInput.value = '';
+                    return;
+                }
+
+                const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'];
+                if (file.type && !allowed.includes(file.type.toLowerCase())) {
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Invalid format. Allowed formats: JPG, PNG, WEBP, GIF.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
+                    photoInput.value = '';
                     return;
                 }
 
@@ -584,41 +608,53 @@
                 // Upload to backend
                 try {
                     const uploadRes = await window.api.uploadAvatar(file);
-                    const newAvatarPath = uploadRes.profile_image || uploadRes.avatar_url || uploadRes.avatar;
+                    const newAvatarPath = uploadRes.profile_image || uploadRes.avatar_url || uploadRes.image_url || uploadRes.relative_url;
                     
-                    // Update current user in localStorage
-                    const storedUser = window.api.getUser() || {};
+                    // Update current user in localStorage with verified session
+                    const storedUser = (window.api && typeof window.api.getCurrentUser === 'function') 
+                        ? (window.api.getCurrentUser() || {})
+                        : JSON.parse(localStorage.getItem('smartlearn_user') || '{}');
                     storedUser.profile_image = newAvatarPath;
                     localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));
 
                     renderInstructorAvatar(newAvatarPath, storedUser.full_name || storedUser.name || 'Instructor');
 
-                    const msgBox = document.getElementById('profileMsg');
                     if (msgBox) {
                         msgBox.style.display = 'block';
                         msgBox.style.background = '#ECFDF5';
                         msgBox.style.color = '#065F46';
                         msgBox.style.border = '1px solid #A7F3D0';
                         msgBox.textContent = 'Profile photo successfully uploaded and updated!';
-                        setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 3500);
                     }
                 } catch (err) {
-                    alert('Failed to upload photo: ' + (err.message || 'Server error'));
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Failed to upload photo: ' + (err.message || 'Server error');
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
                     renderInstructorAvatar(user.profile_image, user.full_name || user.name);
+                } finally {
+                    photoInput.value = '';
                 }
             });
 
             removeBtn?.addEventListener('click', async () => {
                 if (!confirm('Are you sure you want to remove your profile photo?')) return;
+                const msgBox = document.getElementById('profileMsg');
                 try {
                     await window.api.removeAvatar();
-                    const storedUser = window.api.getUser() || {};
+                    const storedUser = (window.api && typeof window.api.getCurrentUser === 'function') 
+                        ? (window.api.getCurrentUser() || {})
+                        : JSON.parse(localStorage.getItem('smartlearn_user') || '{}');
                     storedUser.profile_image = '';
                     localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));
 
                     renderInstructorAvatar('', storedUser.full_name || storedUser.name || 'Instructor');
 
-                    const msgBox = document.getElementById('profileMsg');
                     if (msgBox) {
                         msgBox.style.display = 'block';
                         msgBox.style.background = '#ECFDF5';
@@ -628,7 +664,14 @@
                         setTimeout(() => { msgBox.style.display = 'none'; }, 3000);
                     }
                 } catch (err) {
-                    alert('Failed to remove photo: ' + (err.message || 'Server error'));
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Failed to remove photo: ' + (err.message || 'Server error');
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
                 }
             });
 
@@ -828,7 +871,9 @@
                     await window.api.updateProfile(updatedData);
 
                     // Update UI and Local Storage
-                    const storedUser = window.api.getUser() || {};
+                    const storedUser = (window.api && typeof window.api.getCurrentUser === 'function') 
+                        ? (window.api.getCurrentUser() || {})
+                        : JSON.parse(localStorage.getItem('smartlearn_user') || '{}');
                     storedUser.full_name = updatedName;
                     storedUser.name = updatedName;
                     localStorage.setItem('smartlearn_user', JSON.stringify(storedUser));

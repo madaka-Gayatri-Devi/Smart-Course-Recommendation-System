@@ -74,7 +74,8 @@ if (document.readyState === 'loading') {
 function setInstructorAvatarHelper(el, image, initial) {
     if (!el) return;
     if (image && image.trim()) {
-        el.innerHTML = `<img src="${image}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        const fullUrl = (window.api && typeof window.api.getImageUrl === 'function') ? window.api.getImageUrl(image) : image;
+        el.innerHTML = `<img src="${fullUrl}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`;
     } else {
         el.textContent = initial;
     }
@@ -90,6 +91,17 @@ function setupInstructorHeader(user) {
     document.getElementById('sidebarRole') && (document.getElementById('sidebarRole').textContent = 'Instructor');
     setInstructorAvatarHelper(document.getElementById('topAvatar'), photo, initial);
     setInstructorAvatarHelper(document.getElementById('sidebarAvatar'), photo, initial);
+
+    if (!photo && window.api && typeof window.api.getProfile === 'function') {
+        window.api.getProfile().then(prof => {
+            if (prof && prof.profile_image) {
+                setInstructorAvatarHelper(document.getElementById('topAvatar'), prof.profile_image, initial);
+                setInstructorAvatarHelper(document.getElementById('sidebarAvatar'), prof.profile_image, initial);
+                user.profile_image = prof.profile_image;
+                localStorage.setItem('smartlearn_user', JSON.stringify(user));
+            }
+        }).catch(() => {});
+    }
 }
 
 // =========================================================================

@@ -102,6 +102,14 @@ const api = {
     },
 
     /**
+     * Resilient alias for getCurrentUser() to ensure backwards-compatibility
+     * and prevent TypeError if any component or script calls window.api.getUser().
+     */
+    getUser() {
+        return this.getCurrentUser();
+    },
+
+    /**
      * Retrieves the stored JWT authentication token from localStorage.
      *
      * @returns {string|null} JWT bearer token string or null if unauthenticated.
@@ -150,7 +158,8 @@ const api = {
      */
     getImageUrl(path) {
         if (!path) return '';
-        if (path.startsWith('http://') || path.startsWith('https://')) return path;
+        if (typeof path !== 'string') return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) return path;
         return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
     },
 
@@ -441,13 +450,19 @@ const api = {
         }
         const data = await res.json();
         
-        // If full_name was updated, update cached user object in localStorage
-        if (profileData && profileData.full_name) {
-            const currentUser = this.getCurrentUser();
-            if (currentUser) {
+        // Keep cached localStorage user in sync with updated fields
+        const currentUser = this.getCurrentUser();
+        if (currentUser) {
+            if (profileData && profileData.full_name) {
                 currentUser.full_name = profileData.full_name;
-                localStorage.setItem('smartlearn_user', JSON.stringify(currentUser));
+                currentUser.name = profileData.full_name;
             }
+            if (profileData && profileData.profile_image) {
+                currentUser.profile_image = profileData.profile_image;
+            } else if (data && data.profile && data.profile.profile_image) {
+                currentUser.profile_image = data.profile.profile_image;
+            }
+            localStorage.setItem('smartlearn_user', JSON.stringify(currentUser));
         }
         return data;
     },
@@ -487,7 +502,7 @@ const api = {
             throw new Error(msg);
         }
         const data = await res.json();
-        const avatarPath = data.relative_url || data.image_url || data.profile_image;
+        const avatarPath = data.profile_image || data.image_url || data.relative_url;
         if (avatarPath) {
             const currentUser = this.getCurrentUser();
             if (currentUser) {

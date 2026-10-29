@@ -4029,7 +4029,7 @@ a {
         width: 260px !important;
         min-width: 260px !important;
         max-width: 85vw !important;
-        z-index: 1001 !important;
+        z-index: 1000010 !important;
         transform: translateX(-100%) !important;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
@@ -4037,6 +4037,7 @@ a {
     .dashboard-sidebar.active, .app-sidebar.active, aside.dashboard-sidebar.active, aside.app-sidebar.active {
         transform: translateX(0) !important;
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.4) !important;
+        z-index: 1000010 !important;
     }
 
     .dashboard-main {
@@ -4059,7 +4060,7 @@ a {
         bottom: 0;
         background: rgba(15, 10, 30, 0.5);
         backdrop-filter: blur(2px);
-        z-index: 1000;
+        z-index: 1000005 !important;
         display: none;
         opacity: 0;
         transition: opacity 0.25s ease;
@@ -4068,6 +4069,15 @@ a {
     .sidebar-overlay.active {
         display: block !important;
         opacity: 1 !important;
+        z-index: 1000005 !important;
+    }
+
+    /* Suppress floating chatbot button while mobile navigation drawer is open */
+    body:has(.dashboard-sidebar.active) .smartlearn-chatbot-toggle,
+    body:has(.app-sidebar.active) .smartlearn-chatbot-toggle,
+    body:has(.sidebar-overlay.active) .smartlearn-chatbot-toggle {
+        display: none !important;
+        pointer-events: none !important;
     }
 
     .dashboard-content {

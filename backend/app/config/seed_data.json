@@ -202,7 +202,7 @@
       "id": 26,
       "full_name": "Naga Gayatri",
       "email": "gayatridevim255@gmail.com",
-      "hashed_password": "$2b$12$ZfaJ.cT5cxIc3Oc7LJwbneqxrLrniuhpoPgVNxXIy8odkbh1VDC7y",
+      "hashed_password": "$2b$12$vdeiV5gyv8zJdV2x6tVbwezZHFe64rK6K0FUj6FLbAIa1Pn1AQIJ.",
       "role": "Student",
       "is_active": 1,
       "created_at": "2026-09-11",
@@ -545,7 +545,7 @@
       "courses": [],
       "completion_percentage": 35,
       "secondary_career_goal": "https://tulasi.dev",
-      "profile_image": "",
+      "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAA8ADwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDmqKKK/RwCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/9k=",
       "learning_style": "",
       "wishlist": [],
       "email_preferences": null
@@ -789,7 +789,7 @@
       "dob": "2005-04-04",
       "gender": "Female",
       "city": "Proddatur, Andhra Pradesh",
-      "career_goal": "Full Stack Developer",
+      "career_goal": "Full Stack AI Engineer",
       "skills": [
         {
           "skill": "Python",
@@ -805,33 +805,67 @@
         },
         {
           "skill": "SQL",
-          "level": "Intermediate"
+          "level": "Advanced"
         },
         {
           "skill": "TypeScript",
+          "level": "Intermediate"
+        },
+        {
+          "skill": "React",
           "level": "Advanced"
         }
       ],
       "interests": [
         "Web Development",
         "AI & Machine Learning",
-        "Cloud Computing"
+        "Cloud Computing",
+        "Cyber Security"
       ],
-      "languages": [],
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi"
+      ],
       "education": [
         {
+          "qualification": "B.Tech / B.E",
           "degree": "B.Tech Computer Science & Engineering",
           "institution": "JNTUA College of Engineering",
+          "specialization": "Computer Science & Engineering",
           "year": "2022 - 2026",
+          "cgpa": "8.5 CGPA",
           "percentage": "8.5 CGPA"
         }
       ],
-      "experience": [],
-      "projects": [],
+      "experience": [
+        {
+          "company": "SmartLearn Global Innovations",
+          "role": "Frontend & Full Stack Intern",
+          "position": "Frontend & Full Stack Intern",
+          "startDate": "2024-05",
+          "start_date": "2024-05",
+          "endDate": "2024-09",
+          "end_date": "2024-09",
+          "description": "Implemented accessible UI components, integrated REST endpoints, and optimized page load times."
+        }
+      ],
+      "projects": [
+        {
+          "title": "Smart Course Recommendation System",
+          "name": "Smart Course Recommendation System",
+          "type": "Full Stack AI Platform",
+          "description": "Multi-factor AI course recommender with real-time skill gap analysis and role-based learning tracks.",
+          "githubUrl": "https://github.com/gayatri/SmartLearn",
+          "github_url": "https://github.com/gayatri/SmartLearn",
+          "liveUrl": "https://smartlearn.dev",
+          "live_url": "https://smartlearn.dev"
+        }
+      ],
       "courses": [],
-      "completion_percentage": 90,
-      "secondary_career_goal": "Full Stack Developer",
-      "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAB4AHgDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAj/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCEAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z",
+      "completion_percentage": 100,
+      "secondary_career_goal": "Cloud Solutions Architect",
+      "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAyADIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwBlFFFeofogUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB/9k=",
       "learning_style": null,
       "wishlist": [],
       "email_preferences": null
@@ -1136,7 +1170,7 @@
       "projects": [],
       "courses": [],
       "completion_percentage": 35,
-      "profile_image": ""
+      "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAyADIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDn6KKK/RT5oKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//Z"
     }
   ],
   "categories": [

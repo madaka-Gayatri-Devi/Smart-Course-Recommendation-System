@@ -390,14 +390,32 @@
                 const file = e.target.files && e.target.files[0];
                 if (!file) return;
 
+                const msgBox = document.getElementById('profileMsg');
+
                 // Client validation
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('Image size exceeds 5MB limit. Please select a smaller photo.');
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Image size exceeds 5MB limit. Please select a smaller photo.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
+                    photoInput.value = '';
                     return;
                 }
-                const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-                if (!allowed.includes(file.type.toLowerCase())) {
-                    alert('Invalid format. Allowed formats: JPG, PNG, WEBP.');
+                const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'];
+                if (file.type && !allowed.includes(file.type.toLowerCase())) {
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Invalid format. Allowed formats: JPG, PNG, WEBP, GIF.';
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
+                    photoInput.value = '';
                     return;
                 }
 
@@ -411,12 +429,18 @@
                 };
                 reader.readAsDataURL(file);
 
-                const msgBox = document.getElementById('profileMsg');
                 try {
                     const uploadRes = await window.api.uploadAvatar(file);
-                    const newPath = uploadRes.relative_url || uploadRes.image_url || uploadRes.profile_image;
-                    updateAvatarVisual(newPath, document.getElementById('adminFullName').value);
+                    const newPath = uploadRes.profile_image || uploadRes.avatar_url || uploadRes.image_url || uploadRes.relative_url;
+                    const fullName = document.getElementById('adminFullName').value;
+                    updateAvatarVisual(newPath, fullName);
                     
+                    const cur = (window.api && typeof window.api.getCurrentUser === 'function') 
+                        ? (window.api.getCurrentUser() || {})
+                        : JSON.parse(localStorage.getItem('smartlearn_user') || '{}');
+                    cur.profile_image = newPath;
+                    localStorage.setItem('smartlearn_user', JSON.stringify(cur));
+
                     if (msgBox) {
                         msgBox.style.display = 'block';
                         msgBox.style.background = '#ECFDF5';
@@ -426,8 +450,17 @@
                         setTimeout(() => { msgBox.style.display = 'none'; }, 3500);
                     }
                 } catch (err) {
-                    alert('Failed to upload photo: ' + (err.message || 'Error'));
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Failed to upload photo: ' + (err.message || 'Error');
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
                     loadAdminProfile(); // revert preview
+                } finally {
+                    photoInput.value = '';
                 }
             });
 
@@ -447,7 +480,14 @@
                         setTimeout(() => { msgBox.style.display = 'none'; }, 3500);
                     }
                 } catch (err) {
-                    alert('Failed to remove photo: ' + (err.message || 'Error'));
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.style.background = '#FEF2F2';
+                        msgBox.style.color = '#991B1B';
+                        msgBox.style.border = '1px solid #FECACA';
+                        msgBox.textContent = 'Failed to remove photo: ' + (err.message || 'Error');
+                        setTimeout(() => { msgBox.style.display = 'none'; }, 4000);
+                    }
                 }
             });
 

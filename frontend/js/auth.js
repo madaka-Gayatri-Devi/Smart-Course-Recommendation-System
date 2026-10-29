@@ -223,7 +223,12 @@ async function verifyBackendSession() {
         if (!window.api || typeof window.api.getMe !== 'function') return;
         const verifiedUser = await window.api.getMe();
         if (verifiedUser && verifiedUser.role) {
-            localStorage.setItem('smartlearn_user', JSON.stringify(verifiedUser));
+            const cur = window.api.getCurrentUser() || {};
+            const merged = { ...cur, ...verifiedUser };
+            if (!merged.profile_image && cur.profile_image) {
+                merged.profile_image = cur.profile_image;
+            }
+            localStorage.setItem('smartlearn_user', JSON.stringify(merged));
             localStorage.setItem('smartlearn_role', verifiedUser.role);
 
             const role = (verifiedUser.role || '').toUpperCase();
@@ -586,12 +591,14 @@ async function handleGoogleLogin(e) {
             throw new Error("Invalid backend authentication response.");
         }
 
+        const profileImg = res.profile_image || (res.user && res.user.profile_image) || fbAuthResult.photoURL || '';
         const userObj = {
             id: res.id,
             full_name: res.full_name || fbAuthResult.displayName || 'User',
             name: res.full_name || fbAuthResult.displayName || 'User',
             email: res.email || fbAuthResult.email,
-            role: res.role || 'Student'
+            role: res.role || 'Student',
+            profile_image: profileImg
         };
 
         localStorage.setItem('smartlearn_token', res.access_token);
@@ -1020,12 +1027,14 @@ function setupLoginForm() {
  * @param {string} email - Fallback email address string.
  */
 function completeLoginSession(res, email) {
+    const profileImg = res.profile_image || (res.user && res.user.profile_image) || '';
     const userObj = {
         id: res.id,
         full_name: res.full_name || res.name || 'User',
         name: res.full_name || res.name || 'User',
         email: res.email || email,
-        role: res.role || 'Student'
+        role: res.role || 'Student',
+        profile_image: profileImg
     };
 
     localStorage.setItem('smartlearn_token', res.access_token);
@@ -1143,8 +1152,10 @@ function setupRegisterForm() {
                 const userObj = {
                     id: res.id,
                     full_name: res.full_name || full_name,
+                    name: res.full_name || full_name,
                     email: res.email || email,
-                    role: res.role || role
+                    role: res.role || role,
+                    profile_image: res.profile_image || (res.user && res.user.profile_image) || ''
                 };
                 localStorage.setItem('smartlearn_token', res.access_token);
                 localStorage.setItem('smartlearn_user', JSON.stringify(userObj));
