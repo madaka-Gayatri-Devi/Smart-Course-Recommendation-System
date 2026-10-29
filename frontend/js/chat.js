@@ -2444,11 +2444,13 @@
 
     async function openConversation(convId) {
 
-
-
         if (!convId) {
             window.closeActiveConversation();
             return;
+        }
+
+        if (activeConvId !== convId) {
+            window.closeChatPanels();
         }
 
         activeConvId = convId;
@@ -3710,33 +3712,16 @@
 
 
     window.closeChatPanels = () => {
-
-
-
         const p1 = document.getElementById('chatContactPanel');
-
-
-
         const p2 = document.getElementById('chatSharedPanel');
-
-
-
         if (p1) p1.remove();
-
-
-
         if (p2) p2.remove();
-
-
-
         const menu = document.getElementById('chatHeaderOptionsMenu');
-
-
-
         if (menu) menu.remove();
-
-
-
+        const container = document.getElementById('chatAppContainer');
+        if (container) {
+            container.classList.remove('has-info-open');
+        }
     };
 
 
@@ -3745,242 +3730,85 @@
 
 
 
-    window.openContactInfoPanel = async (convId) => {
-
-
-
+    window.openContactInfoPanel = async (convId, forceOpen = false) => {
         const targetId = convId || activeConvId;
-
-
-
         if (!targetId) return;
 
-
-
-
-
-
+        // Toggle closed if already open for this conversation (unless forced open)
+        const existingPanel = document.getElementById('chatContactPanel');
+        if (!forceOpen && existingPanel && existingPanel.dataset.convId == targetId) {
+            window.closeChatPanels();
+            return;
+        }
 
         window.closeChatPanels();
 
-
-
-
-
-
-
         try {
-
-
-
             const info = await window.api.getContactInfo(targetId);
-
-
-
             const container = document.getElementById('chatAppContainer');
-
-
-
             if (!container) return;
 
-
-
-
-
-
-
             const panel = document.createElement('div');
-
-
-
             panel.id = 'chatContactPanel';
-
-
-
             panel.className = 'chat-contact-panel';
-
-
-
-
-
-
+            panel.dataset.convId = targetId;
 
             const totalSharedCount = (info.media_count || 0) + (info.docs_count || 0) + (info.links_count || 0);
-
-
-
-
-
-
+            const isGroup = info.type !== 'PERSONAL';
+            const panelTitle = isGroup ? 'Group Info' : 'Contact Info';
 
             panel.innerHTML = `
-
-
-
                 <div class="panel-header">
-
-
-
-                    <h4 class="panel-header-title"><i class="fa-solid fa-circle-info" style="color:#5B3FE8;"></i> Contact Info</h4>
-
-
-
-                    <button class="panel-close-btn" onclick="window.closeChatPanels()">&times;</button>
-
-
-
+                    <div class="panel-header-left">
+                        <button type="button" class="panel-back-btn" onclick="window.closeChatPanels()" title="Back to Chat">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <h4 class="panel-header-title">
+                            <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-circle-info'}" style="color: var(--color-primary, #5B3FE8);"></i>
+                            <span>${panelTitle}</span>
+                        </h4>
+                    </div>
+                    <button type="button" class="panel-close-btn" onclick="window.closeChatPanels()" title="Close">&times;</button>
                 </div>
 
-
-
                 <div class="contact-info-body">
-
-
-
                     <div class="contact-profile-avatar">
-
-
-
                         ${info.profile_image ? `<img src="${window.api.getImageUrl(info.profile_image)}" alt="${escapeHTML(info.title)}">` : getInitials(info.title)}
-
-
-
                     </div>
 
-
-
-                    <div style="text-align: center;">
-
-
-
+                    <div style="text-align: center; width: 100%; box-sizing: border-box;">
                         <h3 class="contact-profile-name">${escapeHTML(info.title)}</h3>
-
-
-
                         <span class="contact-profile-role">${escapeHTML(info.role || info.type)}</span>
-
-
-
                     </div>
-
-
-
-
-
-
 
                     <div class="contact-detail-card">
-
-
-
                         ${info.email ? `
-
-
-
                             <div class="contact-detail-row">
-
-
-
                                 <i class="fa-solid fa-envelope"></i>
-
-
-
-                                <div>
-
-
-
+                                <div class="contact-detail-content">
                                     <span class="contact-detail-label">Email</span>
-
-
-
                                     <span class="contact-detail-val">${escapeHTML(info.email)}</span>
-
-
-
                                 </div>
-
-
-
                             </div>
-
-
-
                         ` : ''}
-
-
-
-
-
-
 
                         ${info.course_title ? `
-
-
-
                             <div class="contact-detail-row">
-
-
-
                                 <i class="fa-solid fa-graduation-cap"></i>
-
-
-
-                                <div>
-
-
-
+                                <div class="contact-detail-content">
                                     <span class="contact-detail-label">Course</span>
-
-
-
                                     <span class="contact-detail-val">${escapeHTML(info.course_title)}</span>
-
-
-
                                 </div>
-
-
-
                             </div>
-
-
-
                         ` : ''}
 
-
-
-
-
-
-
                         <div class="contact-detail-row">
-
-
-
-                            <i class="fa-solid fa-circle" style="font-size: 0.6rem; color: ${info.is_online ? '#10B981' : '#CBD5E1'};"></i>
-
-
-
-                            <div>
-
-
-
+                            <i class="fa-solid fa-circle" style="font-size: 0.6rem; color: ${info.is_online ? '#10B981' : '#CBD5E1'}; margin-top: 4px;"></i>
+                            <div class="contact-detail-content">
                                 <span class="contact-detail-label">Status</span>
-
-
-
                                 <span class="contact-detail-val">${info.is_online ? 'Active now' : 'Offline'}</span>
-
-
-
                             </div>
-
-
-
                         </div>
-
-
-
                     </div>
 
 
@@ -4150,12 +3978,7 @@
 
 
             container.appendChild(panel);
-
-
-
-
-
-
+            container.classList.add('has-info-open');
 
             if (info.type !== 'PERSONAL') {
 
@@ -4246,41 +4069,20 @@
 
 
             const panel = document.createElement('div');
-
-
-
             panel.id = 'chatSharedPanel';
-
-
-
             panel.className = 'chat-shared-panel';
-
-
-
-
-
-
+            panel.dataset.convId = targetId;
 
             panel.innerHTML = `
-
-
-
                 <div class="panel-header">
-
-
-
-                    <button class="panel-close-btn" title="Back to Contact Info" onclick="window.openContactInfoPanel(${targetId})"><i class="fa-solid fa-arrow-left"></i></button>
-
-
-
-                    <h4 class="panel-header-title">Media, Links and Docs</h4>
-
-
-
-                    <button class="panel-close-btn" title="Close" onclick="window.closeChatPanels()">&times;</button>
-
-
-
+                    <div class="panel-header-left">
+                        <button type="button" class="panel-back-btn" title="Back to Info" onclick="window.openContactInfoPanel(${targetId}, true)"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h4 class="panel-header-title">
+                            <i class="fa-solid fa-photo-film" style="color: var(--color-primary, #5B3FE8);"></i>
+                            <span>Media, Links and Docs</span>
+                        </h4>
+                    </div>
+                    <button type="button" class="panel-close-btn" title="Close" onclick="window.closeChatPanels()">&times;</button>
                 </div>
 
 
@@ -4382,8 +4184,7 @@
 
 
             container.appendChild(panel);
-
-
+            container.classList.add('has-info-open');
 
             renderSharedContentTabBody();
 
@@ -8819,6 +8620,7 @@
     window.openConversationById = (id) => openConversation(id);
 
     window.closeActiveConversation = () => {
+        window.closeChatPanels();
         activeConvId = null;
         try {
             localStorage.removeItem('smartlearn_last_active_conv');

@@ -2707,7 +2707,7 @@
 
 
 
-    box-sizing: border-border;
+    box-sizing: border-box;
 
 
 
@@ -5250,309 +5250,198 @@
 /* 9. RESPONSIVE LAYOUT (Neutralized legacy baseline - unified responsive architecture active in Section 7) */
 
 /* Elevate floating chatbot toggle above the chat composer */
-
-    #smartlearn-chatbot-root .smartlearn-chatbot-toggle {
-
-        bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
-
-        right: 12px !important;
-
-        width: 42px !important;
-
-        height: 42px !important;
-
-        z-index: 15 !important;
-
-        transition: opacity 0.2s ease, transform 0.2s ease !important;
-
-    }
-
-
-
-    /* When typing in chat composer or when keyboard opens, fade out AI toggle so it never blocks Send */
-
-    body:has(.chat-composer:focus-within) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
-
-    body:has(#chatMessageInput:focus) #smartlearn-chatbot-root .smartlearn-chatbot-toggle {
-
-        opacity: 0.12 !important;
-
-        pointer-events: none !important;
-
-        transform: scale(0.8) !important;
-
-    }
-
+#smartlearn-chatbot-root .smartlearn-chatbot-toggle {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 20px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    z-index: 25 !important;
+    box-shadow: 0 4px 14px rgba(91, 63, 232, 0.4) !important;
+    transition: opacity 0.2s ease, transform 0.2s ease !important;
 }
 
-
-
-
-
-
-
-/* 10. CONTACT / PROFILE INFORMATION PANEL (SLIDE-IN RIGHT SIDE) */
-
-
-
-.chat-contact-panel, .chat-shared-panel {
-    width: 360px;
-    max-width: 100%;
-    background: var(--surface-color, #FFFFFF);
-    border-left: 1px solid var(--border-color, #E2E8F0);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-    height: 100%;
-    z-index: 50;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
-    overflow-y: auto;
-    overflow-x: hidden;
+#smartlearn-chatbot-root .smartlearn-chatbot-toggle span:not(.badge):not(.badge-dot) {
+    display: none !important;
 }
 
+/* When typing in chat composer or when keyboard opens, fade out AI toggle so it never blocks Send */
+body:has(.chat-composer:focus-within) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
+body:has(#chatMessageInput:focus) #smartlearn-chatbot-root .smartlearn-chatbot-toggle {
+    opacity: 0.12 !important;
+    pointer-events: none !important;
+    transform: scale(0.8) !important;
+}
 
+/* 10. CONTACT / GROUP INFORMATION PANEL (RESPONSIVE DRAWER & OVERLAY) */
 
+/* Desktop Grid Configuration when Info Drawer is Open */
+@media (min-width: 992px) {
+    .chat-app-container.has-info-open {
+        grid-template-columns: clamp(180px, 14vw, 220px) clamp(240px, 18vw, 280px) minmax(340px, 1fr) 340px !important;
+    }
 
+    @media (max-width: 1200px) {
+        .chat-app-container.has-info-open {
+            grid-template-columns: 68px clamp(240px, 22vw, 270px) minmax(320px, 1fr) 320px !important;
+        }
+        .chat-app-container.has-info-open .chat-nav-sidebar {
+            width: 68px !important;
+            padding: 0.75rem 0.4rem !important;
+        }
+    }
 
-
-
-@media (max-width: 1200px) {
-
-
+    .chat-page-wrapper.chat-expanded-mode .chat-app-container.has-info-open,
+    .chat-app-container.chat-expanded-mode.has-info-open {
+        grid-template-columns: minmax(360px, 1fr) 340px !important;
+    }
 
     .chat-contact-panel, .chat-shared-panel {
-
-
-
-        position: absolute;
-
-
-
-        right: 0;
-
-
-
-        top: 0;
-
-
-
-        bottom: 0;
-
-
-
-        width: 340px;
-
-
-
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
-
-
-
+        grid-column: 4 !important;
+        grid-row: 1 !important;
+        position: relative !important;
+        width: 340px !important;
+        max-width: 340px !important;
+        min-width: 300px !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-shrink: 0 !important;
+        background: var(--surface-color, #FFFFFF);
+        border-left: 1px solid var(--border-color, #E2E8F0);
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.04);
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+        z-index: 20 !important;
     }
 
+    .chat-page-wrapper.chat-expanded-mode .chat-contact-panel,
+    .chat-page-wrapper.chat-expanded-mode .chat-shared-panel,
+    .chat-app-container.chat-expanded-mode .chat-contact-panel,
+    .chat-app-container.chat-expanded-mode .chat-shared-panel {
+        grid-column: 2 !important;
+    }
 
-
+    .panel-back-btn {
+        display: none !important;
+    }
 }
 
-
-
-
-
-
-
-@media (max-width: 768px) {
-
-
-
+/* Mobile & Tablet Full-Screen Overlay (< 992px) */
+@media (max-width: 991px) {
     .chat-contact-panel, .chat-shared-panel {
-
-
-
-        width: 100%;
-
-
-
-        position: absolute;
-
-
-
-        inset: 0;
-
-
-
+        position: fixed !important;
+        inset: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        z-index: 1200 !important;
+        border-left: none !important;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        background: var(--surface-color, #FFFFFF) !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
     }
 
-
-
+    .panel-back-btn {
+        display: inline-flex !important;
+    }
 }
-
-
-
-
-
-
 
 .panel-header {
-
-
-
-    height: var(--chat-header-height);
-
-
-
-    padding: 0 1.15rem;
-
-
-
-    border-bottom: 1px solid var(--chat-border);
-
-
-
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--border-color, #E2E8F0);
     display: flex;
-
-
-
     align-items: center;
-
-
-
     justify-content: space-between;
-
-
-
-    background: #FFFFFF;
-
-
-
+    background: var(--surface-color, #FFFFFF);
     flex-shrink: 0;
-
-
-
+    box-sizing: border-box;
 }
 
-
-
-
-
-
+.panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    overflow: hidden;
+}
 
 .panel-header-title {
-
-
-
-    font-size: 1rem;
-
-
-
+    font-size: 0.95rem;
     font-weight: 700;
-
-
-
-    color: #172033;
-
-
-
+    color: var(--text-primary, #172033);
     margin: 0;
-
-
-
     display: flex;
-
-
-
     align-items: center;
-
-
-
     gap: 0.5rem;
-
-
-
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+.panel-back-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-hover, #F1F5F9);
+    color: var(--text-secondary, #64748B);
+    cursor: pointer;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
 
-
-
-
-
+.panel-back-btn:hover {
+    background: var(--bg-active, #E2E8F0);
+    color: var(--text-primary, #172033);
+}
 
 .panel-close-btn {
-
-
-
-    background: #F1F5F9;
-
-
-
+    background: var(--bg-hover, #F1F5F9);
     border: none;
-
-
-
     border-radius: 50%;
-
-
-
     width: 32px;
-
-
-
     height: 32px;
-
-
-
-    font-size: 1.1rem;
-
-
-
-    color: #64748B;
-
-
-
+    font-size: 1.15rem;
+    line-height: 1;
+    color: var(--text-secondary, #64748B);
     cursor: pointer;
-
-
-
-    display: flex;
-
-
-
+    display: inline-flex;
     align-items: center;
-
-
-
     justify-content: center;
-
-
-
-    transition: background 0.15s ease;
-
-
-
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
 }
 
-
-
-
-
-
-
 .panel-close-btn:hover {
-
-
-
-    background: #E2E8F0;
-
-
-
-    color: #172033;
-
-
-
+    background: var(--bg-active, #E2E8F0);
+    color: var(--text-primary, #172033);
 }
 
 
@@ -5698,29 +5587,17 @@
 
 
 .contact-profile-name {
-
-
-
-    font-size: 1.15rem;
-
-
-
+    font-size: 1.05rem;
     font-weight: 800;
-
-
-
-    color: #172033;
-
-
-
-    margin-bottom: 2px;
-
-
-
+    color: var(--text-primary, #172033);
+    margin: 0 0 4px 0;
     text-align: center;
-
-
-
+    word-break: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+    padding: 0 0.25rem;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 
@@ -5822,101 +5699,50 @@
 
 
 .contact-detail-row {
-
-
-
     display: flex;
-
-
-
-    align-items: center;
-
-
-
+    align-items: flex-start;
     gap: 0.75rem;
-
-
-
     font-size: 0.85rem;
-
-
-
-    color: #172033;
-
-
-
+    color: var(--text-primary, #172033);
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
-
-
-
-
-
-
 
 .contact-detail-row i {
-
-
-
     width: 20px;
-
-
-
-    color: #5B3FE8;
-
-
-
+    color: var(--color-primary, #5B3FE8);
     font-size: 1rem;
-
-
-
     text-align: center;
-
-
-
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-
-
-
-
-
+.contact-detail-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
 
 .contact-detail-label {
-
-
-
     font-size: 0.7rem;
-
-
-
-    color: #64748B;
-
-
-
+    color: var(--text-muted, #64748B);
     display: block;
-
-
-
+    margin-bottom: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
-
-
-
-
-
-
 .contact-detail-val {
-
-
-
     font-weight: 600;
-
-
-
-    word-break: break-all;
-
-
-
+    font-size: 0.85rem;
+    color: var(--text-primary, #0F172A);
+    word-break: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+    display: block;
+    width: 100%;
 }
 
 
@@ -13496,4 +13322,73 @@
 [data-resolved-appearance="dark"] .emoji-picker-popup {
     background: #1E293B !important;
     border-color: #334155 !important;
+}
+
+/* CONTACT & GROUP INFO PANEL DARK MODE */
+[data-resolved-appearance="dark"] .chat-contact-panel,
+[data-resolved-appearance="dark"] .chat-shared-panel {
+    background: #0F172A !important;
+    border-color: #334155 !important;
+}
+[data-resolved-appearance="dark"] .panel-header {
+    background: #0F172A !important;
+    border-color: #334155 !important;
+}
+[data-resolved-appearance="dark"] .panel-header-title {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .panel-back-btn,
+[data-resolved-appearance="dark"] .panel-close-btn {
+    background: #1E293B !important;
+    color: #94A3B8 !important;
+}
+[data-resolved-appearance="dark"] .panel-back-btn:hover,
+[data-resolved-appearance="dark"] .panel-close-btn:hover {
+    background: #334155 !important;
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .contact-profile-name {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .contact-detail-card {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+[data-resolved-appearance="dark"] .contact-detail-row {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .contact-detail-val {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .contact-detail-label {
+    color: #94A3B8 !important;
+}
+[data-resolved-appearance="dark"] .contact-media-trigger-card {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+[data-resolved-appearance="dark"] .contact-media-trigger-card:hover {
+    background: #334155 !important;
+}
+[data-resolved-appearance="dark"] .trigger-card-title {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .group-members-accordion {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+[data-resolved-appearance="dark"] .group-member-search-input {
+    background: #0F172A !important;
+    border-color: #334155 !important;
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .group-member-item-name {
+    color: #F8FAFC !important;
+}
+[data-resolved-appearance="dark"] .shared-tab-btn {
+    color: #94A3B8 !important;
+}
+[data-resolved-appearance="dark"] .shared-tab-btn.active {
+    color: var(--color-primary, #5B3FE8) !important;
+    border-bottom-color: var(--color-primary, #5B3FE8) !important;
 }
