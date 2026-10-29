@@ -1653,7 +1653,7 @@ def sync_student_recommendations(db: Session, student_id: int, force: bool = Fal
     db.commit()
     return updated_records
 
-def seed_initial_recommendations():
+def seed_initial_recommendations(force: bool = False):
     """
     Generates initial recommendations for all active students upon database bootstrap.
 
@@ -1662,6 +1662,8 @@ def seed_initial_recommendations():
     """
     db = SessionLocal()
     try:
+        if not force and db.query(RecommendationDB).count() > 0:
+            return
         students = db.query(UserDB).filter(UserDB.role.in_(["Student", "STUDENT", "student"])).all()
         for s in students:
             sync_student_recommendations(db, s.id)
@@ -1686,9 +1688,8 @@ async def on_startup():
     Application startup event handler.
 
     Purpose:
-        Seeds initial admin, catalogs, assessments, and recommendations; boots background notification scheduler.
+        Boots background notification and inactivity scheduler when not in testing mode.
     """
-    run_migrations()
     try:
         import asyncio
         try:
@@ -1698,8 +1699,12 @@ async def on_startup():
                 from services.scheduler_service import start_inactivity_scheduler
             except ImportError:
                 from backend.app.services.scheduler_service import start_inactivity_scheduler
-        asyncio.create_task(start_inactivity_scheduler())
-        print("[SmartLearn] Inactivity scheduler task started.")
+        is_testing = bool(os.getenv("TESTING") or os.getenv("PYTEST_CURRENT_TEST") or "pytest" in sys.modules)
+        if not is_testing:
+            asyncio.create_task(start_inactivity_scheduler())
+            print("[SmartLearn] Inactivity scheduler task started.")
+        else:
+            print("[SmartLearn] Inactivity scheduler skipped in test environment.")
     except Exception as _sch_err:
         print(f"[SmartLearn Scheduler Startup Warning] {_sch_err}")
 
@@ -1767,8 +1772,8 @@ def get_current_user(
     Error handling:
         Raises HTTP 401 if token is expired, invalid, or user record does not exist.
     """
-    token_str = token
-    if not token_str and authorization:
+    token_str = token if isinstance(token, str) else None
+    if not token_str and authorization and isinstance(authorization, str):
         if authorization.startswith("Bearer "):
             token_str = authorization[7:].strip()
         else:

@@ -217,6 +217,9 @@ async def start_inactivity_scheduler():
         asyncio.sleep, check_and_send_inactivity_reminders.
     """
     print(f"[Scheduler] Inactivity Reminder Scheduler initialized (Threshold: {INACTIVITY_THRESHOLD_DAYS} days, Interval: {SCHEDULER_CHECK_INTERVAL_SECONDS}s).")
+    # Initial grace period so server starts and answers initial requests without contention
+    initial_delay = int(os.getenv("SCHEDULER_INITIAL_DELAY_SECONDS", "60"))
+    await asyncio.sleep(initial_delay)
     while True:
         try:
             await asyncio.to_thread(check_and_send_inactivity_reminders)

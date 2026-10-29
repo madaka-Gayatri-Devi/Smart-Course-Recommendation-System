@@ -244,7 +244,7 @@
     },
     {
       "id": 30,
-      "full_name": "System Administrator",
+      "full_name": "SmartLearn Lead Administrator",
       "email": "admin@smartlearn.com",
       "hashed_password": "$2b$12$5SYJtXDkvG9Ou4FbqE7r.uuWBh3ljCPoakKJ5VRKETdct2p9kobE6",
       "role": "Admin",
@@ -531,19 +531,36 @@
     {
       "id": 13,
       "user_id": 14,
-      "phone": "+1 (555) 234-5678",
+      "phone": "9876543210",
       "dob": "",
       "gender": "",
-      "city": "Seattle, WA",
+      "city": "Bengaluru, Karnataka",
       "career_goal": "Senior Cloud & AI Instructor",
-      "skills": [],
-      "interests": [],
+      "skills": [
+        {
+          "skill": "Python",
+          "level": "Expert"
+        },
+        {
+          "skill": "FastAPI",
+          "level": "Expert"
+        },
+        {
+          "skill": "Cloud Architecture",
+          "level": "Advanced"
+        }
+      ],
+      "interests": [
+        "Machine Learning",
+        "System Design",
+        "Microservices"
+      ],
       "languages": [],
       "education": [],
       "experience": [],
       "projects": [],
       "courses": [],
-      "completion_percentage": 35,
+      "completion_percentage": 65,
       "secondary_career_goal": "https://tulasi.dev",
       "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAA8ADwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDmqKKK/RwCiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/9k=",
       "learning_style": "",
@@ -796,31 +813,18 @@
           "level": "Advanced"
         },
         {
-          "skill": "Java",
-          "level": "Advanced"
-        },
-        {
-          "skill": "JavaScript",
-          "level": "Advanced"
-        },
-        {
-          "skill": "SQL",
-          "level": "Advanced"
-        },
-        {
-          "skill": "TypeScript",
+          "skill": "React",
           "level": "Intermediate"
         },
         {
-          "skill": "React",
+          "skill": "SQL",
           "level": "Advanced"
         }
       ],
       "interests": [
         "Web Development",
         "AI & Machine Learning",
-        "Cloud Computing",
-        "Cyber Security"
+        "Cloud Computing"
       ],
       "languages": [
         "English",
@@ -862,7 +866,19 @@
           "live_url": "https://smartlearn.dev"
         }
       ],
-      "courses": [],
+      "courses": [
+        {
+          "id": 1,
+          "title": "Full Stack Web Development Bootcamp",
+          "progress": 0,
+          "completed_lessons": 0,
+          "total_lessons": 24,
+          "status": "in_progress",
+          "hours": 48,
+          "hours_spent": 0,
+          "icon": "fa-solid fa-code"
+        }
+      ],
       "completion_percentage": 100,
       "secondary_career_goal": "Cloud Solutions Architect",
       "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAyADIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwBlFFFeofogUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB/9k=",
@@ -1156,20 +1172,32 @@
     },
     {
       "user_id": 30,
-      "phone": "+1 (555) 019-2834",
+      "phone": "9988776655",
       "dob": "",
       "gender": "",
       "city": "San Francisco, CA",
       "career_goal": "Platform Operations & Security",
       "secondary_career_goal": "",
-      "skills": [],
-      "interests": [],
+      "skills": [
+        {
+          "skill": "System Administration",
+          "level": "Expert"
+        },
+        {
+          "skill": "Cloud Security",
+          "level": "Expert"
+        }
+      ],
+      "interests": [
+        "Platform Reliability",
+        "Cloud Infrastructure"
+      ],
       "languages": [],
       "education": [],
       "experience": [],
       "projects": [],
       "courses": [],
-      "completion_percentage": 35,
+      "completion_percentage": 65,
       "profile_image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAyADIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDn6KKK/RT5oKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//Z"
     }
   ],
