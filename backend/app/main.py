@@ -3451,6 +3451,10 @@ def save_profile(profile_data: ProfileData, user: UserDB = Depends(get_current_u
 @app.post("/api/profile/avatar")
 @app.post("/upload/avatar")
 @app.post("/api/upload/avatar")
+@app.post("/profile/upload-avatar")
+@app.post("/api/profile/upload-avatar")
+@app.post("/api/users/me/avatar")
+@app.post("/users/me/avatar")
 async def upload_avatar(
     file: Optional[UploadFile] = File(None),
     avatar: Optional[UploadFile] = File(None),
@@ -3514,16 +3518,30 @@ async def upload_avatar(
         from PIL import Image
         import io
         img = Image.open(io.BytesIO(content))
-        img.thumbnail((300, 300))
+
+        # Robustly handle transparent (RGBA/LA/P) and non-RGB image modes before JPEG compression
+        if img.mode in ("RGBA", "LA", "P"):
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode == "P":
+                img = img.convert("RGBA")
+            alpha_mask = img.split()[-1] if "A" in img.mode else None
+            bg.paste(img, mask=alpha_mask)
+            rgb_img = bg
+        elif img.mode != "RGB":
+            rgb_img = img.convert("RGB")
+        else:
+            rgb_img = img
+
+        rgb_img.thumbnail((300, 300))
         thumb_io = io.BytesIO()
-        img.save(thumb_io, format="JPEG", quality=85, optimize=True)
+        rgb_img.save(thumb_io, format="JPEG", quality=85, optimize=True)
         thumb_bytes = thumb_io.getvalue()
         thumb_b64 = base64.b64encode(thumb_bytes).decode("utf-8")
         data_uri = f"data:image/jpeg;base64,{thumb_b64}"
-    except Exception:
-        if len(content) <= 300 * 1024:
-            b64_str = base64.b64encode(content).decode("utf-8")
-            data_uri = f"data:{mime};base64,{b64_str}"
+    except Exception as _thumb_err:
+        auth_logger.warning(f"Avatar thumbnail conversion notice: {_thumb_err}")
+        b64_str = base64.b64encode(content).decode("utf-8")
+        data_uri = f"data:{mime};base64,{b64_str}"
 
     avatar_val = data_uri if data_uri else relative_url
 
@@ -3549,6 +3567,12 @@ async def upload_avatar(
 
 @app.delete("/profile/avatar")
 @app.delete("/api/profile/avatar")
+@app.delete("/upload/avatar")
+@app.delete("/api/upload/avatar")
+@app.delete("/profile/upload-avatar")
+@app.delete("/api/profile/upload-avatar")
+@app.delete("/api/users/me/avatar")
+@app.delete("/users/me/avatar")
 def delete_avatar(user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Removes the current user's profile photo and returns to initials avatar.

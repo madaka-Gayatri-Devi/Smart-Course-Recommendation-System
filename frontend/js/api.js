@@ -101,13 +101,7 @@ const api = {
         }
     },
 
-    /**
-     * Resilient alias for getCurrentUser() to ensure backwards-compatibility
-     * and prevent TypeError if any component or script calls window.api.getUser().
-     */
-    getUser() {
-        return this.getCurrentUser();
-    },
+
 
     /**
      * Retrieves the stored JWT authentication token from localStorage.
@@ -161,6 +155,39 @@ const api = {
         if (typeof path !== 'string') return '';
         if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) return path;
         return `${API_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+    },
+
+    /**
+     * Standardized helper to render an avatar in any container element.
+     * Handles Base64 Data URIs, absolute URLs, relative URLs, cache-busting,
+     * and automatic fallback to initials on load failure.
+     *
+     * @param {HTMLElement|string} target - Container DOM element or element ID.
+     * @param {string|null} imagePath - Avatar image path, URL, or data URI.
+     * @param {string} [nameFallback='User'] - Full name for initials extraction.
+     */
+    renderAvatar(target, imagePath, nameFallback = 'User') {
+        const el = typeof target === 'string' ? document.getElementById(target) : target;
+        if (!el) return;
+
+        const cleanName = (nameFallback || 'User').trim();
+        const parts = cleanName.split(/\s+/);
+        let initials = parts[0] ? parts[0].charAt(0) : 'U';
+        if (parts.length > 1 && parts[parts.length - 1]) {
+            initials += parts[parts.length - 1].charAt(0);
+        }
+        initials = initials.toUpperCase();
+
+        if (imagePath && typeof imagePath === 'string' && imagePath.trim()) {
+            const rawPath = imagePath.trim();
+            const fullUrl = this.getImageUrl(rawPath);
+            const isDataOrBlob = fullUrl.startsWith('data:') || fullUrl.startsWith('blob:');
+            const displayUrl = isDataOrBlob ? fullUrl : `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+
+            el.innerHTML = `<img src="${displayUrl}" alt="${cleanName}" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;" onerror="this.onerror=null; this.parentElement.textContent='${initials}';">`;
+        } else {
+            el.textContent = initials;
+        }
     },
 
     // --- AUTHENTICATION ---

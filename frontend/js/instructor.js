@@ -73,9 +73,11 @@ if (document.readyState === 'loading') {
  */
 function setInstructorAvatarHelper(el, image, initial) {
     if (!el) return;
-    if (image && image.trim()) {
+    if (window.api && typeof window.api.renderAvatar === 'function') {
+        window.api.renderAvatar(el, image, initial);
+    } else if (image && image.trim()) {
         const fullUrl = (window.api && typeof window.api.getImageUrl === 'function') ? window.api.getImageUrl(image) : image;
-        el.innerHTML = `<img src="${fullUrl}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.parentElement.textContent='${initial}'">`;
+        el.innerHTML = `<img src="${fullUrl}" alt="Avatar" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.onerror=null; this.parentElement.textContent='${initial}'">`;
     } else {
         el.textContent = initial;
     }

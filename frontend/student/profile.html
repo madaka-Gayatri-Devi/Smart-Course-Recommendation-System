@@ -118,6 +118,9 @@
                         </label>
                         <input type="file" id="profilePhotoFileInput" accept="image/*" style="display: none;">
                     </div>
+                    <button type="button" id="studentRemovePhotoBtn" style="display: none; background: none; border: none; color: #EF4444; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 6px; padding: 2px 8px;" title="Remove profile photo">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Remove Photo
+                    </button>
 
                     <h3 id="sideFullName">Student Name</h3>
                     <span class="profile-role-badge" id="sideRole">Student</span>
@@ -564,6 +567,7 @@
 
             // Profile Data & Picture
             const activeProfileImg = (profileData && profileData.profile_image) || userData.profile_image;
+            const remBtn = document.getElementById('studentRemovePhotoBtn');
             if (activeProfileImg) {
                 const fullImgUrl = window.api.getImageUrl(activeProfileImg);
                 if (avatarImg) {
@@ -572,13 +576,16 @@
                     avatarImg.onerror = function() {
                         this.style.display = 'none';
                         if (avatarInitials) avatarInitials.style.display = 'flex';
+                        if (remBtn) remBtn.style.display = 'none';
                     };
                 }
                 if (avatarInitials) avatarInitials.style.display = 'none';
+                if (remBtn) remBtn.style.display = 'inline-block';
                 updateTopbarAndSidebarAvatars(activeProfileImg, name);
             } else {
                 if (avatarImg) avatarImg.style.display = 'none';
                 if (avatarInitials) avatarInitials.style.display = 'flex';
+                if (remBtn) remBtn.style.display = 'none';
                 updateTopbarAndSidebarAvatars(null, name);
             }
 
@@ -979,6 +986,8 @@
                             localStorage.setItem('smartlearn_user', JSON.stringify(uObj));
                         }
                     } catch (_) {}
+                    const remBtn = document.getElementById('studentRemovePhotoBtn');
+                    if (remBtn) remBtn.style.display = 'inline-block';
                     showAlert('Profile photo updated successfully!');
                 } catch (err) {
                     console.error(err);
@@ -1388,6 +1397,26 @@
             e.preventDefault();
             window.api.clearToken();
             window.location.href = '../login.html';
+        });
+
+        
+        // Remove Photo Listener
+        document.getElementById('studentRemovePhotoBtn')?.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to remove your profile photo?')) return;
+            try {
+                await window.api.removeAvatar();
+                if (avatarImg) {
+                    avatarImg.src = '';
+                    avatarImg.style.display = 'none';
+                }
+                if (avatarInitials) avatarInitials.style.display = 'flex';
+                const remBtn = document.getElementById('studentRemovePhotoBtn');
+                if (remBtn) remBtn.style.display = 'none';
+                updateTopbarAndSidebarAvatars('', editFullName?.value || 'Student');
+                showAlert('Profile photo removed successfully.');
+            } catch (err) {
+                showAlert('Failed to remove photo: ' + (err.message || 'Server error'), false);
+            }
         });
 
         initPage();
