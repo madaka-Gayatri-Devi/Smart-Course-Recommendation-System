@@ -92,6 +92,24 @@
 
     let selectedMsgIds = new Set();
 
+    function showChatToast(message, isError = false) {
+        let toast = document.getElementById('chatToastNotification');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'chatToastNotification';
+            toast.style.cssText = 'position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); background: #1E293B; color: #FFFFFF; padding: 8px 18px; border-radius: 9999px; font-size: 13px; font-weight: 600; z-index: 2000; box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: opacity 0.2s ease; pointer-events: none;';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.style.background = isError ? '#EF4444' : '#1E293B';
+        toast.style.opacity = '1';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 2400);
+    }
+
+
 
 
 
@@ -2045,262 +2063,88 @@
 
 
     function buildConvItemHTML(c) {
-
-
-
         const isActive = c.id === activeConvId ? 'active' : '';
-
-
-
         const isOnline = c.other_user ? c.other_user.is_online : false;
-
-
-
         const isPinned = pinnedConvs.has(c.id);
-
-
-
         const isMuted = mutedConvs.has(c.id);
-
-
-
         const hasUnread = c.unread_count > 0;
 
-
-
-
-
-
-
-                const isGroup = (c.type === 'COURSE_GROUP' || c.type === 'CUSTOM_GROUP');
+        const isGroup = (c.type === 'COURSE_GROUP' || c.type === 'CUSTOM_GROUP');
         let roleOrTypeTag = '';
         if (isGroup) {
-            roleOrTypeTag = '<span class="chat-conv-tag course-tag"><i class="fa-solid fa-graduation-cap"></i> Group</span>';
+            roleOrTypeTag = '<span class="chat-conv-tag course-tag group"><i class="fa-solid fa-graduation-cap"></i> Group</span>';
         } else if (c.other_user) {
             const r = (c.other_user.role || 'Student').toUpperCase();
             if (r === 'INSTRUCTOR') {
-                roleOrTypeTag = '<span class="chat-conv-tag instructor-tag"><i class="fa-solid fa-chalkboard-user"></i> Instructor</span>';
+                roleOrTypeTag = '<span class="chat-conv-tag instructor-tag instructor"><i class="fa-solid fa-chalkboard-user"></i> Instructor</span>';
             } else if (r === 'ADMIN') {
                 roleOrTypeTag = '<span class="chat-conv-tag admin-tag"><i class="fa-solid fa-user-shield"></i> Admin</span>';
             } else {
-                roleOrTypeTag = '<span class="chat-conv-tag student-tag"><i class="fa-solid fa-user-graduate"></i> Student</span>';
+                roleOrTypeTag = '<span class="chat-conv-tag student-tag direct"><i class="fa-solid fa-user-graduate"></i> Student</span>';
             }
         }
 
         const avatarText = c.other_user ? getInitials(c.other_user.full_name) : (c.title ? c.title.substring(0, 2).toUpperCase() : 'GP');
-
-
-
         const avatarSrc = c.other_user ? c.other_user.profile_image : null;
 
-
-
-
-
-
-
         let lastMsgText = 'No messages yet';
-
-
-
         if (c.last_message) {
-
-
-
             if (c.last_message.content) {
-
-
-
                 lastMsgText = c.last_message.content;
-
-
-
             } else if (c.last_message.attachments && c.last_message.attachments.length > 0) {
-
-
-
                 const att = c.last_message.attachments[0];
-
-
-
                 const fileType = (att.file_type || '').toLowerCase();
-
-
-
                 const fileName = (att.file_name || '').toLowerCase();
-
-
-
                 if (fileType.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => fileName.endsWith('.' + ext))) {
-
-
-
                     lastMsgText = '📷 Image';
-
-
-
                 } else if (fileName.endsWith('.pdf')) {
-
-
-
                     lastMsgText = '📄 PDF document';
-
-
-
                 } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx') || fileName.endsWith('.csv')) {
-
-
-
                     lastMsgText = '📊 Excel spreadsheet';
-
-
-
                 } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-
-
-
                     lastMsgText = '📝 Word document';
-
-
-
                 } else if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
-
-
-
                     lastMsgText = '📊 PowerPoint presentation';
-
-
-
                 } else if (fileName.endsWith('.zip') || fileName.endsWith('.rar') || fileName.endsWith('.7z')) {
-
-
-
                     lastMsgText = '📦 Archive file';
-
-
-
                 } else {
-
-
-
-                    lastMsgText = `📎 Document attachment`;
-
-
-
+                    lastMsgText = '📎 Document attachment';
                 }
-
-
-
             } else {
-
-
-
                 lastMsgText = 'Shared attachment';
-
-
-
             }
-
-
-
         }
-
-
-
-
-
-
 
         const lastMsgTime = c.last_message ? formatShortTime(c.last_message.created_at) : '';
 
-
-
-
-
-
-
         return `
-
-
-
-            <div class="chat-conv-item ${isActive} ${hasUnread ? 'has-unread' : ''}" data-conv-id="${c.id}">
-
-
-
+            <div class="chat-conv-item ${isActive} ${hasUnread ? 'has-unread' : ''}" data-conv-id="${c.id}" onclick="window.openConversationById(${c.id})">
                 <div class="chat-avatar-wrapper">
-
-
-
-                    <div class="chat-avatar">
-
-
-
+                    <div class="chat-avatar ${isGroup ? 'group-avatar' : ''}">
                         ${avatarSrc ? `<img src="${window.api.getImageUrl(avatarSrc)}" alt="${escapeHTML(c.title)}">` : avatarText}
-
-
-
                     </div>
-
-
-
                     ${c.type === 'PERSONAL' ? `<span class="${isOnline ? 'online-indicator' : 'offline-indicator'}" title="${isOnline ? 'Online' : 'Offline'}"></span>` : ''}
-
-
-
                 </div>
-
-
-
                 <div class="chat-conv-info">
-
-
-
-                    <div class="chat-conv-top">
-                    <div class="chat-conv-name-wrapper">
+                    <div class="chat-conv-header-row">
                         ${roleOrTypeTag}
-                        <span class="chat-conv-name" style="${hasUnread ? 'font-weight: 800;' : ''}">
+                        <span class="chat-conv-time" style="${hasUnread ? 'color: var(--color-primary, #5B3FE8); font-weight: 700;' : ''}">${lastMsgTime}</span>
+                    </div>
+                    <div class="chat-conv-title-row">
+                        <span class="chat-conv-name" title="${escapeHTML(c.title)}" style="${hasUnread ? 'font-weight: 800;' : ''}">
                             ${escapeHTML(c.title)}
                             ${isPinned ? `<i class="fa-solid fa-thumbtack chat-pin-badge"></i>` : ''}
                             ${isMuted ? `<i class="fa-solid fa-volume-xmark chat-mute-badge"></i>` : ''}
                         </span>
                     </div>
-                    <span class="chat-conv-time" style="${hasUnread ? 'color: var(--color-primary, #5B3FE8); font-weight: 700;' : ''}">${lastMsgTime}</span>
-                </div>
                     <div class="chat-conv-bottom">
-
-
-
-                        <p class="chat-conv-last-msg" style="${hasUnread ? 'font-weight: 700; color: var(--text-color, #172033);' : ''}">${escapeHTML(lastMsgText)}</p>
-
-
-
+                        <p class="chat-conv-last-msg" title="${escapeHTML(lastMsgText)}" style="${hasUnread ? 'font-weight: 700; color: var(--text-color, #172033);' : ''}">${escapeHTML(lastMsgText)}</p>
                         ${c.unread_count > 0 ? `<span class="chat-unread-badge">${c.unread_count}</span>` : ''}
-
-
-
                     </div>
-
-
-
                 </div>
-
-
-
             </div>
-
-
-
         `;
-
-
-
     }
-
-
-
-
-
-
 
     function buildContactQuickItemHTML(ac) {
 
@@ -2443,7 +2287,6 @@
 
 
     async function openConversation(convId) {
-
         if (!convId) {
             window.closeActiveConversation();
             return;
@@ -2461,79 +2304,51 @@
 
         if (window.clearMessageSelection) window.clearMessageSelection();
 
+        const chatMain = document.getElementById('chatMain');
+        if (chatMain) chatMain.setAttribute('data-chat-state', 'active');
+
         const header = document.getElementById('chatHeader');
         const messages = document.getElementById('chatMessagesContainer');
         const composer = document.getElementById('chatComposer');
         const emptyView = document.getElementById('chatEmptySelectionView');
 
-        if (header) header.style.display = 'flex';
-        if (messages) messages.style.display = 'flex';
-        if (composer) composer.style.display = 'flex';
-        if (emptyView) emptyView.style.display = 'none';
+        if (header) header.style.setProperty('display', 'flex', 'important');
+        if (messages) {
+            messages.style.setProperty('display', 'flex', 'important');
+            messages.innerHTML = `
+                <div class="chat-thread-loading-skeleton" style="padding: 2.5rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; width: 100%; box-sizing: border-box;">
+                    <div style="width: 55%; height: 42px; background: #EDE9FE; border-radius: 16px 16px 16px 4px; animation: floatIllustration 2s infinite ease-in-out;"></div>
+                    <div style="width: 40%; height: 36px; background: #E2E8F0; border-radius: 16px 16px 4px 16px; align-self: flex-end; animation: floatIllustration 2s infinite ease-in-out;"></div>
+                    <div style="width: 65%; height: 48px; background: #EDE9FE; border-radius: 16px 16px 16px 4px; animation: floatIllustration 2s infinite ease-in-out;"></div>
+                </div>
+            `;
+        }
+        if (composer) composer.style.setProperty('display', 'flex', 'important');
+        if (emptyView) emptyView.style.setProperty('display', 'none', 'important');
 
         const pageWrapper = document.getElementById('chatPageWrapper');
         if (pageWrapper) pageWrapper.classList.add('mobile-open');
         const appContainer = document.getElementById('chatAppContainer');
         if (appContainer) appContainer.classList.add('mobile-open');
 
-
-
-
-
-
-
         renderConversationsList(conversations);
 
-
-
-
-
-
-
         const conv = conversations.find(c => c.id === convId);
-
-
-
         if (conv) {
-
-
-
             renderChatHeader(conv);
-
-
-
             conv.unread_count = 0;
-
-
-
             updateGlobalUnreadBadge();
-
-
-
             updateCategoryBadges();
-
             const composerTextarea = document.getElementById('chatComposerTextarea');
             if (composerTextarea) {
                 composerTextarea.placeholder = `Message ${conv.title || 'your classmates or instructor'}... (Type @ to mention)`;
             }
-
         }
 
-
-
-
-
-
-
         await loadActiveMessages(convId);
-
-
-
         await window.api.markConversationRead(convId);
-
-
-
         scrollToBottom(true);
+
 
 
 
@@ -3734,6 +3549,9 @@
         const targetId = convId || activeConvId;
         if (!targetId) return;
 
+        const container = document.getElementById('chatAppContainer');
+        if (!container) return;
+
         // Toggle closed if already open for this conversation (unless forced open)
         const existingPanel = document.getElementById('chatContactPanel');
         if (!forceOpen && existingPanel && existingPanel.dataset.convId == targetId) {
@@ -3743,15 +3561,46 @@
 
         window.closeChatPanels();
 
+        // Immediate visual response (0ms latency): open drawer & show loading skeleton
+        container.classList.add('has-info-open');
+
+        const panel = document.createElement('div');
+        panel.id = 'chatContactPanel';
+        panel.className = 'chat-contact-panel';
+        panel.dataset.convId = targetId;
+
+        const conv = conversations.find(c => c.id === targetId);
+        const isGroupInitial = conv ? (conv.type !== 'PERSONAL') : false;
+        const initialTitle = conv ? (conv.title || 'Information') : 'Information';
+
+        panel.innerHTML = `
+            <div class="panel-header">
+                <div class="panel-header-left">
+                    <button type="button" class="panel-back-btn" onclick="window.closeChatPanels()" title="Back to Chat">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h4 class="panel-header-title">
+                        <i class="fa-solid ${isGroupInitial ? 'fa-users' : 'fa-circle-info'}" style="color: var(--color-primary, #5B3FE8);"></i>
+                        <span>${isGroupInitial ? 'Group Info' : 'Contact Info'}</span>
+                    </h4>
+                </div>
+                <button type="button" class="panel-close-btn" onclick="window.closeChatPanels()" title="Close">&times;</button>
+            </div>
+            <div class="contact-info-body">
+                <div class="contact-profile-avatar" style="opacity: 0.8;">
+                    ${getInitials(initialTitle)}
+                </div>
+                <div style="text-align: center; width: 100%; box-sizing: border-box;">
+                    <h3 class="contact-profile-name">${escapeHTML(initialTitle)}</h3>
+                    <span class="contact-profile-role" style="color: var(--color-primary, #5B3FE8);"><i class="fa-solid fa-spinner fa-spin"></i> Loading details...</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(panel);
+
         try {
             const info = await window.api.getContactInfo(targetId);
-            const container = document.getElementById('chatAppContainer');
-            if (!container) return;
-
-            const panel = document.createElement('div');
-            panel.id = 'chatContactPanel';
-            panel.className = 'chat-contact-panel';
-            panel.dataset.convId = targetId;
+            if (!panel.isConnected || panel.dataset.convId != targetId) return;
 
             const totalSharedCount = (info.media_count || 0) + (info.docs_count || 0) + (info.links_count || 0);
             const isGroup = info.type !== 'PERSONAL';
@@ -7427,37 +7276,32 @@
 
 
     async function loadActiveMessages(convId) {
-
-
-
         try {
-
-
-
-            activeMessages = await window.api.getMessages(convId, 50);
-
-
-
+            const msgs = await window.api.getMessages(convId, 50);
+            if (activeConvId !== convId) return;
+            activeMessages = msgs || [];
             renderMessages(activeMessages);
-
-
-
             scrollToBottom(true);
-
-
-
         } catch (err) {
-
-
-
             console.error('[Chat] Error loading messages:', err);
-
-
-
+            if (activeConvId === convId) {
+                const container = document.getElementById('chatMessagesContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="chat-thread-error-state" style="margin: auto; text-align: center; padding: 2.5rem 1rem; color: #64748B;">
+                            <div style="width: 52px; height: 52px; border-radius: 50%; background: #FEE2E2; color: #EF4444; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 1rem;">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <h4 style="color: #0F172A; font-weight: 700; font-size: 15px; margin: 0 0 0.5rem 0;">Unable to Load Messages</h4>
+                            <p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0 0 1rem 0;">We could not retrieve this discussion thread. Please check your connection and retry.</p>
+                            <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 0.45rem 1.25rem; font-weight: 600; border-radius: 8px; cursor: pointer; background: var(--color-primary-soft, #EDE7FF); border: 1px solid var(--color-primary, #5B3FE8); color: var(--color-primary, #5B3FE8);" onclick="window.openConversationById(${convId})">
+                                <i class="fa-solid fa-rotate-right" style="margin-right: 4px;"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
         }
-
-
-
     }
 
 
@@ -8125,7 +7969,8 @@
 
 
 
-                <div class="chat-msg-row ${msgClass}" id="msg-row-${msg.id}" data-msg-id="${msg.id}">
+                <div class="chat-msg-row ${msgClass} ${selectedMsgIds.has(msg.id) ? 'is-selected' : ''}" id="msg-row-${msg.id}" data-msg-id="${msg.id}">
+                        <span class="chat-msg-select-check" onclick="event.stopPropagation(); window.toggleSelectMessage(${msg.id});"><i class="fa-solid fa-check"></i></span>
 
 
 
@@ -8285,7 +8130,7 @@
 
 
 
-                if (selectedMsgIds.size > 0) {
+                if (selectedMsgIds.size > 0 || document.getElementById('chatMain')?.classList.contains('is-selection-mode')) {
 
 
 
@@ -8626,15 +8471,21 @@
             localStorage.removeItem('smartlearn_last_active_conv');
         } catch (_) {}
 
+        const chatMain = document.getElementById('chatMain');
+        if (chatMain) chatMain.setAttribute('data-chat-state', 'empty');
+
         const header = document.getElementById('chatHeader');
         const messages = document.getElementById('chatMessagesContainer');
         const composer = document.getElementById('chatComposer');
         const emptyView = document.getElementById('chatEmptySelectionView');
 
-        if (header) header.style.display = 'none';
-        if (messages) messages.style.display = 'none';
-        if (composer) composer.style.display = 'none';
-        if (emptyView) emptyView.style.display = 'flex';
+        if (header) header.style.setProperty('display', 'none', 'important');
+        if (messages) {
+            messages.innerHTML = '';
+            messages.style.setProperty('display', 'none', 'important');
+        }
+        if (composer) composer.style.setProperty('display', 'none', 'important');
+        if (emptyView) emptyView.style.setProperty('display', 'flex', 'important');
 
         if (window.clearMessageSelection) window.clearMessageSelection();
 
@@ -8649,20 +8500,44 @@
     };
 
     window.toggleMessageSelection = () => {
-        const selectBtn = document.getElementById('chatSelectBtn');
-        if (selectedMsgIds.size > 0) {
+        const chatMain = document.getElementById('chatMain');
+        const isSelectionMode = chatMain && chatMain.classList.contains('is-selection-mode');
+        if (isSelectionMode || selectedMsgIds.size > 0) {
             window.clearMessageSelection();
-            if (selectBtn) selectBtn.textContent = 'Select';
         } else {
-            if (activeMessages && activeMessages.length > 0) {
-                window.toggleSelectMessage(activeMessages[activeMessages.length - 1].id);
-                if (selectBtn) selectBtn.textContent = 'Cancel';
+            if (!activeMessages || activeMessages.length === 0) {
+                showChatToast('No messages to select in this discussion.');
+                return;
             }
+            if (chatMain) chatMain.classList.add('is-selection-mode');
+            const selectBtn = document.getElementById('chatSelectBtn');
+            if (selectBtn) selectBtn.textContent = 'Cancel';
+            window.updateSelectionUI();
         }
     };
 
 
     function setupDOMEvents() {
+        // Escape key to exit selection mode or dismiss menus
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('chatSelectionToolbar') || document.getElementById('chatMain')?.classList.contains('is-selection-mode')) {
+                    window.clearMessageSelection();
+                    return;
+                }
+                const optionsMenu = document.getElementById('chatHeaderOptionsMenu');
+                if (optionsMenu) {
+                    optionsMenu.remove();
+                    return;
+                }
+                const contactPanel = document.getElementById('chatContactPanel');
+                if (contactPanel) {
+                    window.closeChatPanels();
+                    return;
+                }
+            }
+        });
+
 
 
 
@@ -10467,312 +10342,119 @@
 
 
     window.toggleSelectMessage = (msgId) => {
-
-
-
         if (!msgId) return;
-
-
-
         if (selectedMsgIds.has(msgId)) {
-
-
-
             selectedMsgIds.delete(msgId);
-
-
-
         } else {
-
-
-
             selectedMsgIds.add(msgId);
-
-
-
         }
-
-
-
         window.updateSelectionUI();
-
-
-
     };
-
-
-
-
-
-
 
     window.clearMessageSelection = () => {
-
-
-
         selectedMsgIds.clear();
-
-
-
+        const chatMain = document.getElementById('chatMain');
+        if (chatMain) chatMain.classList.remove('is-selection-mode');
+        const selectBtn = document.getElementById('chatSelectBtn');
+        if (selectBtn) selectBtn.textContent = 'Select';
         window.updateSelectionUI();
-
-
-
     };
 
+    window.selectAllMessages = () => {
+        if (!activeMessages || activeMessages.length === 0) return;
+        if (selectedMsgIds.size === activeMessages.length) {
+            selectedMsgIds.clear();
+        } else {
+            activeMessages.forEach(m => selectedMsgIds.add(m.id));
+        }
+        window.updateSelectionUI();
+    };
 
-
-
-
-
+    window.copySelectedMessages = () => {
+        if (selectedMsgIds.size === 0) return;
+        const selected = activeMessages.filter(m => selectedMsgIds.has(m.id));
+        const textToCopy = selected.map(m => {
+            const time = formatTime(m.created_at);
+            return `[${time}] ${m.sender_name}: ${m.content || '[Attachment]'}`;
+        }).join('\n');
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showChatToast('Copied to clipboard');
+                window.clearMessageSelection();
+            }).catch(() => {
+                showChatToast('Copied text');
+                window.clearMessageSelection();
+            });
+        } else {
+            showChatToast('Copied to clipboard');
+            window.clearMessageSelection();
+        }
+    };
 
     window.updateSelectionUI = () => {
-
-
-
         const header = document.querySelector('.chat-header');
-
-
-
+        const chatMain = document.getElementById('chatMain');
+        const isSelectionMode = chatMain && chatMain.classList.contains('is-selection-mode');
+        const selectBtn = document.getElementById('chatSelectBtn');
         let toolbar = document.getElementById('chatSelectionToolbar');
 
-
-
-
-
-
-
-        if (selectedMsgIds.size === 0) {
-
-
-
+        if (!isSelectionMode && selectedMsgIds.size === 0) {
             if (toolbar) toolbar.remove();
-
-
-
+            if (selectBtn) selectBtn.textContent = 'Select';
             document.querySelectorAll('.chat-msg-row').forEach(row => row.classList.remove('is-selected'));
-
-
-
             return;
-
-
-
         }
 
-
-
-
-
-
+        if (selectBtn) selectBtn.textContent = 'Cancel';
 
         if (!toolbar && header) {
-
-
-
             toolbar = document.createElement('div');
-
-
-
             toolbar.id = 'chatSelectionToolbar';
-
-
-
             toolbar.className = 'chat-selection-toolbar';
-
-
-
             header.appendChild(toolbar);
-
-
-
         }
-
-
-
-
-
-
 
         const count = selectedMsgIds.size;
-
-
-
         const singleSelected = count === 1;
 
-
-
-
-
-
-
         if (toolbar) {
-
-
-
             toolbar.innerHTML = `
-
-
-
                 <div class="selection-left">
-
-
-
-                    <button type="button" class="selection-btn" onclick="window.clearMessageSelection()" title="Cancel selection">
-
-
-
-                        <i class="fa-solid fa-arrow-left"></i>
-
-
-
+                    <button type="button" class="selection-btn" onclick="window.clearMessageSelection()" title="Cancel selection" style="border: none; background: transparent; color: #fff; cursor: pointer; font-size: 16px;">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
-
-
-
-                    <span class="selection-count" id="selectionCount">${count}</span>
-
-
-
+                    <span class="selection-count" id="selectionCount">${count} selected</span>
+                    <button type="button" class="selection-select-all-btn" onclick="window.selectAllMessages()">
+                        ${(activeMessages && count === activeMessages.length) ? 'Deselect All' : 'Select All'}
+                    </button>
                 </div>
-
-
 
                 <div class="selection-actions">
-
-
-
-                    <button type="button" class="selection-action-btn ${!singleSelected ? 'disabled' : ''}" onclick="window.handleSelectionReply()" title="Reply" ${!singleSelected ? 'disabled' : ''}>
-
-
-
-                        <i class="fa-solid fa-reply"></i>
-
-
-
+                    <button type="button" class="selection-action-btn ${count === 0 ? 'disabled' : ''}" onclick="window.copySelectedMessages()" title="Copy Text" ${count === 0 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-copy"></i>
                     </button>
-
-
-
-                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionStar()" title="Star">
-
-
-
+                    <button type="button" class="selection-action-btn ${count === 0 ? 'disabled' : ''}" onclick="window.handleSelectionStar()" title="Star Messages" ${count === 0 ? 'disabled' : ''}>
                         <i class="fa-regular fa-star"></i>
-
-
-
                     </button>
-
-
-
-                    <button type="button" class="selection-action-btn ${!singleSelected ? 'disabled' : ''}" onclick="window.handleSelectionInfo()" title="Info" ${!singleSelected ? 'disabled' : ''}>
-
-
-
-                        <i class="fa-solid fa-circle-info"></i>
-
-
-
-                    </button>
-
-
-
-                    <button type="button" class="selection-action-btn selection-delete-btn" onclick="window.showDeleteConfirmationModal()" title="Delete">
-
-
-
-                        <i class="fa-solid fa-trash-can"></i>
-
-
-
-                    </button>
-
-
-
-                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionForward()" title="Forward">
-
-
-
+                    <button type="button" class="selection-action-btn ${count === 0 ? 'disabled' : ''}" onclick="window.handleSelectionForward()" title="Forward Messages" ${count === 0 ? 'disabled' : ''}>
                         <i class="fa-solid fa-share"></i>
-
-
-
                     </button>
-
-
-
-                    <button type="button" class="selection-action-btn" onclick="window.handleSelectionMore(event)" title="More options">
-
-
-
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-
-
-
+                    <button type="button" class="selection-action-btn selection-delete-btn ${count === 0 ? 'disabled' : ''}" onclick="window.showDeleteConfirmationModal()" title="Delete Messages" ${count === 0 ? 'disabled' : ''}>
+                        <i class="fa-solid fa-trash-can"></i>
                     </button>
-
-
-
                 </div>
-
-
-
             `;
-
-
-
         }
 
-
-
-
-
-
-
-        // Highlight selected message rows
-
-
-
         document.querySelectorAll('.chat-msg-row').forEach(row => {
-
-
-
-            const mId = parseInt(row.dataset.msgId, 10);
-
-
-
-            if (selectedMsgIds.has(mId)) {
-
-
-
+            const mid = parseInt(row.dataset.msgId, 10);
+            if (selectedMsgIds.has(mid)) {
                 row.classList.add('is-selected');
-
-
-
             } else {
-
-
-
                 row.classList.remove('is-selected');
-
-
-
             }
-
-
-
         });
-
-
-
     };
-
-
-
-
-
-
 
     window.handleSelectionReply = () => {
 

@@ -4815,13 +4815,40 @@
 
 
 
-/* SMARTLEARN CHAT PAGE ELEVATION: Keep bot toggle above composer */
+/* SMARTLEARN CHAT PAGE ELEVATION: Keep bot toggle above composer as compact icon button */
 body.chat-page-body #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
 body.chat-page-body #smartlearn-chatbot-root.pos-right .smartlearn-chatbot-toggle,
 body.chat-page-body .smartlearn-chatbot-toggle,
 body:has(#chatComposerTextarea) #smartlearn-chatbot-root .smartlearn-chatbot-toggle,
 body:has(.chat-composer) #smartlearn-chatbot-root .smartlearn-chatbot-toggle {
     bottom: 84px !important;
-    right: 24px !important;
-    z-index: 85 !important;
+    right: 20px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    z-index: 40 !important;
+}
+
+body.chat-page-body #smartlearn-chatbot-root .smartlearn-chatbot-toggle span,
+body.chat-page-body .smartlearn-chatbot-toggle span,
+body:has(#chatComposerTextarea) #smartlearn-chatbot-root .smartlearn-chatbot-toggle span,
+body:has(.chat-composer) #smartlearn-chatbot-root .smartlearn-chatbot-toggle span {
+    display: none !important;
+}
+
+body.chat-page-body #smartlearn-chatbot-root .smartlearn-chatbot-toggle i.main-icon,
+body.chat-page-body .smartlearn-chatbot-toggle i.main-icon,
+body:has(#chatComposerTextarea) #smartlearn-chatbot-root .smartlearn-chatbot-toggle i.main-icon,
+body:has(.chat-composer) #smartlearn-chatbot-root .smartlearn-chatbot-toggle i.main-icon {
+    margin: 0 !important;
+    font-size: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
